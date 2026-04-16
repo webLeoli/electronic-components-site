@@ -1,0 +1,2 @@
+﻿partNumber,manufacturer,description,category,packageType,mountType,status,minPrice,stock,moq,leadTime,datasheet,imageUrl,specs
+STM32F103C8T6,STMicroelectronics,"ARM Cortex-M3 MCU, 72MHz",Microcontrollers,LQFP-48,SMD,Active,2.85,15000,1,1-3 days,,,"{\"Core\":\"ARM Cortex-M3\",\"Speed\":\"72MHz\"}"
