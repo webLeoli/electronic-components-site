@@ -31,17 +31,7 @@ export const metadata = {
     description: SITE_DESC,
 
   },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
+  // robots.txt is handled by src/app/robots.js
   // Note: do NOT set alternates.canonical here — it would be inherited by all
   // child pages as the homepage URL, causing massive canonical conflicts.
   // Each page sets its own canonical via page-level metadata.
