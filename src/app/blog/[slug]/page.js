@@ -1,6 +1,7 @@
 import prisma from '@/lib/db';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import { SITE_NAME, SITE_URL } from '@/lib/seo';
 import '../blog.css';
 
@@ -125,8 +126,13 @@ export default async function BlogPostPage({ params }) {
 
   if (!post || post.status !== 'published') notFound();
 
-  // Increment view count (fire-and-forget)
-  prisma.blogPost.update({ where: { id: post.id }, data: { viewCount: { increment: 1 } } }).catch(() => {});
+  // Increment view count (fire-and-forget) — skip bots to avoid inflated counts
+  const headersList = await headers();
+  const ua = (headersList.get('user-agent') || '').toLowerCase();
+  const isBot = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex|sogou|facebookexternalhit|twitterbot|linkedinbot|semrushbot|ahrefsbot|dotbot|mj12bot|bytespider/i.test(ua);
+  if (!isBot) {
+    prisma.blogPost.update({ where: { id: post.id }, data: { viewCount: { increment: 1 } } }).catch(() => {});
+  }
 
   // Smart content detection and conversion
   // Content may be pure HTML (from WYSIWYG), pure markdown (from seeds), or MIXED (edited seeddata)
@@ -147,13 +153,13 @@ export default async function BlogPostPage({ params }) {
   }
   
   // Post-processing: convert any remaining inline markdown patterns in HTML content
-  // This handles cases like "## Heading" appearing inline (not at start of line) in HTML content
-  contentHtml = contentHtml.replace(/(?:^|(?<=>))(\s*)#{4}\s+(.+?)(?=\s*(?:<|$))/gm, '$1<h4>$2</h4>');
-  contentHtml = contentHtml.replace(/(?:^|(?<=>))(\s*)#{3}\s+(.+?)(?=\s*(?:<|$))/gm, '$1<h3>$2</h3>');
-  contentHtml = contentHtml.replace(/(?:^|(?<=>))(\s*)#{2}\s+(.+?)(?=\s*(?:<|$))/gm, '$1<h2>$2</h2>');
+  // Using universally compatible regex (no lookbehind for Edge Runtime compat)
+  contentHtml = contentHtml.replace(/(^|>)(\s*)#{4}\s+(.+?)(?=\s*(?:<|$))/gm, '$1$2<h4>$3</h4>');
+  contentHtml = contentHtml.replace(/(^|>)(\s*)#{3}\s+(.+?)(?=\s*(?:<|$))/gm, '$1$2<h3>$3</h3>');
+  contentHtml = contentHtml.replace(/(^|>)(\s*)#{2}\s+(.+?)(?=\s*(?:<|$))/gm, '$1$2<h2>$3</h2>');
   // Convert remaining markdown bold/italic if any
   contentHtml = contentHtml.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  contentHtml = contentHtml.replace(/(?<!\w)\*([^*]+?)\*(?!\w)/g, '<em>$1</em>');
+  contentHtml = contentHtml.replace(/(^|[\s>])\*([^*]+?)\*(?=[\s<.,;!?)]|$)/gm, '$1<em>$2</em>');
   
   // Strip HTML tags from a string to get plain text
   const stripHtml = (html) => html.replace(/<[^>]+>/g, '').trim();
@@ -218,7 +224,8 @@ export default async function BlogPostPage({ params }) {
     dateModified: post.updatedAt?.toISOString(),
     author: { '@type': 'Organization', name: post.author || SITE_NAME },
     publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL, logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon-512.png` } },
-    image: post.coverImage || undefined,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/blog/${post.slug}` },
+    image: post.coverImage || `${SITE_URL}/og-image.png`,
     wordCount: (post.content || '').split(/\s+/).length,
   };
 

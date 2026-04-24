@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { sendRfqNotification } from '@/lib/email';
 
-// In-memory rate limiter (per IP)
+// In-memory rate limiter (per IP).
+// NOTE: Works for single-process deployments (PM2 fork mode).
+// For cluster mode, replace with a Redis-backed limiter.
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
 const RATE_LIMIT_MAX = 5;
@@ -10,11 +12,14 @@ const RATE_LIMIT_MAX = 5;
 function checkRateLimit(ip) {
   const now = Date.now();
   const key = ip || 'unknown';
-  if (!rateLimitMap.has(key)) rateLimitMap.set(key, []);
-  const timestamps = rateLimitMap.get(key).filter(t => now - t < RATE_LIMIT_WINDOW);
-  rateLimitMap.set(key, timestamps);
-  if (timestamps.length >= RATE_LIMIT_MAX) return false;
+  const prev = rateLimitMap.get(key) || [];
+  const timestamps = prev.filter(t => now - t < RATE_LIMIT_WINDOW);
+  if (timestamps.length >= RATE_LIMIT_MAX) {
+    rateLimitMap.set(key, timestamps);
+    return false;
+  }
   timestamps.push(now);
+  rateLimitMap.set(key, timestamps);
   return true;
 }
 

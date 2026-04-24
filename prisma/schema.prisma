@@ -69,17 +69,17 @@ model RfqSubmission {
   country       String?
   message       String?
   parts         String
-  bomFile       String?
-  bomFileName   String?
   status        String    @default("new")
   notes         String?
   ipAddress     String?
   userAgent     String?
-  trackingData  String?
-  sourceChannel String?
-  landingPage   String?
   submittedAt   DateTime  @default(now())
   processedAt   DateTime?
+  landingPage   String?
+  sourceChannel String?
+  trackingData  String?
+  bomFile       String?
+  bomFileName   String?
 
   @@index([status])
   @@index([email])
@@ -148,20 +148,19 @@ model AdminUser {
 }
 
 model ContactSubmission {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   name        String
   email       String
   company     String?
   phone       String?
   subject     String
   message     String
-  status      String    @default("new")
+  status      String   @default("new")
   notes       String?
   ipAddress   String?
-  submittedAt DateTime  @default(now())
+  submittedAt DateTime @default(now())
 
   @@index([status])
   @@index([email])
   @@index([submittedAt])
 }
-

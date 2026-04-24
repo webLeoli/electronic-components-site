@@ -1,8 +1,17 @@
+import { cache } from 'react';
 import prisma from '@/lib/db';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SITE_URL } from '@/lib/seo';
 import { FALLBACK_BRANDS } from '@/lib/fallbacks';
+
+// React cache() deduplicates this query within a single request
+const getManufacturer = cache(async (slug) => {
+  const manufacturer = await prisma.manufacturer.findUnique({ where: { slug } });
+  if (manufacturer) return manufacturer;
+  const brandName = FALLBACK_BRANDS.find(b => b.toLowerCase().replace(/[\s\/]+/g, '-') === slug);
+  return brandName ? { name: brandName, slug } : null;
+});
 
 export const revalidate = 3600;
 
@@ -11,36 +20,33 @@ export async function generateStaticParams() {
   return manufacturers.map((m) => ({ slug: m.slug }));
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params, searchParams }) {
   const { slug } = await params;
-  const manufacturer = await prisma.manufacturer.findUnique({ where: { slug } });
-  if (!manufacturer) {
-    // Check if slug matches a fallback brand
-    const brandName = FALLBACK_BRANDS.find(b => b.toLowerCase().replace(/[\s\/]+/g, '-') === slug);
-    if (!brandName) return { title: 'Manufacturer Not Found' };
-    const title = `${brandName} Electronic Components`;
-    const ogTitle = `${brandName} Electronic Components | FPGACenter`;
-    const description = `Buy ${brandName} electronic components at FPGACenter. Original parts, fast delivery, no MOQ.`;
-    return { title, description, openGraph: { title: ogTitle, description, url: `${SITE_URL}/manufacturer/${slug}`, siteName: 'FPGACenter', type: 'website' }, alternates: { canonical: `${SITE_URL}/manufacturer/${slug}` } };
-  }
+  const sp = await searchParams;
+  const page = Math.max(1, parseInt(sp?.page) || 1);
+  const manufacturer = await getManufacturer(slug);
+  if (!manufacturer) return { title: 'Manufacturer Not Found' };
 
-  const productCount = await prisma.product.count({ where: { manufacturer: manufacturer.name } });
-  const title = `${manufacturer.name} Electronic Components`;
+  const title = page > 1
+    ? `${manufacturer.name} Electronic Components - Page ${page}`
+    : `${manufacturer.name} Electronic Components`;
   const ogTitle = `${manufacturer.name} Electronic Components | FPGACenter`;
-  const description = `Buy ${manufacturer.name} electronic components at FPGACenter. ${productCount.toLocaleString()} parts in stock including ICs, semiconductors, and more. Original parts, fast delivery, no MOQ.`;
+  const description = `Buy ${manufacturer.name} electronic components at FPGACenter. Original parts, fast delivery, no MOQ.`;
+  const baseUrl = `${SITE_URL}/manufacturer/${slug}`;
+  const canonicalUrl = page > 1 ? `${baseUrl}?page=${page}` : baseUrl;
 
   return {
     title,
     description,
     openGraph: {
       title: ogTitle,
-      description: `Browse ${productCount.toLocaleString()} ${manufacturer.name} components in stock at FPGACenter.`,
-      url: `${SITE_URL}/manufacturer/${slug}`,
+      description,
+      url: canonicalUrl,
       siteName: 'FPGACenter',
       type: 'website',
     },
     alternates: {
-      canonical: `${SITE_URL}/manufacturer/${slug}`,
+      canonical: canonicalUrl,
     },
   };
 }
@@ -52,38 +58,32 @@ export default async function ManufacturerPage({ params, searchParams }) {
   const sp = await searchParams;
   const page = Math.max(1, parseInt(sp?.page) || 1);
 
-  let manufacturer = await prisma.manufacturer.findUnique({ where: { slug } });
-  if (!manufacturer) {
-    const brandName = FALLBACK_BRANDS.find(b => b.toLowerCase().replace(/[\s\/]+/g, '-') === slug);
-    if (!brandName) notFound();
-    manufacturer = { name: brandName, slug };
-  }
+  const manufacturer = await getManufacturer(slug);
+  if (!manufacturer) notFound();
 
-  const totalProducts = await prisma.product.count({
-    where: { manufacturer: manufacturer.name },
-  });
+  // Run all queries in parallel to avoid serial timeout
+  const [totalProducts, products, categories] = await Promise.all([
+    prisma.product.count({ where: { manufacturer: manufacturer.name } }),
+    prisma.product.findMany({
+      where: { manufacturer: manufacturer.name },
+      include: { category: true },
+      orderBy: { partNumber: 'asc' },
+      skip: (page - 1) * ITEMS_PER_PAGE,
+      take: ITEMS_PER_PAGE,
+    }),
+    prisma.product.groupBy({
+      by: ['categoryId'],
+      where: { manufacturer: manufacturer.name },
+      _count: true,
+    }),
+  ]);
   const totalPages = Math.ceil(totalProducts / ITEMS_PER_PAGE);
-
-  const products = await prisma.product.findMany({
-    where: { manufacturer: manufacturer.name },
-    include: { category: true },
-    orderBy: { partNumber: 'asc' },
-    skip: (page - 1) * ITEMS_PER_PAGE,
-    take: ITEMS_PER_PAGE,
-  });
-
-  // Get category distribution
-  const categories = await prisma.product.groupBy({
-    by: ['categoryId'],
-    where: { manufacturer: manufacturer.name },
-    _count: true,
-  });
 
   // Fetch category names
   const categoryIds = categories.map(c => c.categoryId).filter(Boolean);
-  const categoryData = await prisma.category.findMany({
-    where: { id: { in: categoryIds } },
-  });
+  const categoryData = categoryIds.length > 0
+    ? await prisma.category.findMany({ where: { id: { in: categoryIds } } })
+    : [];
   const categoryMap = Object.fromEntries(categoryData.map(c => [c.id, c]));
 
   // JSON-LD: BreadcrumbList
@@ -136,7 +136,7 @@ export default async function ManufacturerPage({ params, searchParams }) {
             {totalProducts.toLocaleString()} products available • {categoryData.length} categories
           </p>
           {manufacturer.website && (
-            <a href={manufacturer.website} target="_blank" rel="noopener noreferrer"
+            <a href={manufacturer.website} target="_blank" rel="noopener noreferrer nofollow"
               style={{ fontSize: '13px', color: 'var(--color-accent)', marginTop: '4px', display: 'inline-block' }}>
               Visit Official Website →
             </a>
@@ -236,20 +236,21 @@ export default async function ManufacturerPage({ params, searchParams }) {
           {totalPages > 1 && (
             <div className="pagination">
               {page > 1 && (
-                <Link href={`/manufacturer/${slug}?page=${page - 1}`} className="pagination-btn">← Prev</Link>
+                <Link href={`/manufacturer/${slug}?page=${page - 1}`} className="pagination-btn" rel="nofollow">← Prev</Link>
               )}
               {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
                 const p = i + Math.max(1, page - 3);
                 if (p > totalPages) return null;
                 return (
                   <Link key={p} href={`/manufacturer/${slug}?page=${p}`}
+                    rel="nofollow"
                     className={`pagination-btn ${p === page ? 'active' : ''}`}>
                     {p}
                   </Link>
                 );
               })}
               {page < totalPages && (
-                <Link href={`/manufacturer/${slug}?page=${page + 1}`} className="pagination-btn">Next →</Link>
+                <Link href={`/manufacturer/${slug}?page=${page + 1}`} className="pagination-btn" rel="nofollow">Next →</Link>
               )}
             </div>
           )}

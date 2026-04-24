@@ -3,7 +3,7 @@ import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import prisma from '@/lib/db';
-import { cookies } from 'next/headers';
+import { getAdminSession } from '@/lib/admin-auth';
 
 /**
  * Secure BOM file download — admin only.
@@ -30,36 +30,20 @@ const DOWNLOAD_MIMES = {
 
 export async function GET(request) {
   try {
-    // 1. AUTHENTICATION CHECK — only admin can download BOM files
-    const cookieStore = await cookies();
-    const sessionToken = cookieStore.get('admin_session')?.value;
-
-    if (!sessionToken) {
+    // 1. AUTHENTICATION CHECK — uses shared admin-auth helper
+    const session = getAdminSession(request);
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify admin session — token format: userId:role:timestamp-hash
-    try {
-      const parts = sessionToken.split(':');
-      if (parts.length < 3) throw new Error('Invalid session');
-
-      const userId = parseInt(parts[0]);
-      const role = parts[1];
-
-      // Legacy mode (userId=0): allow download for admin role
-      if (userId === 0 && role === 'admin') {
-        // Legacy single-password mode — authorized
-      } else {
-        // Multi-user mode: verify user exists and is active
-        const adminUser = await prisma.adminUser.findUnique({
-          where: { id: userId },
-        });
-        if (!adminUser || !adminUser.isActive) {
-          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+    // For multi-user mode (non-legacy), verify user is active in DB
+    if (session.userId !== 0) {
+      const adminUser = await prisma.adminUser.findUnique({
+        where: { id: session.userId },
+      });
+      if (!adminUser || !adminUser.isActive) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
-    } catch {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
 
     // 2. GET RFQ ID from query params

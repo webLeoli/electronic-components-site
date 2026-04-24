@@ -59,7 +59,9 @@ function deriveSourceChannel(tracking) {
   return 'direct';
 }
 
-// In-memory rate limiter (per IP)  
+// In-memory rate limiter (per IP).
+// NOTE: Works for single-process deployments (PM2 fork mode).
+// For cluster mode, replace with a Redis-backed limiter.
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
 const RATE_LIMIT_MAX = 3; // max 3 submissions per hour per IP
@@ -67,20 +69,19 @@ const RATE_LIMIT_MAX = 3; // max 3 submissions per hour per IP
 function checkRateLimit(ip) {
   const now = Date.now();
   const key = ip || 'unknown';
-  
-  if (!rateLimitMap.has(key)) {
-    rateLimitMap.set(key, []);
-  }
-  
-  // Clean old entries
-  const timestamps = rateLimitMap.get(key).filter(t => now - t < RATE_LIMIT_WINDOW);
-  rateLimitMap.set(key, timestamps);
-  
+
+  // Filter out expired timestamps
+  const prev = rateLimitMap.get(key) || [];
+  const timestamps = prev.filter(t => now - t < RATE_LIMIT_WINDOW);
+
   if (timestamps.length >= RATE_LIMIT_MAX) {
+    // Still store the cleaned list to avoid re-processing
+    rateLimitMap.set(key, timestamps);
     return false; // Rate limited
   }
-  
+
   timestamps.push(now);
+  rateLimitMap.set(key, timestamps);
   return true;
 }
 
@@ -295,6 +296,38 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+
+    // Parts array structure validation
+    let parsedParts;
+    try {
+      parsedParts = JSON.parse(data.parts);
+      if (!Array.isArray(parsedParts) || parsedParts.length === 0) throw new Error('empty');
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid parts data. Please re-add your parts and try again.' },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize + validate each part item
+    const validParts = parsedParts
+      .map(p => ({
+        partNumber: String(p.partNumber || '').trim().replace(/[<>]/g, '').substring(0, 100),
+        manufacturer: String(p.manufacturer || '').trim().replace(/[<>]/g, '').substring(0, 100),
+        qty: Math.max(1, parseInt(p.qty) || 1),       // default qty=1 if missing/invalid
+        targetPrice: String(p.targetPrice || '').trim().substring(0, 50),
+      }))
+      .filter(p => p.partNumber.length >= 2);         // must have a real part number
+
+    if (validParts.length === 0) {
+      return NextResponse.json(
+        { error: 'Please add at least one valid part number.' },
+        { status: 400 }
+      );
+    }
+
+    // Re-serialize sanitized parts for storage
+    data.parts = JSON.stringify(validParts);
 
     // Spam detection
     const spamReasons = detectSpam(data);

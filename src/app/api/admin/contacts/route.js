@@ -34,29 +34,39 @@ export async function PUT(request) {
   const authError = requireAuth(request);
   if (authError) return authError;
 
-  const { id, status, notes } = await request.json();
-  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+  try {
+    const { id, status, notes } = await request.json();
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
-  const data = {};
-  if (status) data.status = status;
-  if (notes !== undefined) data.notes = notes;
+    const data = {};
+    if (status) data.status = status;
+    if (notes !== undefined) data.notes = notes;
 
-  const updated = await prisma.contactSubmission.update({
-    where: { id },
-    data,
-  });
+    const updated = await prisma.contactSubmission.update({
+      where: { id },
+      data,
+    });
 
-  return NextResponse.json(updated);
+    return NextResponse.json(updated);
+  } catch (e) {
+    console.error('[Contacts PUT]', e.message);
+    return NextResponse.json({ error: 'Failed to update contact' }, { status: 500 });
+  }
 }
 
 export async function DELETE(request) {
   const authError = requireAuth(request);
   if (authError) return authError;
 
-  const { searchParams } = new URL(request.url);
-  const id = parseInt(searchParams.get('id'));
-  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = parseInt(searchParams.get('id'));
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
-  await prisma.contactSubmission.delete({ where: { id } });
-  return NextResponse.json({ success: true });
+    await prisma.contactSubmission.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    console.error('[Contacts DELETE]', e.message);
+    return NextResponse.json({ error: 'Failed to delete contact' }, { status: 500 });
+  }
 }

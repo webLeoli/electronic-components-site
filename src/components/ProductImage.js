@@ -26,6 +26,7 @@ export default function ProductImage({
   size = 200,
   variant = 'default', // 'default' | 'thumbnail' | 'card'
   alt, // optional override; if omitted, auto-generated
+  priority = false, // set true for above-the-fold images (LCP) to avoid lazy loading
   className = '',
   style = {},
 }) {
@@ -51,7 +52,8 @@ export default function ProductImage({
           width={size}
           height={size}
           style={{ objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }}
-          loading="lazy"
+          loading={priority ? 'eager' : 'lazy'}
+          {...(priority ? { fetchPriority: 'high' } : {})}
         />
       </div>
     );

@@ -3,17 +3,30 @@ import Link from 'next/link';
 import { SITE_NAME, SITE_URL } from '@/lib/seo';
 import './blog.css';
 
-export const metadata = {
-  title: 'Technical Articles & Guides',
-  description: 'Expert guides, product comparisons, and technical articles about FPGAs, MCUs, and electronic components. Stay updated with industry knowledge.',
-  alternates: { canonical: `${SITE_URL}/blog` },
-  openGraph: {
-    title: `Technical Articles & Guides | ${SITE_NAME}`,
-    description: 'Expert guides, product comparisons, and technical articles about FPGAs, MCUs, and electronic components.',
-    url: `${SITE_URL}/blog`,
-    siteName: SITE_NAME,
-  },
-};
+export async function generateMetadata({ searchParams }) {
+  const sp = await searchParams;
+  const page = Math.max(1, parseInt(sp?.page) || 1);
+  const categorySlug = sp?.category || '';
+  
+  const suffix = [];
+  if (page > 1) suffix.push(`page=${page}`);
+  if (categorySlug) suffix.push(`category=${categorySlug}`);
+  const qs = suffix.length > 0 ? `?${suffix.join('&')}` : '';
+  const canonicalUrl = `${SITE_URL}/blog${qs}`;
+  const title = page > 1 ? `Technical Articles & Guides - Page ${page}` : 'Technical Articles & Guides';
+
+  return {
+    title,
+    description: 'Expert guides, product comparisons, and technical articles about FPGAs, MCUs, and electronic components. Stay updated with industry knowledge.',
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      title: `${title} | ${SITE_NAME}`,
+      description: 'Expert guides, product comparisons, and technical articles about FPGAs, MCUs, and electronic components.',
+      url: canonicalUrl,
+      siteName: SITE_NAME,
+    },
+  };
+}
 
 export default async function BlogPage({ searchParams }) {
   const sp = await searchParams;
@@ -49,7 +62,7 @@ export default async function BlogPage({ searchParams }) {
     '@type': 'CollectionPage',
     name: `Technical Articles | ${SITE_NAME}`,
     url: `${SITE_URL}/blog`,
-    description: metadata.description,
+    description: 'Expert guides, product comparisons, and technical articles about FPGAs, MCUs, and electronic components.',
   };
 
   const breadcrumbJsonLd = {
@@ -78,7 +91,7 @@ export default async function BlogPage({ searchParams }) {
             <div className="blog-category-tabs">
               <Link href="/blog" className={`blog-cat-tab ${!categorySlug ? 'active' : ''}`}>All</Link>
               {categories.filter(c => c._count.posts > 0).map(c => (
-                <Link key={c.id} href={`/blog?category=${c.slug}`} className={`blog-cat-tab ${categorySlug === c.slug ? 'active' : ''}`}>
+                <Link key={c.id} href={`/blog?category=${c.slug}`} rel="nofollow" className={`blog-cat-tab ${categorySlug === c.slug ? 'active' : ''}`}>
                   {c.name} <span className="blog-cat-count">({c._count.posts})</span>
                 </Link>
               ))}
@@ -96,9 +109,21 @@ export default async function BlogPage({ searchParams }) {
             <div className="blog-grid">
               {posts.map(post => (
                 <Link href={`/blog/${post.slug}`} key={post.id} className="blog-card">
-                  {post.coverImage && (
-                    <div className="blog-card-cover" style={{ backgroundImage: `url(${post.coverImage})` }} />
-                  )}
+                  <div
+                    className="blog-card-cover"
+                    style={post.coverImage
+                      ? { backgroundImage: `url(${post.coverImage})` }
+                      : { background: 'linear-gradient(135deg, #0F1D32 0%, #142644 50%, #1a2d4a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }
+                    }
+                  >
+                    {!post.coverImage && (
+                      <span style={{ fontSize: 36, opacity: 0.18 }}>
+                        {post.category?.slug?.includes('fpga') ? '🔮' :
+                         post.category?.slug?.includes('micro') ? '⚙️' :
+                         post.category?.slug?.includes('power') ? '⚡' : '📡'}
+                      </span>
+                    )}
+                  </div>
                   <div className="blog-card-body">
                     {post.category && (
                       <span className="blog-card-cat">{post.category.name}</span>
@@ -123,9 +148,9 @@ export default async function BlogPage({ searchParams }) {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="blog-pagination">
-              {page > 1 && <Link href={`/blog?page=${page - 1}${categorySlug ? `&category=${categorySlug}` : ''}`} className="blog-page-btn">← Previous</Link>}
+              {page > 1 && <Link href={`/blog?page=${page - 1}${categorySlug ? `&category=${categorySlug}` : ''}`} rel="nofollow" className="blog-page-btn">← Previous</Link>}
               <span className="blog-page-info">Page {page} of {totalPages}</span>
-              {page < totalPages && <Link href={`/blog?page=${page + 1}${categorySlug ? `&category=${categorySlug}` : ''}`} className="blog-page-btn">Next →</Link>}
+              {page < totalPages && <Link href={`/blog?page=${page + 1}${categorySlug ? `&category=${categorySlug}` : ''}`} rel="nofollow" className="blog-page-btn">Next →</Link>}
             </div>
           )}
         </div>

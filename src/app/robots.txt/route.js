@@ -5,7 +5,15 @@ const DEFAULT_ROBOTS = `User-agent: *
 Allow: /
 Disallow: /admin/
 Disallow: /api/
-Disallow: /api/admin/
+
+# Prevent crawl-budget waste on parameterized URLs
+# Sorting, filtering, and pagination generate near-infinite URL combinations
+Disallow: /search
+Disallow: /*?*sort=
+Disallow: /*?*order=
+Disallow: /*?*status=
+Disallow: /*?*mount=
+Disallow: /*?*page=
 
 # Block common bad bots
 User-agent: AhrefsBot
@@ -13,6 +21,12 @@ Crawl-delay: 10
 
 User-agent: SemrushBot
 Crawl-delay: 10
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
 
 Sitemap: ${SITE_URL}/sitemap.xml`;
 

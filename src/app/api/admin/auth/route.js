@@ -1,8 +1,25 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+
+const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-in-production';
+
+/**
+ * Create a signed session token: userId:role:timestamp:hmac
+ * The HMAC prevents token forgery — only the server can create valid tokens.
+ */
+function createSignedToken(userId, role) {
+  const payload = `${userId}:${role}:${Date.now()}`;
+  const hmac = crypto
+    .createHmac('sha256', SESSION_SECRET)
+    .update(payload)
+    .digest('hex');
+  return `${payload}:${hmac}`;
+}
 
 // --- Brute-force protection: IP-based rate limiting ---
+// NOTE: Works for single-process deployments (PM2 fork mode).
 const loginAttempts = new Map();
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
 const RATE_LIMIT_MAX = 5;
@@ -10,11 +27,14 @@ const RATE_LIMIT_MAX = 5;
 function checkLoginRateLimit(ip) {
   const now = Date.now();
   const key = ip || 'unknown';
-  if (!loginAttempts.has(key)) loginAttempts.set(key, []);
-  const timestamps = loginAttempts.get(key).filter(t => now - t < RATE_LIMIT_WINDOW);
-  loginAttempts.set(key, timestamps);
-  if (timestamps.length >= RATE_LIMIT_MAX) return false;
+  const prev = loginAttempts.get(key) || [];
+  const timestamps = prev.filter(t => now - t < RATE_LIMIT_WINDOW);
+  if (timestamps.length >= RATE_LIMIT_MAX) {
+    loginAttempts.set(key, timestamps);
+    return false;
+  }
   timestamps.push(now);
+  loginAttempts.set(key, timestamps);
   return true;
 }
 
@@ -53,7 +73,7 @@ export async function POST(request) {
           data: { lastLoginAt: new Date() },
         });
 
-        const token = `${user.id}:${user.role}:${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+        const token = createSignedToken(user.id, user.role);
         const response = NextResponse.json({
           success: true,
           user: { id: user.id, email: user.email, name: user.name, role: user.role },
@@ -79,8 +99,11 @@ export async function POST(request) {
         if (setting) adminPassword = setting.value;
       } catch {}
 
-      if (password === adminPassword) {
-        const token = `0:admin:${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+      // Timing-safe comparison to prevent timing attacks on password
+      const passwordMatch = password.length === adminPassword.length &&
+        crypto.timingSafeEqual(Buffer.from(password), Buffer.from(adminPassword));
+      if (passwordMatch) {
+        const token = createSignedToken(0, 'admin');
         const response = NextResponse.json({
           success: true,
           user: { id: 0, email: 'admin', name: 'Super Admin', role: 'admin' },

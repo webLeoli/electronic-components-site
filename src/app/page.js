@@ -59,11 +59,10 @@ const getHomeData = unstable_cache(
           orderBy: { stock: 'desc' },
           take: 8,
         }),
-        // Top manufacturers by product count
-        prisma.product.groupBy({
-          by: ['manufacturer'],
-          _count: { manufacturer: true },
-          orderBy: { _count: { manufacturer: 'desc' } },
+        // Top manufacturers with verified slugs from Manufacturer table
+        prisma.manufacturer.findMany({
+          select: { name: true, slug: true },
+          orderBy: { name: 'asc' },
           take: 24,
         }),
         // Overall stats
@@ -76,7 +75,7 @@ const getHomeData = unstable_cache(
       return {
         categories: categories.length > 0 ? categories : FALLBACK_CATEGORIES,
         popularProducts: popularProducts.length > 0 ? popularProducts : null,
-        manufacturers: manufacturers.length > 0 ? manufacturers.map(m => m.manufacturer) : null,
+        manufacturers: manufacturers.length > 0 ? manufacturers : null,
         totalProducts: stats[0] || 10000,
         totalManufacturers: stats[1] || 500,
       };
@@ -106,7 +105,7 @@ export default async function HomePage() {
   const { categories, popularProducts, manufacturers, totalProducts, totalManufacturers } = await getHomeData();
 
   const parts = popularProducts || FALLBACK_PARTS;
-  const brands = manufacturers || FALLBACK_BRANDS;
+  const brands = manufacturers || FALLBACK_BRANDS.map(b => ({ name: b, slug: b.toLowerCase().replace(/[\s\/]+/g, '-') }));
 
   const orgJsonLd = (await import('@/lib/seo')).generateOrganizationJsonLd();
   const websiteJsonLd = (await import('@/lib/seo')).generateWebSiteJsonLd();
@@ -128,12 +127,12 @@ export default async function HomePage() {
               Quality assured, no minimum order, worldwide shipping.
             </p>
 
-            <form className="hero-search animate-fade-in animate-fade-in-delay-2" action="/search" method="GET" id="hero-search-form">
+            <form className="hero-search animate-fade-in animate-fade-in-delay-2" action="/search" method="GET" role="search" id="hero-search-form">
               <svg className="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />
               </svg>
-              <input type="text" name="q" className="input" placeholder="Enter part number, e.g. STM32F103C8T6..." id="hero-search-input" />
+              <input type="search" name="q" className="input" placeholder="Enter part number, e.g. STM32F103C8T6..." id="hero-search-input" />
               <button type="submit" className="search-btn" id="hero-search-btn">Search Parts</button>
             </form>
 
@@ -285,12 +284,21 @@ export default async function HomePage() {
             <Link href="/manufacturers" className="view-all">All Manufacturers →</Link>
           </div>
 
-          <div className="brands-scroll">
-            {brands.map((brand) => (
-              <Link key={brand} href={`/manufacturer/${brand.toLowerCase().replace(/\s+/g, '-')}`} className="brand-item">
-                {brand}
-              </Link>
-            ))}
+          <div className="brands-marquee-wrapper">
+            <div className="brands-scroll">
+              {/* First set */}
+              {brands.map((brand) => (
+                <Link key={`a-${brand.name}`} href={`/manufacturer/${brand.slug}`} className="brand-item">
+                  {brand.name}
+                </Link>
+              ))}
+              {/* Duplicate set for seamless loop */}
+              {brands.map((brand) => (
+                <Link key={`b-${brand.name}`} href={`/manufacturer/${brand.slug}`} className="brand-item" aria-hidden="true" rel="nofollow" tabIndex={-1}>
+                  {brand.name}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </section>

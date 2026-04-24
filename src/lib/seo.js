@@ -2,11 +2,22 @@ const SITE_NAME = 'FPGACenter';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'https://fpgacenter.com';
 const SITE_DESC = 'Professional sourcing for hard-to-find and obsolete electronic components. Extensive inventory with no minimum order quantity. Global shipping.';
 
+// Warn if SITE_URL is still localhost in production — all canonical/sitemap URLs will be wrong
+if (process.env.NODE_ENV === 'production' && SITE_URL.includes('localhost')) {
+  console.warn(
+    '\x1b[33m⚠️  SEO WARNING: SITE_URL is set to localhost in production!\x1b[0m\n' +
+    '   All canonical URLs, sitemap entries, and OG tags will point to localhost.\n' +
+    '   Set NEXT_PUBLIC_SITE_URL and SITE_URL to your production domain in .env'
+  );
+}
+
 export function generateProductMeta(product) {
   const mfr = product.manufacturer || 'Electronic Component';
+  const encodedPN = encodeURIComponent(product.partNumber);
   const title = `${product.partNumber} - ${mfr} | Buy Online`;
   const ogTitle = `${product.partNumber} - ${mfr} | Buy at ${SITE_NAME}`;
   const description = `Buy ${product.partNumber} by ${mfr}. ${product.description || 'Original part, fast delivery, no MOQ requirement.'} In stock at ${SITE_NAME}.`;
+  const productUrl = `${SITE_URL}/product/${encodedPN}`;
 
   const meta = {
     title,
@@ -14,12 +25,19 @@ export function generateProductMeta(product) {
     openGraph: {
       title: ogTitle,
       description,
-      url: `${SITE_URL}/product/${product.partNumber}`,
+      url: productUrl,
       siteName: SITE_NAME,
+      // Note: Next.js metadata API only supports 'website'|'article'|'book'|'profile'|'video.*'.
+      // 'product' crashes Next.js 16. Product semantics are conveyed via JSON-LD instead.
       type: 'website',
     },
+    twitter: {
+      card: 'summary',
+      title: ogTitle,
+      description,
+    },
     alternates: {
-      canonical: `${SITE_URL}/product/${product.partNumber}`,
+      canonical: productUrl,
     },
   };
 
@@ -34,15 +52,20 @@ export function generateProductMeta(product) {
       width: 600,
       height: 600,
     }];
+    meta.twitter.images = [imageUrl];
   }
 
   return meta;
 }
 
-export function generateCategoryMeta(category) {
-  const title = `${category.name} - Electronic Components`;
+export function generateCategoryMeta(category, { page = 1 } = {}) {
+  const title = page > 1
+    ? `${category.name} - Electronic Components - Page ${page}`
+    : `${category.name} - Electronic Components`;
   const ogTitle = `${category.name} - Electronic Components | ${SITE_NAME}`;
   const description = category.seoDesc || `Browse ${category.name} electronic components. Find hard-to-find and obsolete parts at ${SITE_NAME}. Fast delivery, no minimum order.`;
+  const baseUrl = `${SITE_URL}/category/${category.slug}`;
+  const canonicalUrl = page > 1 ? `${baseUrl}?page=${page}` : baseUrl;
 
   return {
     title,
@@ -50,17 +73,21 @@ export function generateCategoryMeta(category) {
     openGraph: {
       title: ogTitle,
       description,
-      url: `${SITE_URL}/category/${category.slug}`,
+      url: canonicalUrl,
       siteName: SITE_NAME,
       type: 'website',
     },
     alternates: {
-      canonical: `${SITE_URL}/category/${category.slug}`,
+      canonical: canonicalUrl,
     },
   };
 }
 
 export function generateProductJsonLd(product) {
+  const encodedPN = encodeURIComponent(product.partNumber);
+  const productUrl = `${SITE_URL}/product/${encodedPN}`;
+  const hasPrice = product.minPrice != null && product.minPrice > 0;
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -75,28 +102,33 @@ export function generateProductJsonLd(product) {
     category: product.category?.name,
     offers: {
       '@type': 'Offer',
-      url: `${SITE_URL}/product/${product.partNumber}`,
-      priceCurrency: 'USD',
-      price: product.minPrice || undefined,
+      url: productUrl,
       availability: product.stock > 0
         ? 'https://schema.org/InStock'
         : 'https://schema.org/OutOfStock',
       itemCondition: product.status === 'active'
         ? 'https://schema.org/NewCondition'
         : 'https://schema.org/UsedCondition',
-      priceValidUntil: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
       seller: {
         '@type': 'Organization',
         name: SITE_NAME,
       },
+      // Only include price fields when a valid price exists (Google requires all-or-nothing)
+      ...(hasPrice ? {
+        priceCurrency: 'USD',
+        price: product.minPrice,
+        priceValidUntil: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
+      } : {}),
     },
   };
 
-  // Add image with SEO-friendly alt embedded in the URL filename
+  // Add product image — use generic component image as fallback for Rich Results
   if (product.imageUrl) {
     jsonLd.image = product.imageUrl.startsWith('http')
       ? product.imageUrl
       : `${SITE_URL}${product.imageUrl}`;
+  } else {
+    jsonLd.image = `${SITE_URL}/og-image.png`;
   }
 
   return jsonLd;
@@ -136,8 +168,12 @@ export function generateOrganizationJsonLd() {
         '@type': 'ContactPoint',
         email: 'sales@fpgacenter.com',
         contactType: 'sales',
-        availableLanguage: ['English', 'Chinese'],
+        availableLanguage: ['English'],
       },
+    ],
+    hasCredential: [
+      { '@type': 'EducationalOccupationalCredential', credentialCategory: 'certification', name: 'ISO 9001:2015' },
+      { '@type': 'EducationalOccupationalCredential', credentialCategory: 'certification', name: 'IDEA-STD-1010' },
     ],
     address: {
       '@type': 'PostalAddress',
@@ -145,7 +181,8 @@ export function generateOrganizationJsonLd() {
       addressRegion: 'Guangdong',
       addressCountry: 'CN',
     },
-    sameAs: [],
+    // Note: add sameAs URLs when social profiles are available, e.g.:
+    // sameAs: ['https://linkedin.com/company/fpgacenter', 'https://www.erai.com/...'],
   };
 }
 

@@ -10,16 +10,22 @@ import { FALLBACK_CATEGORIES } from '@/lib/fallbacks';
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
-  const categories = await prisma.category.findMany({
-    select: { slug: true, parent: { select: { slug: true } } },
-  });
-  return categories.map((c) => ({
-    slug: c.parent ? [c.parent.slug, c.slug] : [c.slug],
-  }));
+  try {
+    const categories = await prisma.category.findMany({
+      select: { slug: true, parent: { select: { slug: true } } },
+    });
+    return categories.map((c) => ({
+      slug: c.parent ? [c.parent.slug, c.slug] : [c.slug],
+    }));
+  } catch {
+    return []; // If DB unavailable at build time, skip prerendering
+  }
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params, searchParams }) {
   const { slug } = await params;
+  const sp = await searchParams;
+  const page = Math.max(1, parseInt(sp?.page) || 1);
   const categorySlug = slug?.[slug.length - 1];
   if (!categorySlug) return {
     title: 'All Categories',
@@ -41,7 +47,7 @@ export async function generateMetadata({ params }) {
     else return { title: 'Category Not Found' };
   }
 
-  return generateCategoryMeta(category);
+  return generateCategoryMeta(category, { page });
 }
 
 // Pagination config
@@ -85,6 +91,15 @@ export default async function CategoryPage({ params, searchParams }) {
     } else {
       notFound();
     }
+  }
+
+  // H6: Validate slug path matches actual category hierarchy
+  // Prevents /category/random-junk/integrated-circuits from being equivalent to /category/integrated-circuits
+  if (slug.length === 2) {
+    const expectedParentSlug = category.parent?.slug;
+    if (!expectedParentSlug || slug[0] !== expectedParentSlug) notFound();
+  } else if (slug.length === 1 && category.parent) {
+    // Single slug used for a subcategory — still valid (direct access)
   }
 
   // Get all descendant category IDs for product query
@@ -184,7 +199,7 @@ export default async function CategoryPage({ params, searchParams }) {
                 const labels = { active: 'Active', obsolete: 'Obsolete', eol: 'End of Life' };
                 const badgeCls = { active: 'badge-success', obsolete: 'badge-danger', eol: 'badge-warning' };
                 return (
-                  <Link key={s} href={`/category/${categorySlug}?${params}`} className={`filter-item ${statusFilter === s ? 'active' : ''}`}>
+                  <Link key={s} href={`/category/${categorySlug}?${params}`} rel="nofollow" className={`filter-item ${statusFilter === s ? 'active' : ''}`}>
                     <span className={`badge ${badgeCls[s]}`} style={{ marginRight: '6px' }}>●</span> {labels[s]}
                   </Link>
                 );
@@ -201,7 +216,7 @@ export default async function CategoryPage({ params, searchParams }) {
                 if (sort !== 'partNumber') params.set('sort', sort);
                 if (order !== 'asc') params.set('order', order);
                 return (
-                  <Link key={m} href={`/category/${categorySlug}?${params}`} className={`filter-item ${mountFilter === m ? 'active' : ''}`}>
+                  <Link key={m} href={`/category/${categorySlug}?${params}`} rel="nofollow" className={`filter-item ${mountFilter === m ? 'active' : ''}`}>
                     {m === 'SMD' ? 'SMD' : 'Through-Hole'}
                   </Link>
                 );
@@ -229,6 +244,14 @@ export default async function CategoryPage({ params, searchParams }) {
               <p style={{ color: 'var(--color-text-muted)', marginTop: '4px', fontSize: '14px' }}>
                 {category.seoDesc || `Browse ${category.name} electronic components at FPGACenter.`}
               </p>
+              {page === 1 && (
+                <p style={{ color: 'var(--color-text-secondary)', marginTop: 'var(--space-sm)', fontSize: '13px', lineHeight: 1.7, maxWidth: '700px' }}>
+                  FPGACenter offers a comprehensive selection of {totalProducts.toLocaleString()} {category.name.toLowerCase()} from leading manufacturers worldwide. 
+                  Whether you need active production parts, hard-to-find obsolete components, or end-of-life {category.name.toLowerCase()}, 
+                  our global sourcing network ensures competitive pricing with no minimum order quantity. 
+                  All {category.name.toLowerCase()} undergo quality inspection per ISO 9001:2015 standards before shipment.
+                </p>
+              )}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
               <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
@@ -371,6 +394,7 @@ function SortLink({ field, current, order, slug, statusFilter, mountFilter, chil
   return (
     <Link
       href={`/category/${slug}?${params}`}
+      rel="nofollow"
       style={{ color: current === field ? 'var(--color-accent)' : 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '2px' }}
     >
       {children}{arrow}
@@ -398,6 +422,7 @@ function SortDropdown({ current, order, slug, statusFilter, mountFilter }) {
           <Link
             key={opt.value}
             href={`/category/${slug}?${params}`}
+            rel="nofollow"
             className={`btn btn-sm ${current === opt.value ? 'btn-primary' : 'btn-secondary'}`}
             style={{ padding: '4px 10px', fontSize: '11px' }}
           >
@@ -431,7 +456,7 @@ function Pagination({ current, total, slug, sort, order, statusFilter, mountFilt
   return (
     <div className="pagination">
       {current > 1 && (
-        <Link href={buildUrl(current - 1)} className="pagination-btn">← Prev</Link>
+        <Link href={buildUrl(current - 1)} className="pagination-btn" rel="nofollow">← Prev</Link>
       )}
       {pages.map((p, i) =>
         p === '...' ? (
@@ -440,6 +465,7 @@ function Pagination({ current, total, slug, sort, order, statusFilter, mountFilt
           <Link
             key={p}
             href={buildUrl(p)}
+            rel="nofollow"
             className={`pagination-btn ${p === current ? 'active' : ''}`}
           >
             {p}
@@ -447,7 +473,7 @@ function Pagination({ current, total, slug, sort, order, statusFilter, mountFilt
         )
       )}
       {current < total && (
-        <Link href={buildUrl(current + 1)} className="pagination-btn">Next →</Link>
+        <Link href={buildUrl(current + 1)} className="pagination-btn" rel="nofollow">Next →</Link>
       )}
     </div>
   );

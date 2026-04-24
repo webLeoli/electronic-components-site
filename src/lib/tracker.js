@@ -375,12 +375,16 @@ export function initTracker() {
     saveJourney(journey);
   }
 
-  // --- Clean tracking params from URL (cosmetic) ---
-  const paramsToClean = [...Object.keys(AD_CLICK_PARAMS), 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
-  const hasTrackingParams = paramsToClean.some(p => url.searchParams.has(p));
-  if (hasTrackingParams && window.history.replaceState) {
-    paramsToClean.forEach(p => url.searchParams.delete(p));
-    window.history.replaceState({}, '', url.pathname + (url.search || '') + url.hash);
+  // --- Clean tracking params from URL (cosmetic, humans only) ---
+  // Skip for bots: Googlebot's WRS executing this could cause URL mismatch
+  const isBotUA = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex/i.test(navigator.userAgent || '');
+  if (!isBotUA) {
+    const paramsToClean = [...Object.keys(AD_CLICK_PARAMS), 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+    const hasTrackingParams = paramsToClean.some(p => url.searchParams.has(p));
+    if (hasTrackingParams && window.history.replaceState) {
+      paramsToClean.forEach(p => url.searchParams.delete(p));
+      window.history.replaceState({}, '', url.pathname + (url.search || '') + url.hash);
+    }
   }
 }
 

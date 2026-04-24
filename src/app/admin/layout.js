@@ -77,7 +77,11 @@ export default function AdminLayout({ children }) {
             <Link
               key={item.path}
               href={item.path}
-              className={`admin-nav-item ${pathname === item.path ? 'active' : ''}`}
+              className={`admin-nav-item ${
+                item.path === '/admin'
+                  ? pathname === '/admin' ? 'active' : ''
+                  : pathname.startsWith(item.path) ? 'active' : ''
+              }`}
             >
               <span className="admin-nav-icon" dangerouslySetInnerHTML={{ __html: ICONS[item.iconKey] }} />
               {item.name}

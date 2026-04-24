@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import prisma from '@/lib/db';
 import { generateProductMeta, generateProductJsonLd, generateBreadcrumbJsonLd } from '@/lib/seo';
 import Link from 'next/link';
@@ -5,6 +6,28 @@ import { notFound } from 'next/navigation';
 import AddToRfqButton from '@/components/AddToRfqButton';
 import ProductImage, { ProductIcon } from '@/components/ProductImage';
 import { FALLBACK_PARTS } from '@/lib/fallbacks';
+
+// React cache() deduplicates this query within a single request
+// so generateMetadata and ProductPage share the same DB result
+const getProduct = cache(async (partNumber) => {
+  const product = await prisma.product.findUnique({
+    where: { partNumber },
+    include: { category: { include: { parent: true } } },
+  });
+  if (product) return product;
+  const fallback = FALLBACK_PARTS.find(p => p.partNumber === partNumber);
+  return fallback ? {
+    ...fallback,
+    id: 0,
+    description: `${fallback.partNumber} by ${fallback.manufacturer}. High quality electronic component in stock.`,
+    packageType: 'Tape & Reel (TR)',
+    mountType: 'Surface Mount',
+    moq: 1,
+    leadTime: 'In Stock',
+    specs: '{}',
+    imageUrl: null,
+  } : null;
+});
 
 // ISR: revalidate every 1 hour
 export const revalidate = 3600;
@@ -14,7 +37,6 @@ export async function generateStaticParams() {
   try {
     const products = await prisma.product.findMany({
       select: { partNumber: true },
-      where: { manufacturer: { not: null } }, // Only products with complete data
       take: 20,
     });
     return products.map((p) => ({ partNumber: p.partNumber }));
@@ -23,20 +45,12 @@ export async function generateStaticParams() {
   }
 }
 
-// Dynamic metadata for SEO
+// Dynamic metadata for SEO — uses cached getProduct()
 export async function generateMetadata({ params }) {
   try {
     const { partNumber } = await params;
-    const decodedPart = decodeURIComponent(partNumber);
-    let product = await prisma.product.findUnique({
-      where: { partNumber: decodedPart },
-      include: { category: true },
-    });
-    if (!product) {
-      const fallback = FALLBACK_PARTS.find(p => p.partNumber === decodedPart);
-      if (fallback) product = fallback;
-      else return { title: 'Product Not Found' };
-    }
+    const product = await getProduct(decodeURIComponent(partNumber));
+    if (!product) return { title: 'Product Not Found' };
     return generateProductMeta(product);
   } catch {
     return { title: 'Product Not Found' };
@@ -79,68 +93,49 @@ function getPriceTiers(basePrice) {
 
 export default async function ProductPage({ params }) {
   const { partNumber } = await params;
-  const decodedPart = decodeURIComponent(partNumber);
-
-  let product = await prisma.product.findUnique({
-    where: { partNumber: decodedPart },
-    include: { category: { include: { parent: true } } },
-  });
+  const product = await getProduct(decodeURIComponent(partNumber));
 
   if (!product) {
-    const fallback = FALLBACK_PARTS.find(p => p.partNumber === decodedPart);
-    if (fallback) {
-      product = {
-        ...fallback,
-        id: 0,
-        description: `${fallback.partNumber} by ${fallback.manufacturer}. High quality electronic component in stock.`,
-        packageType: 'Tape & Reel (TR)',
-        mountType: 'Surface Mount',
-        moq: 1,
-        leadTime: 'In Stock',
-        specs: '{}',
-        imageUrl: null,
-      };
-    } else {
-      notFound();
-    }
+    notFound();
   }
 
   const specs = parseSpecs(product.specs);
   const priceTiers = getPriceTiers(product.minPrice);
 
-  // Lookup manufacturer slug from DB (avoids hardcoded string->slug mismatch)
-  const manufacturerRecord = product.manufacturer
-    ? await prisma.manufacturer.findFirst({
-        where: { name: product.manufacturer },
-        select: { slug: true },
-      })
-    : null;
+  // Run all secondary queries in parallel to avoid serial timeout
+  const [manufacturerRecord, relatedProducts, sameManufacturerProducts] = await Promise.all([
+    // Lookup manufacturer slug from DB
+    product.manufacturer
+      ? prisma.manufacturer.findFirst({
+          where: { name: product.manufacturer },
+          select: { slug: true },
+        })
+      : null,
+    // Fetch related products (same category)
+    product.categoryId
+      ? prisma.product.findMany({
+          where: {
+            categoryId: product.categoryId,
+            partNumber: { not: product.partNumber },
+          },
+          take: 6,
+          orderBy: { stock: 'desc' },
+        })
+      : [],
+    // Fetch more products from same manufacturer (for internal linking)
+    product.manufacturer
+      ? prisma.product.findMany({
+          where: {
+            manufacturer: product.manufacturer,
+            partNumber: { not: product.partNumber },
+          },
+          select: { partNumber: true, description: true, minPrice: true, stock: true },
+          take: 6,
+          orderBy: { stock: 'desc' },
+        })
+      : [],
+  ]);
   const manufacturerSlug = manufacturerRecord?.slug || (product.manufacturer || 'unknown').toLowerCase().replace(/[\s\/]+/g, '-');
-
-  // Fetch related products (same category)
-  const relatedProducts = product.categoryId
-    ? await prisma.product.findMany({
-        where: {
-          categoryId: product.categoryId,
-          partNumber: { not: product.partNumber },
-        },
-        take: 6,
-        orderBy: { stock: 'desc' },
-      })
-    : [];
-
-  // Fetch more products from same manufacturer (for internal linking)
-  const sameManufacturerProducts = product.manufacturer
-    ? await prisma.product.findMany({
-        where: {
-          manufacturer: product.manufacturer,
-          partNumber: { not: product.partNumber },
-        },
-        select: { partNumber: true, description: true, minPrice: true, stock: true },
-        take: 6,
-        orderBy: { stock: 'desc' },
-      })
-    : [];
 
   // Build breadcrumb items
   const breadcrumbItems = [{ name: 'Home', url: '/' }];
@@ -161,8 +156,9 @@ export default async function ProductPage({ params }) {
   const productJsonLd = generateProductJsonLd(product);
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(breadcrumbItems);
 
-  // FAQ JSON-LD for rich snippets
-  const faqJsonLd = {
+  // FAQ JSON-LD for rich snippets — only include for in-stock products to avoid
+  // Google SpamBrain flagging identical templated FAQs across thousands of pages
+  const faqJsonLd = product.stock > 0 ? {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
     mainEntity: [
@@ -179,9 +175,7 @@ export default async function ProductPage({ params }) {
         name: `What is the lead time for ${product.partNumber}?`,
         acceptedAnswer: {
           '@type': 'Answer',
-          text: product.stock > 0
-            ? `${product.partNumber} is currently in stock with ${product.stock.toLocaleString()} units available. In-stock items ship same day for orders placed before 3PM.`
-            : `${product.partNumber} is currently on lead time. Submit an RFQ and our team will provide availability and lead time within 24 hours.`,
+          text: `${product.partNumber} is currently in stock with ${product.stock.toLocaleString()} units available. In-stock items ship same day for orders placed before 3PM.`,
         },
       },
       {
@@ -192,18 +186,16 @@ export default async function ProductPage({ params }) {
           text: `FPGACenter has no minimum order quantity for ${product.partNumber}. You can order from 1 piece to production volumes.`,
         },
       },
-      {
+      ...(product.datasheet ? [{
         '@type': 'Question',
         name: `Can I get a datasheet for ${product.partNumber}?`,
         acceptedAnswer: {
           '@type': 'Answer',
-          text: product.datasheet
-            ? `Yes, the ${product.partNumber} datasheet is available for download on the product page.`
-            : `Contact our sales team for the ${product.partNumber} datasheet and technical documentation.`,
+          text: `Yes, the ${product.partNumber} datasheet is available for download on the product page.`,
         },
-      },
+      }] : []),
     ],
-  };
+  } : null;
 
   return (
     <>
@@ -216,10 +208,12 @@ export default async function ProductPage({ params }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
+      {faqJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      )}
 
       <div className="container" style={{ paddingTop: 'var(--space-lg)', paddingBottom: 'var(--space-3xl)' }}>
         {/* Breadcrumb */}
@@ -243,7 +237,7 @@ export default async function ProductPage({ params }) {
             <div className="product-header-section">
               <div style={{ display: 'flex', gap: 'var(--space-lg)', alignItems: 'flex-start' }}>
                 {/* Product Image */}
-                <ProductImage product={product} size={160} style={{ flexShrink: 0 }} />
+                <ProductImage product={product} size={160} priority style={{ flexShrink: 0 }} />
 
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', flexWrap: 'wrap' }}>
@@ -350,7 +344,7 @@ export default async function ProductPage({ params }) {
             {product.datasheet && (
               <div className="product-section">
                 <h2 className="product-section-title">Documentation</h2>
-                <a href={product.datasheet} target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
+                <a href={product.datasheet} target="_blank" rel="noopener noreferrer nofollow" className="btn btn-secondary">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
@@ -361,6 +355,47 @@ export default async function ProductPage({ params }) {
                 </a>
               </div>
             )}
+
+            {/* Product Overview — rich unique content for SEO */}
+            <div className="product-section">
+              <h2 className="product-section-title">Product Overview</h2>
+              <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)', lineHeight: 1.8 }}>
+                <p>
+                  The <strong>{product.partNumber}</strong>{product.manufacturer ? <> is manufactured by <strong>{product.manufacturer}</strong></> : ''}{product.category?.name ? <> and belongs to the <strong>{product.category.name}</strong> category</> : ''}.
+                  {product.description ? ` ${product.description}.` : ''}
+                  {product.status === 'active' ? ' This component is currently in active production status.' :
+                   product.status === 'obsolete' ? ' This component has been marked as obsolete by the manufacturer. FPGACenter specializes in sourcing obsolete and discontinued parts.' :
+                   product.status === 'eol' ? ' This component has reached End of Life (EOL) status. Limited quantities may still be available through our global sourcing network.' :
+                   product.status === 'nrnd' ? ' This component is classified as Not Recommended for New Designs (NRND). It remains available for existing production requirements.' : ''}
+                </p>
+                {(product.packageType || product.mountType) && (
+                  <p>
+                    {product.packageType && <>This part is available in <strong>{product.packageType}</strong> packaging. </>}
+                    {product.mountType && <>It utilizes <strong>{product.mountType}</strong> technology{product.mountType === 'Surface Mount' ? ', making it suitable for automated pick-and-place assembly processes' : product.mountType === 'Through Hole' ? ', suitable for applications requiring robust mechanical connections' : ''}. </>}
+                    {product.moq > 1 ? `The minimum order quantity is ${product.moq} units.` : 'There is no minimum order quantity — order from 1 piece to production volumes.'}
+                  </p>
+                )}
+                <p>
+                  {product.stock > 0
+                    ? <>We currently have <strong>{product.stock.toLocaleString()} units</strong> of {product.partNumber} in stock, ready for immediate shipment. In-stock orders placed before 3:00 PM ship the same business day.</>
+                    : <>Contact our sales team for current availability and lead time on {product.partNumber}. Our global sourcing network can locate hard-to-find components from authorized distributors and verified independent sources.</>
+                  }
+                  {' '}All components from FPGACenter undergo rigorous quality inspection per our ISO 9001:2015 quality management system, including visual inspection, authenticity verification, and electrical testing where applicable.
+                </p>
+                {Object.keys(specs).length > 0 && (
+                  <p>
+                    Key specifications for the {product.partNumber} include{' '}
+                    {Object.entries(specs).slice(0, 5).map(([key, value], i, arr) => (
+                      <span key={key}>
+                        <strong>{key.replace(/([A-Z])/g, ' $1').trim()}</strong>: {String(value)}
+                        {i < arr.length - 1 ? ', ' : '.'}
+                      </span>
+                    ))}
+                    {Object.keys(specs).length > 5 && ' See the full specifications table above for complete technical details.'}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Sidebar: Actions */}

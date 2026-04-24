@@ -1,6 +1,7 @@
 import prisma from '@/lib/db';
 import Link from 'next/link';
 import { SITE_NAME, SITE_URL } from '@/lib/seo';
+import { unstable_cache } from 'next/cache';
 
 export const metadata = {
   title: 'Electronic Component Manufacturers',
@@ -16,27 +17,31 @@ export const metadata = {
 
 export const revalidate = 3600;
 
+// Cache heavy queries for 1 hour
+const getManufacturersData = unstable_cache(
+  async () => {
+    const [manufacturers, productCounts] = await Promise.all([
+      prisma.manufacturer.findMany({ orderBy: { name: 'asc' } }),
+      prisma.product.groupBy({ by: ['manufacturer'], _count: true }),
+    ]);
+    const countMap = Object.fromEntries(productCounts.map(p => [p.manufacturer, p._count]));
+
+    // Group by first letter
+    const grouped = {};
+    manufacturers.forEach(m => {
+      const letter = m.name.charAt(0).toUpperCase();
+      if (!grouped[letter]) grouped[letter] = [];
+      grouped[letter].push(m);
+    });
+
+    return { manufacturers, countMap, grouped, letters: Object.keys(grouped).sort() };
+  },
+  ['manufacturers-list'],
+  { revalidate: 3600, tags: ['manufacturers'] }
+);
+
 export default async function ManufacturersPage() {
-  const manufacturers = await prisma.manufacturer.findMany({
-    orderBy: { name: 'asc' },
-  });
-
-  // Get product counts per manufacturer
-  const productCounts = await prisma.product.groupBy({
-    by: ['manufacturer'],
-    _count: true,
-  });
-  const countMap = Object.fromEntries(productCounts.map(p => [p.manufacturer, p._count]));
-
-  // Group by first letter
-  const grouped = {};
-  manufacturers.forEach(m => {
-    const letter = m.name.charAt(0).toUpperCase();
-    if (!grouped[letter]) grouped[letter] = [];
-    grouped[letter].push(m);
-  });
-
-  const letters = Object.keys(grouped).sort();
+  const { manufacturers, countMap, grouped, letters } = await getManufacturersData();
 
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',

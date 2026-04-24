@@ -68,6 +68,19 @@ export async function sendEmail({ to, subject, text, html }) {
 }
 
 /**
+ * Escape HTML special characters to prevent injection in email templates.
+ */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
  * Send RFQ notification to admin
  */
 export async function sendRfqNotification(rfq) {
@@ -83,9 +96,9 @@ export async function sendRfqNotification(rfq) {
   ).join('\n');
 
   const partsHtml = parts.map(p =>
-    `<tr><td style="padding:8px;border-bottom:1px solid #eee;font-family:monospace;font-weight:600">${p.partNumber}</td>` +
-    `<td style="padding:8px;border-bottom:1px solid #eee">${p.manufacturer || '—'}</td>` +
-    `<td style="padding:8px;border-bottom:1px solid #eee">${p.qty || 'N/A'}</td></tr>`
+    `<tr><td style="padding:8px;border-bottom:1px solid #eee;font-family:monospace;font-weight:600">${escapeHtml(p.partNumber)}</td>` +
+    `<td style="padding:8px;border-bottom:1px solid #eee">${escapeHtml(p.manufacturer) || '—'}</td>` +
+    `<td style="padding:8px;border-bottom:1px solid #eee">${escapeHtml(p.qty) || 'N/A'}</td></tr>`
   ).join('');
 
   const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
@@ -110,11 +123,11 @@ export async function sendRfqNotification(rfq) {
       <div style="background:white;padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">
         <h3 style="margin:0 0 12px;font-size:15px;color:#374151">Contact Information</h3>
         <table style="width:100%;font-size:14px;margin-bottom:20px">
-          <tr><td style="padding:4px 0;color:#6b7280;width:100px">Name</td><td style="padding:4px 0;font-weight:600">${rfq.name}</td></tr>
-          <tr><td style="padding:4px 0;color:#6b7280">Email</td><td style="padding:4px 0"><a href="mailto:${rfq.email}" style="color:#FF6B00">${rfq.email}</a></td></tr>
-          ${rfq.company ? `<tr><td style="padding:4px 0;color:#6b7280">Company</td><td style="padding:4px 0">${rfq.company}</td></tr>` : ''}
-          ${rfq.phone ? `<tr><td style="padding:4px 0;color:#6b7280">Phone</td><td style="padding:4px 0">${rfq.phone}</td></tr>` : ''}
-          ${rfq.country ? `<tr><td style="padding:4px 0;color:#6b7280">Country</td><td style="padding:4px 0">${rfq.country}</td></tr>` : ''}
+          <tr><td style="padding:4px 0;color:#6b7280;width:100px">Name</td><td style="padding:4px 0;font-weight:600">${escapeHtml(rfq.name)}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280">Email</td><td style="padding:4px 0"><a href="mailto:${escapeHtml(rfq.email)}" style="color:#FF6B00">${escapeHtml(rfq.email)}</a></td></tr>
+          ${rfq.company ? `<tr><td style="padding:4px 0;color:#6b7280">Company</td><td style="padding:4px 0">${escapeHtml(rfq.company)}</td></tr>` : ''}
+          ${rfq.phone ? `<tr><td style="padding:4px 0;color:#6b7280">Phone</td><td style="padding:4px 0">${escapeHtml(rfq.phone)}</td></tr>` : ''}
+          ${rfq.country ? `<tr><td style="padding:4px 0;color:#6b7280">Country</td><td style="padding:4px 0">${escapeHtml(rfq.country)}</td></tr>` : ''}
         </table>
 
         <h3 style="margin:0 0 12px;font-size:15px;color:#374151">Parts Requested</h3>
@@ -127,9 +140,9 @@ export async function sendRfqNotification(rfq) {
           <tbody>${partsHtml}</tbody>
         </table>
 
-        ${rfq.message ? `<h3 style="margin:0 0 8px;font-size:15px;color:#374151">Message</h3><p style="font-size:14px;color:#4b5563;background:#f9fafb;padding:12px;border-radius:6px">${rfq.message}</p>` : ''}
+        ${rfq.message ? `<h3 style="margin:0 0 8px;font-size:15px;color:#374151">Message</h3><p style="font-size:14px;color:#4b5563;background:#f9fafb;padding:12px;border-radius:6px">${escapeHtml(rfq.message)}</p>` : ''}
 
-        ${rfq.bomFile ? `<div style="margin-top:12px;padding:12px;background:#FFF7ED;border:1px solid #FFEDD5;border-radius:6px"><p style="margin:0;font-size:14px;color:#9A3412">📎 <strong>BOM File Uploaded:</strong> ${rfq.bomFileName || 'BOM file attached'} — <a href="${siteUrl}/admin/rfq" style="color:#FF6B00">Download from Admin Panel</a></p></div>` : ''}
+        ${rfq.bomFile ? `<div style="margin-top:12px;padding:12px;background:#FFF7ED;border:1px solid #FFEDD5;border-radius:6px"><p style="margin:0;font-size:14px;color:#9A3412">📎 <strong>BOM File Uploaded:</strong> ${escapeHtml(rfq.bomFileName) || 'BOM file attached'} — <a href="${siteUrl}/admin/rfq" style="color:#FF6B00">Download from Admin Panel</a></p></div>` : ''}
 
         <div style="margin-top:24px;text-align:center">
           <a href="${siteUrl}/admin/rfq" style="display:inline-block;padding:10px 24px;background:#FF6B00;color:white;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px">
@@ -160,9 +173,9 @@ export async function sendRfqConfirmation(rfq) {
   })();
 
   const partsHtml = parts.map(p =>
-    `<tr><td style="padding:8px;border-bottom:1px solid #eee;font-family:monospace">${p.partNumber}</td>` +
-    `<td style="padding:8px;border-bottom:1px solid #eee">${p.manufacturer || '—'}</td>` +
-    `<td style="padding:8px;border-bottom:1px solid #eee">${p.qty || 'N/A'}</td></tr>`
+    `<tr><td style="padding:8px;border-bottom:1px solid #eee;font-family:monospace">${escapeHtml(p.partNumber)}</td>` +
+    `<td style="padding:8px;border-bottom:1px solid #eee">${escapeHtml(p.manufacturer) || '—'}</td>` +
+    `<td style="padding:8px;border-bottom:1px solid #eee">${escapeHtml(p.qty) || 'N/A'}</td></tr>`
   ).join('');
 
   const html = `
@@ -171,7 +184,7 @@ export async function sendRfqConfirmation(rfq) {
         <h1 style="margin:0;font-size:20px">✅ Quote Request Received</h1>
       </div>
       <div style="background:white;padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">
-        <p style="font-size:15px;color:#374151">Hi ${rfq.name},</p>
+        <p style="font-size:15px;color:#374151">Hi ${escapeHtml(rfq.name)},</p>
         <p style="font-size:14px;color:#4b5563;line-height:1.7">
           Thank you for your quote request. Our procurement team has received your inquiry for
           <strong>${parts.length} part(s)</strong>${rfq.bomFile ? ' along with your uploaded BOM file' : ''} and will respond within <strong>24 hours</strong>.

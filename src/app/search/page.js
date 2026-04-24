@@ -212,20 +212,20 @@ export default async function SearchPage({ searchParams }) {
           {totalPages > 1 && (
             <div className="pagination">
               {page > 1 && (
-                <Link href={`/search?q=${encodeURIComponent(query)}&page=${page - 1}&sort=${sort}&order=${order}`} className="pagination-btn">← Prev</Link>
+                <Link href={`/search?q=${encodeURIComponent(query)}&page=${page - 1}&sort=${sort}&order=${order}`} className="pagination-btn" rel="nofollow">← Prev</Link>
               )}
               {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                 const p = i + Math.max(1, page - 2);
                 if (p > totalPages) return null;
                 return (
                   <Link key={p} href={`/search?q=${encodeURIComponent(query)}&page=${p}&sort=${sort}&order=${order}`}
-                    className={`pagination-btn ${p === page ? 'active' : ''}`}>
+                    className={`pagination-btn ${p === page ? 'active' : ''}`} rel="nofollow">
                     {p}
                   </Link>
                 );
               })}
               {page < totalPages && (
-                <Link href={`/search?q=${encodeURIComponent(query)}&page=${page + 1}&sort=${sort}&order=${order}`} className="pagination-btn">Next →</Link>
+                <Link href={`/search?q=${encodeURIComponent(query)}&page=${page + 1}&sort=${sort}&order=${order}`} className="pagination-btn" rel="nofollow">Next →</Link>
               )}
             </div>
           )}
@@ -254,10 +254,12 @@ export default async function SearchPage({ searchParams }) {
 // Highlight matching keywords in text
 function HighlightText({ text, query }) {
   if (!query || !text) return text;
-  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-  const parts = text.split(regex);
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const splitRegex = new RegExp(`(${escaped})`, 'gi');
+  const parts = text.split(splitRegex);
+  const lowerQuery = query.toLowerCase();
   return parts.map((part, i) =>
-    regex.test(part) ? (
+    part.toLowerCase() === lowerQuery ? (
       <mark key={i} style={{ background: 'var(--color-accent-glow)', color: 'var(--color-accent)', padding: '0 2px', borderRadius: '2px' }}>
         {part}
       </mark>

@@ -851,37 +851,50 @@ select.input option {
   line-height: 1.6;
 }
 
-/* --- Brand Logos Carousel --- */
+/* --- Brand Logos Carousel (Infinite Marquee) --- */
+.brands-marquee-wrapper {
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
 .brands-scroll {
   display: flex;
   gap: var(--space-xl);
-  overflow-x: auto;
-  padding: var(--space-md) 0;
-  scrollbar-width: none;
+  width: max-content;
+  animation: marquee-scroll 40s linear infinite;
 }
 
-.brands-scroll::-webkit-scrollbar {
-  display: none;
+.brands-scroll:hover {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 .brand-item {
   flex-shrink: 0;
-  padding: var(--space-md) var(--space-xl);
+  padding: var(--space-sm) var(--space-xl);
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--color-text-muted);
   transition: all var(--transition-fast);
   cursor: pointer;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .brand-item:hover {
-  color: var(--color-text-primary);
-  border-color: var(--color-border-hover);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
   background: var(--color-bg-hover);
+  box-shadow: 0 0 12px var(--color-accent-glow);
 }
 
 /* --- Footer --- */
@@ -909,21 +922,28 @@ select.input option {
   line-height: 1.7;
 }
 
+.footer-col {
+  display: flex;
+  flex-direction: column;
+}
+
 .footer-col h4 {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
   margin-bottom: var(--space-md);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
 }
 
 .footer-col a {
   display: block;
   font-size: 13px;
   color: var(--color-text-muted);
-  padding: 4px 0;
+  padding: 5px 0;
   transition: color var(--transition-fast);
+  text-decoration: none;
+  line-height: 1.4;
 }
 
 .footer-col a:hover {
@@ -943,6 +963,7 @@ select.input option {
 .footer-certs {
   display: flex;
   gap: var(--space-md);
+  align-items: center;
 }
 
 .footer-cert {

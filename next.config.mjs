@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Explicitly normalize URLs — redirect /path/ → /path (prevents duplicate content)
+  trailingSlash: false,
+
   // Image optimization
   images: {
     remotePatterns: [
@@ -17,8 +20,8 @@ const nextConfig = {
         // Apply to all routes
         source: '/:path*',
         headers: [
-          // Clickjacking protection
-          { key: 'X-Frame-Options', value: 'DENY' },
+          // Clickjacking protection (modern CSP replacement for X-Frame-Options)
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'self'" },
           // MIME sniffing protection
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           // Referrer policy

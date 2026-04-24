@@ -42,9 +42,9 @@ export const metadata = {
       'max-snippet': -1,
     },
   },
-  alternates: {
-    canonical: SITE_URL,
-  },
+  // Note: do NOT set alternates.canonical here — it would be inherited by all
+  // child pages as the homepage URL, causing massive canonical conflicts.
+  // Each page sets its own canonical via page-level metadata.
 };
 
 export default function RootLayout({ children }) {
@@ -53,6 +53,31 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="manifest" href="/manifest.webmanifest" />
         <meta name="theme-color" content="#3B82F6" />
+        {/* Site navigation schema for Google sitelinks accuracy */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'SiteNavigationElement',
+          name: [
+            'Electronic Component Categories',
+            'Request for Quote',
+            'BOM Quote Tool',
+            'Manufacturers',
+            'Technical Articles',
+            'Quality Assurance',
+            'About Us',
+            'Contact Us',
+          ],
+          url: [
+            `${SITE_URL}/category`,
+            `${SITE_URL}/rfq`,
+            `${SITE_URL}/bom`,
+            `${SITE_URL}/manufacturers`,
+            `${SITE_URL}/blog`,
+            `${SITE_URL}/quality`,
+            `${SITE_URL}/about`,
+            `${SITE_URL}/contact`,
+          ],
+        })}} />
         <Suspense fallback={null}>
           <CodeInjection />
         </Suspense>
