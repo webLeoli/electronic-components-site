@@ -11,14 +11,11 @@ export const revalidate = 3600;
 
 export async function generateStaticParams() {
   try {
-    const categories = await prisma.category.findMany({
-      select: { slug: true, parent: { select: { slug: true } } },
-    });
-    return categories.map((c) => ({
-      slug: c.parent ? [c.parent.slug, c.slug] : [c.slug],
-    }));
+    // Flat URL strategy: every category is /category/[slug]
+    const categories = await prisma.category.findMany({ select: { slug: true } });
+    return categories.map((c) => ({ slug: [c.slug] }));
   } catch {
-    return []; // If DB unavailable at build time, skip prerendering
+    return [];
   }
 }
 
@@ -57,9 +54,9 @@ const MAX_PAGES = 100; // Limit deep pagination to protect database
 export default async function CategoryPage({ params, searchParams }) {
   const { slug } = await params;
   
-  // Prevent deep nested slug SEO attacks (e.g., /category/foo/bar/baz/junk)
-  // Our max category depth is 2, allowing 3 as a buffer. Throw 404 otherwise.
-  if (slug && slug.length > 3) notFound();
+  // Flat URL strategy: all categories at /category/[slug]
+  // Reject any multi-segment URLs to enforce flat structure
+  if (slug && slug.length > 1) notFound();
 
   const sp = await searchParams;
   // Enforce page bounds: 1 <= page <= MAX_PAGES
@@ -78,8 +75,17 @@ export default async function CategoryPage({ params, searchParams }) {
   let category = await prisma.category.findUnique({
     where: { slug: categorySlug },
     include: {
-      parent: true,
-      children: { orderBy: { sortOrder: 'asc' } },
+      parent: { include: { parent: true } },
+      children: {
+        orderBy: { sortOrder: 'asc' },
+        include: {
+          _count: { select: { products: true } },
+          children: {
+            orderBy: { sortOrder: 'asc' },
+            include: { _count: { select: { products: true } } },
+          },
+        },
+      },
     },
   });
 
@@ -93,19 +99,19 @@ export default async function CategoryPage({ params, searchParams }) {
     }
   }
 
-  // H6: Validate slug path matches actual category hierarchy
-  // Prevents /category/random-junk/integrated-circuits from being equivalent to /category/integrated-circuits
-  if (slug.length === 2) {
-    const expectedParentSlug = category.parent?.slug;
-    if (!expectedParentSlug || slug[0] !== expectedParentSlug) notFound();
-  } else if (slug.length === 1 && category.parent) {
-    // Single slug used for a subcategory — still valid (direct access)
-  }
+  // Flat URL — no hierarchy validation needed, slug uniqueness is enforced by DB
 
   // Get all descendant category IDs for product query
+  // Collect all descendant IDs (L2 children + L3 grandchildren)
   const categoryIds = [category.id];
   if (category.children.length > 0) {
-    categoryIds.push(...category.children.map(c => c.id));
+    for (const child of category.children) {
+      categoryIds.push(child.id);
+      // Also include grandchildren for L1 pages
+      if (child.children) {
+        categoryIds.push(...child.children.map(gc => gc.id));
+      }
+    }
   }
 
   // Build product where clause with optional filters
@@ -139,15 +145,49 @@ export default async function CategoryPage({ params, searchParams }) {
     include: { category: true },
   });
 
-  // Breadcrumb
-  const breadcrumbItems = [{ name: 'Home', url: '/' }];
-  if (category.parent) {
+  // Breadcrumb — flat URLs, hierarchy expressed via breadcrumb trail
+  const breadcrumbItems = [{ name: 'Home', url: '/' }, { name: 'Categories', url: '/category' }];
+  if (category.parent?.parent) {
+    breadcrumbItems.push({ name: category.parent.parent.name, url: `/category/${category.parent.parent.slug}` });
+    breadcrumbItems.push({ name: category.parent.name, url: `/category/${category.parent.slug}` });
+  } else if (category.parent) {
     breadcrumbItems.push({ name: category.parent.name, url: `/category/${category.parent.slug}` });
   }
   breadcrumbItems.push({ name: category.name });
 
+  // JSON-LD BreadcrumbList for Google
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: breadcrumbItems.map((item, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: item.name,
+      ...(item.url ? { item: `${SITE_URL}${item.url}` } : {}),
+    })),
+  };
+
+  // JSON-LD ItemList for category products
+  const itemListJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: category.name,
+    description: category.seoDesc || `${category.name} electronic components`,
+    numberOfItems: totalProducts,
+    itemListElement: products.slice(0, 10).map((p, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: p.partNumber,
+      url: `${SITE_URL}/product/${encodeURIComponent(p.partNumber)}`,
+    })),
+  };
+
   return (
     <div className="container" style={{ paddingTop: 'var(--space-lg)', paddingBottom: 'var(--space-3xl)' }}>
+      {/* JSON-LD Structured Data */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }} />
+
       {/* Breadcrumb */}
       <nav className="breadcrumb" aria-label="Breadcrumb">
         {breadcrumbItems.map((item, i) => (
@@ -161,15 +201,22 @@ export default async function CategoryPage({ params, searchParams }) {
       <div className="category-page-layout">
         {/* Sidebar */}
         <aside className="category-sidebar">
-          {/* Subcategories */}
+          {/* Subcategories — flat URL links */}
           {category.children.length > 0 && (
             <div className="filter-section">
               <h3 className="filter-title">Subcategories</h3>
               <div className="filter-list">
                 {category.children.map(child => (
-                  <Link key={child.slug} href={`/category/${child.slug}`} className="filter-item" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <CategoryIcon slug={child.slug} size={20} variant="badge" />
-                    <span>{child.name}</span>
+                  <Link key={child.slug} href={`/category/${child.slug}`} className="filter-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CategoryIcon slug={child.slug} size={20} variant="badge" />
+                      <span>{child.name}</span>
+                    </span>
+                    {child._count?.products > 0 && (
+                      <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                        {child._count.products.toLocaleString()}
+                      </span>
+                    )}
                   </Link>
                 ))}
               </div>
@@ -339,12 +386,21 @@ export default async function CategoryPage({ params, searchParams }) {
   );
 }
 
-// All Categories overview page
+// All Categories overview page — 3-level tree
 async function AllCategoriesPage() {
   let categories = await prisma.category.findMany({
     where: { parentId: null },
     include: {
-      children: { orderBy: { sortOrder: 'asc' } },
+      children: {
+        orderBy: { sortOrder: 'asc' },
+        include: {
+          _count: { select: { products: true } },
+          children: {
+            orderBy: { sortOrder: 'asc' },
+            include: { _count: { select: { products: true } } },
+          },
+        },
+      },
       _count: { select: { products: true } },
     },
     orderBy: { sortOrder: 'asc' },
@@ -354,31 +410,48 @@ async function AllCategoriesPage() {
     categories = FALLBACK_CATEGORIES.map(c => ({ ...c, children: [], _count: c._count || { products: 0 } }));
   }
 
+  // Calculate total products per L1 (sum of all descendants)
+  const getTotalProducts = (cat) => {
+    let total = cat._count?.products || 0;
+    if (cat.children) {
+      for (const child of cat.children) {
+        total += getTotalProducts(child);
+      }
+    }
+    return total;
+  };
+
   return (
     <div className="container" style={{ paddingTop: 'var(--space-xl)', paddingBottom: 'var(--space-3xl)' }}>
       <h1 style={{ fontSize: '32px', fontWeight: 800, marginBottom: 'var(--space-sm)' }}>All Categories</h1>
       <p style={{ color: 'var(--color-text-muted)', marginBottom: 'var(--space-2xl)', fontSize: '15px' }}>
-        Browse our complete catalog of electronic components by category
+        Browse our complete catalog of integrated circuits and electronic components
       </p>
 
       <div className="all-categories-grid">
-        {categories.map(cat => (
-          <div key={cat.slug} className="card all-cat-card">
-            <Link href={`/category/${cat.slug}`} className="all-cat-header">
-              <span style={{ width: '42px', height: '42px' }}><CategoryIcon slug={cat.slug} size={42} variant="card" /></span>
-              <h2 style={{ fontSize: '18px', fontWeight: 700 }}>{cat.name}</h2>
-            </Link>
-            {cat.children.length > 0 && (
-              <div className="all-cat-children">
-                {cat.children.map(child => (
-                  <Link key={child.slug} href={`/category/${child.slug}`} className="all-cat-child-link">
-                    {child.name}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+        {categories.map(cat => {
+          const totalProducts = getTotalProducts(cat);
+          return (
+            <div key={cat.slug} className="card all-cat-card">
+              <Link href={`/category/${cat.slug}`} className="all-cat-header">
+                <span style={{ width: '42px', height: '42px' }}><CategoryIcon slug={cat.slug} size={42} variant="card" /></span>
+                <div>
+                  <h2 style={{ fontSize: '18px', fontWeight: 700 }}>{cat.name}</h2>
+                  <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{totalProducts.toLocaleString()} products</span>
+                </div>
+              </Link>
+              {cat.children.length > 0 && (
+                <div className="all-cat-children">
+                  {cat.children.map(child => (
+                    <Link key={child.slug} href={`/category/${child.slug}`} className="all-cat-child-link">
+                      {child.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

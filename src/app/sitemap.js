@@ -10,7 +10,7 @@ import { SITE_URL } from '@/lib/seo';
  * pointing to /sitemap/0.xml, /sitemap/1.xml, etc.
  */
 
-const PRODUCTS_PER_SITEMAP = 10000;
+const PRODUCTS_PER_SITEMAP = 5000;
 
 /**
  * Generate sitemap index entries.
@@ -19,11 +19,19 @@ const PRODUCTS_PER_SITEMAP = 10000;
 export async function generateSitemaps() {
   let productCount = 0;
   try {
-    productCount = await prisma.product.count();
+    // Only count products worth submitting to Google:
+    // Must have price (real commercial value) AND be active/lastbuy status
+    // Obsolete products get included after Step B (description enrichment)
+    productCount = await prisma.product.count({
+      where: {
+        minPrice: { gt: 0 },
+        status: { in: ['active', 'lastbuy'] },
+      },
+    });
   } catch {}
 
   // id=0 is static + categories + manufacturers + blog
-  // id=1..N are product batches
+  // id=1..N are product batches (only quality-gated products)
   const productSitemapCount = Math.max(1, Math.ceil(productCount / PRODUCTS_PER_SITEMAP));
   const ids = [{ id: 0 }];
   for (let i = 1; i <= productSitemapCount; i++) {
@@ -50,18 +58,30 @@ export default async function sitemap({ id }) {
       { url: `${SITE_URL}/privacy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
     ];
 
-    // Dynamic: Categories
+    // Dynamic: Categories (flat URLs, priority by depth level)
     let categoryPages = [];
     try {
       const categories = await prisma.category.findMany({
-        select: { slug: true },
+        select: { slug: true, parentId: true },
       });
-      categoryPages = categories.map(cat => ({
-        url: `${SITE_URL}/category/${cat.slug}`,
-        lastModified: new Date(),
-        changeFrequency: 'weekly',
-        priority: 0.8,
-      }));
+      // Determine depth: null parentId = L1, else check parent
+      const parentIds = new Set(categories.filter(c => c.parentId === null).map(c => c.slug));
+      categoryPages = categories.map(cat => {
+        // L1: no parent, L2: parent is L1, L3: parent is L2
+        let priority = 0.8; // L3 default
+        if (!cat.parentId) priority = 0.9; // L1
+        else {
+          const parentSlug = categories.find(c => c.slug !== cat.slug && !c.parentId);
+          // Simple: if parentId exists but parent has no parent, it's L2
+          priority = 0.85;
+        }
+        return {
+          url: `${SITE_URL}/category/${cat.slug}`,
+          lastModified: new Date(),
+          changeFrequency: 'weekly',
+          priority,
+        };
+      });
     } catch {}
 
     // Dynamic: Manufacturers
@@ -121,20 +141,28 @@ export default async function sitemap({ id }) {
   }
 
   // Sitemap 1..N: Product pages batch
-  const batchIndex = id - 1; // id=1 → batch 0, id=2 → batch 1, etc.
+  // Only submit quality-gated products to Google.
+  // Sort by stock DESC so in-stock products get crawled first.
+  const numericId = typeof id === 'number' ? id : parseInt(id, 10);
+  const batchIndex = numericId - 1;
+  if (batchIndex < 0 || isNaN(batchIndex)) return [];
   let productPages = [];
   try {
     const products = await prisma.product.findMany({
-      select: { partNumber: true, updatedAt: true },
-      orderBy: { id: 'asc' },
+      where: {
+        minPrice: { gt: 0 },
+        status: { in: ['active', 'lastbuy'] },
+      },
+      select: { partNumber: true, updatedAt: true, stock: true },
+      orderBy: [{ stock: 'desc' }, { id: 'asc' }],
       skip: batchIndex * PRODUCTS_PER_SITEMAP,
       take: PRODUCTS_PER_SITEMAP,
     });
     productPages = products.map(p => ({
       url: `${SITE_URL}/product/${encodeURIComponent(p.partNumber)}`,
       lastModified: p.updatedAt || new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.6,
+      changeFrequency: p.stock > 0 ? 'weekly' : 'monthly',
+      priority: p.stock > 0 ? 0.7 : 0.5,
     }));
   } catch {}
 

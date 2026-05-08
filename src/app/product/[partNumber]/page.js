@@ -32,17 +32,10 @@ const getProduct = cache(async (partNumber) => {
 // ISR: revalidate every 1 hour
 export const revalidate = 3600;
 
-// Generate static params for known products (optional — ISR handles unknown ones)
+// Skip build-time prerendering — with 720K products, ISR handles everything.
+// Pages are generated on first request and cached for `revalidate` seconds.
 export async function generateStaticParams() {
-  try {
-    const products = await prisma.product.findMany({
-      select: { partNumber: true },
-      take: 20,
-    });
-    return products.map((p) => ({ partNumber: p.partNumber }));
-  } catch {
-    return []; // If DB unavailable at build time, skip prerendering
-  }
+  return [];
 }
 
 // Dynamic metadata for SEO — uses cached getProduct()
@@ -51,7 +44,20 @@ export async function generateMetadata({ params }) {
     const { partNumber } = await params;
     const product = await getProduct(decodeURIComponent(partNumber));
     if (!product) return { title: 'Product Not Found' };
-    return generateProductMeta(product);
+    const meta = generateProductMeta(product);
+
+    // Quality gate: noindex thin-content pages to protect domain quality.
+    // A page needs EITHER a decent description OR specs OR a price to be index-worthy.
+    const descLen = (product.description || '').length;
+    const hasSpecs = product.specs && product.specs !== '{}' && product.specs !== '';
+    const hasPrice = product.minPrice > 0;
+    const isThin = descLen <= 30 && !hasSpecs && !hasPrice;
+
+    if (isThin) {
+      meta.robots = { index: false, follow: true };
+    }
+
+    return meta;
   } catch {
     return { title: 'Product Not Found' };
   }
@@ -156,50 +162,12 @@ export default async function ProductPage({ params }) {
   const productJsonLd = generateProductJsonLd(product);
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(breadcrumbItems);
 
-  // FAQ JSON-LD for rich snippets — only include for in-stock products to avoid
-  // Google SpamBrain flagging identical templated FAQs across thousands of pages
-  const faqJsonLd = product.stock > 0 ? {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: [
-      {
-        '@type': 'Question',
-        name: `Is ${product.partNumber} original and genuine?`,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `Yes, all ${product.partNumber} components from FPGACenter are 100% original and genuine${product.manufacturer ? ` from ${product.manufacturer}` : ''}. Every part undergoes rigorous quality inspection and testing before shipment.`,
-        },
-      },
-      {
-        '@type': 'Question',
-        name: `What is the lead time for ${product.partNumber}?`,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `${product.partNumber} is currently in stock with ${product.stock.toLocaleString()} units available. In-stock items ship same day for orders placed before 3PM.`,
-        },
-      },
-      {
-        '@type': 'Question',
-        name: `What is the minimum order quantity for ${product.partNumber}?`,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `FPGACenter has no minimum order quantity for ${product.partNumber}. You can order from 1 piece to production volumes.`,
-        },
-      },
-      ...(product.datasheet ? [{
-        '@type': 'Question',
-        name: `Can I get a datasheet for ${product.partNumber}?`,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `Yes, the ${product.partNumber} datasheet is available for download on the product page.`,
-        },
-      }] : []),
-    ],
-  } : null;
+  // FAQ JSON-LD REMOVED — templated FAQ across 720K pages is a SpamBrain trigger.
+  // Only re-enable when each product has genuinely unique Q&A content.
 
   return (
     <>
-      {/* JSON-LD Structured Data */}
+      {/* JSON-LD: Product + Breadcrumb only. No FAQ (removed: SpamBrain risk). */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
@@ -208,12 +176,6 @@ export default async function ProductPage({ params }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      {faqJsonLd && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-        />
-      )}
 
       <div className="container" style={{ paddingTop: 'var(--space-lg)', paddingBottom: 'var(--space-3xl)' }}>
         {/* Breadcrumb */}
@@ -356,46 +318,15 @@ export default async function ProductPage({ params }) {
               </div>
             )}
 
-            {/* Product Overview — rich unique content for SEO */}
-            <div className="product-section">
-              <h2 className="product-section-title">Product Overview</h2>
-              <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)', lineHeight: 1.8 }}>
-                <p>
-                  The <strong>{product.partNumber}</strong>{product.manufacturer ? <> is manufactured by <strong>{product.manufacturer}</strong></> : ''}{product.category?.name ? <> and belongs to the <strong>{product.category.name}</strong> category</> : ''}.
-                  {product.description ? ` ${product.description}.` : ''}
-                  {product.status === 'active' ? ' This component is currently in active production status.' :
-                   product.status === 'obsolete' ? ' This component has been marked as obsolete by the manufacturer. FPGACenter specializes in sourcing obsolete and discontinued parts.' :
-                   product.status === 'eol' ? ' This component has reached End of Life (EOL) status. Limited quantities may still be available through our global sourcing network.' :
-                   product.status === 'nrnd' ? ' This component is classified as Not Recommended for New Designs (NRND). It remains available for existing production requirements.' : ''}
+            {/* Product description — only show actual data, no template padding */}
+            {product.description && product.description.length > 40 && (
+              <div className="product-section">
+                <h2 className="product-section-title">Description</h2>
+                <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', lineHeight: 1.8 }}>
+                  {product.description}
                 </p>
-                {(product.packageType || product.mountType) && (
-                  <p>
-                    {product.packageType && <>This part is available in <strong>{product.packageType}</strong> packaging. </>}
-                    {product.mountType && <>It utilizes <strong>{product.mountType}</strong> technology{product.mountType === 'Surface Mount' ? ', making it suitable for automated pick-and-place assembly processes' : product.mountType === 'Through Hole' ? ', suitable for applications requiring robust mechanical connections' : ''}. </>}
-                    {product.moq > 1 ? `The minimum order quantity is ${product.moq} units.` : 'There is no minimum order quantity — order from 1 piece to production volumes.'}
-                  </p>
-                )}
-                <p>
-                  {product.stock > 0
-                    ? <>We currently have <strong>{product.stock.toLocaleString()} units</strong> of {product.partNumber} in stock, ready for immediate shipment. In-stock orders placed before 3:00 PM ship the same business day.</>
-                    : <>Contact our sales team for current availability and lead time on {product.partNumber}. Our global sourcing network can locate hard-to-find components from authorized distributors and verified independent sources.</>
-                  }
-                  {' '}All components from FPGACenter undergo rigorous quality inspection per our ISO 9001:2015 quality management system, including visual inspection, authenticity verification, and electrical testing where applicable.
-                </p>
-                {Object.keys(specs).length > 0 && (
-                  <p>
-                    Key specifications for the {product.partNumber} include{' '}
-                    {Object.entries(specs).slice(0, 5).map(([key, value], i, arr) => (
-                      <span key={key}>
-                        <strong>{key.replace(/([A-Z])/g, ' $1').trim()}</strong>: {String(value)}
-                        {i < arr.length - 1 ? ', ' : '.'}
-                      </span>
-                    ))}
-                    {Object.keys(specs).length > 5 && ' See the full specifications table above for complete technical details.'}
-                  </p>
-                )}
               </div>
-            </div>
+            )}
           </div>
 
           {/* Sidebar: Actions */}

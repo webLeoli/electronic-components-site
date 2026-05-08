@@ -16,8 +16,7 @@ const getManufacturer = cache(async (slug) => {
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
-  const manufacturers = await prisma.manufacturer.findMany({ select: { slug: true } });
-  return manufacturers.map((m) => ({ slug: m.slug }));
+  return [];
 }
 
 export async function generateMetadata({ params, searchParams }) {

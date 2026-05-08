@@ -32,7 +32,19 @@ export default async function robots() {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin/', '/api/', '/search', '/*?*sort=', '/*?*order=', '/*?*status=', '/*?*mount=', '/*?*page='],
+        disallow: [
+          '/admin/',
+          '/api/',
+          '/search',
+          '/*?*sort=',      // Sort variations = duplicate content
+          '/*?*order=',     // Order variations = duplicate content
+          '/*?*status=',    // Lifecycle filter = low SEO value
+          '/*?*mount=',     // Mount filter = low SEO value
+          '/*?*stock=',     // Stock filter = low SEO value
+          '/*?*page=',      // Pagination pages = thin content
+          // NOTE: ?mfr= is intentionally ALLOWED — manufacturer×category
+          // pages are high-value SEO landing pages
+        ],
       },
       {
         userAgent: 'AhrefsBot',

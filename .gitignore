@@ -49,6 +49,9 @@ prisma/dev.db-journal
 # build logs
 build-log*.txt
 
+# database dumps
+*.sql
+
 # user uploaded files (BOM files, etc.)
 /data/
 /public/uploads/bom/

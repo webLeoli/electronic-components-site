@@ -26,12 +26,12 @@ export default function Footer() {
 
           <div className="footer-col">
             <h4>Products</h4>
-            <Link href="/category/integrated-circuits">Integrated Circuits</Link>
-            <Link href="/category/discrete-semiconductors">Semiconductors</Link>
-            <Link href="/category/capacitors">Capacitors</Link>
-            <Link href="/category/resistors">Resistors</Link>
-            <Link href="/category/connectors">Connectors</Link>
-            <Link href="/category/sensors">Sensors</Link>
+            <Link href="/category/embedded">Embedded & Programmable</Link>
+            <Link href="/category/power-management">Power Management</Link>
+            <Link href="/category/memory">Memory ICs</Link>
+            <Link href="/category/analog">Analog & Mixed Signal</Link>
+            <Link href="/category/logic">Logic ICs</Link>
+            <Link href="/category/interface">Interface & Communication</Link>
             <Link href="/category">All Categories</Link>
           </div>
 

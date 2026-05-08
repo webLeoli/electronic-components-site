@@ -14,9 +14,27 @@ if (process.env.NODE_ENV === 'production' && SITE_URL.includes('localhost')) {
 export function generateProductMeta(product) {
   const mfr = product.manufacturer || 'Electronic Component';
   const encodedPN = encodeURIComponent(product.partNumber);
-  const title = `${product.partNumber} - ${mfr} | Buy Online`;
+  const stockLabel = product.stock > 0 ? 'In Stock' : 'Available';
+  const categoryName = product.category?.name || '';
+
+  // Title: Part# - Manufacturer | Status | FPGACenter
+  // e.g. "XC7A35T-1CPG236C - Xilinx | In Stock | Buy Online"
+  const title = `${product.partNumber} - ${mfr} | ${stockLabel} | Buy Online`;
   const ogTitle = `${product.partNumber} - ${mfr} | Buy at ${SITE_NAME}`;
-  const description = `Buy ${product.partNumber} by ${mfr}. ${product.description || 'Original part, fast delivery, no MOQ requirement.'} In stock at ${SITE_NAME}.`;
+
+  // Description: richer with category, package, stock for SERP snippet
+  const descParts = [`Buy ${product.partNumber} by ${mfr}`];
+  if (categoryName) descParts.push(`(${categoryName})`);
+  if (product.packageType) descParts.push(`in ${product.packageType} package`);
+  descParts.push('.');
+  if (product.stock > 0) {
+    descParts.push(`${product.stock.toLocaleString()} units in stock.`);
+  }
+  if (product.minPrice > 0) {
+    descParts.push(`From $${product.minPrice.toFixed(product.minPrice < 1 ? 4 : 2)}.`);
+  }
+  descParts.push(`No MOQ. Fast shipping from ${SITE_NAME}.`);
+  const description = descParts.join(' ');
   const productUrl = `${SITE_URL}/product/${encodedPN}`;
 
   const meta = {
@@ -59,19 +77,21 @@ export function generateProductMeta(product) {
 }
 
 export function generateCategoryMeta(category, { page = 1 } = {}) {
-  const title = page > 1
-    ? `${category.name} - Electronic Components - Page ${page}`
-    : `${category.name} - Electronic Components`;
-  const ogTitle = `${category.name} - Electronic Components | ${SITE_NAME}`;
   const description = category.seoDesc || `Browse ${category.name} electronic components. Find hard-to-find and obsolete parts at ${SITE_NAME}. Fast delivery, no minimum order.`;
   const baseUrl = `${SITE_URL}/category/${category.slug}`;
   const canonicalUrl = page > 1 ? `${baseUrl}?page=${page}` : baseUrl;
+
+  // Title with product count for CTR — shows inventory scale
+  const titleBase = category.seoTitle || `${category.name} - Electronic Components`;
+  const title = page > 1
+    ? `${titleBase} - Page ${page}`
+    : titleBase;
 
   return {
     title,
     description,
     openGraph: {
-      title: ogTitle,
+      title: `${category.name} | ${SITE_NAME}`,
       description,
       url: canonicalUrl,
       siteName: SITE_NAME,
@@ -129,6 +149,51 @@ export function generateProductJsonLd(product) {
       : `${SITE_URL}${product.imageUrl}`;
   } else {
     jsonLd.image = `${SITE_URL}/og-image.png`;
+  }
+
+  // Additional properties for richer structured data
+  const additionalProperties = [];
+  if (product.packageType) {
+    additionalProperties.push({
+      '@type': 'PropertyValue',
+      name: 'Package Type',
+      value: product.packageType,
+    });
+  }
+  if (product.mountType) {
+    additionalProperties.push({
+      '@type': 'PropertyValue',
+      name: 'Mount Type',
+      value: product.mountType,
+    });
+  }
+  if (product.status) {
+    additionalProperties.push({
+      '@type': 'PropertyValue',
+      name: 'Lifecycle Status',
+      value: product.status === 'active' ? 'Active' :
+             product.status === 'obsolete' ? 'Obsolete' :
+             product.status === 'eol' ? 'End of Life' :
+             product.status === 'nrnd' ? 'Not Recommended for New Design' : product.status,
+    });
+  }
+  // Parse specs JSON and add key parameters
+  if (product.specs) {
+    try {
+      const specs = typeof product.specs === 'string' ? JSON.parse(product.specs) : product.specs;
+      Object.entries(specs).slice(0, 10).forEach(([key, value]) => {
+        if (value && String(value).length < 100) {
+          additionalProperties.push({
+            '@type': 'PropertyValue',
+            name: key.replace(/([A-Z])/g, ' $1').trim(),
+            value: String(value),
+          });
+        }
+      });
+    } catch {}
+  }
+  if (additionalProperties.length > 0) {
+    jsonLd.additionalProperty = additionalProperties;
   }
 
   return jsonLd;
