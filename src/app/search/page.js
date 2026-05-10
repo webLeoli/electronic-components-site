@@ -2,7 +2,7 @@ import prisma from '@/lib/db';
 import Link from 'next/link';
 import AddToRfqButton from '@/components/AddToRfqButton';
 import { ProductIcon } from '@/components/ProductImage';
-import { SITE_NAME, SITE_URL } from '@/lib/seo';
+import { productPath, SITE_NAME, SITE_URL } from '@/lib/seo';
 
 export const metadata = {
   title: 'Search Electronic Components',
@@ -162,7 +162,7 @@ export default async function SearchPage({ searchParams }) {
                     <td className="part-number">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <ProductIcon product={product} size={28} />
-                        <Link href={`/product/${encodeURIComponent(product.partNumber)}`}>
+                        <Link href={productPath(product.partNumber, product.manufacturer)}>
                           <HighlightText text={product.partNumber} query={query} />
                         </Link>
                       </div>

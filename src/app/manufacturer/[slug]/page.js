@@ -2,7 +2,7 @@ import { cache } from 'react';
 import prisma from '@/lib/db';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { SITE_URL } from '@/lib/seo';
+import { productPath, SITE_URL } from '@/lib/seo';
 import { FALLBACK_BRANDS } from '@/lib/fallbacks';
 
 // React cache() deduplicates this query within a single request
@@ -106,7 +106,7 @@ export default async function ManufacturerPage({ params, searchParams }) {
     itemListElement: products.slice(0, 10).map((p, i) => ({
       '@type': 'ListItem',
       position: i + 1,
-      url: `${SITE_URL}/product/${encodeURIComponent(p.partNumber)}`,
+      url: `${SITE_URL}${productPath(p.partNumber, p.manufacturer)}`,
       name: p.partNumber,
     })),
   } : null;
@@ -202,7 +202,7 @@ export default async function ManufacturerPage({ params, searchParams }) {
                 {products.map(product => (
                   <tr key={product.partNumber}>
                     <td className="part-number">
-                      <Link href={`/product/${encodeURIComponent(product.partNumber)}`}>{product.partNumber}</Link>
+                      <Link href={productPath(product.partNumber, product.manufacturer)}>{product.partNumber}</Link>
                     </td>
                     <td>
                       {product.category ? (

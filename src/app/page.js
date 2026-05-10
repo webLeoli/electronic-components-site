@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import prisma from '@/lib/db';
-import { SITE_NAME, SITE_URL, SITE_DESC } from '@/lib/seo';
+import { productPath, SITE_NAME, SITE_URL, SITE_DESC } from '@/lib/seo';
 import CategoryIcon from '@/components/CategoryIcon';
 import { ProductIcon } from '@/components/ProductImage';
 import { FALLBACK_CATEGORIES, FALLBACK_PARTS, FALLBACK_BRANDS } from '@/lib/fallbacks';
@@ -218,7 +218,7 @@ export default async function HomePage() {
                     <td className="part-number">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <ProductIcon product={part} size={28} />
-                        <Link href={`/product/${encodeURIComponent(part.partNumber)}`}>{part.partNumber}</Link>
+                        <Link href={productPath(part.partNumber, part.manufacturer)}>{part.partNumber}</Link>
                       </div>
                     </td>
                     <td>{part.manufacturer}</td>

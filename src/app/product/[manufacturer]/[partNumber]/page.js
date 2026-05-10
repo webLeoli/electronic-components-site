@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import prisma from '@/lib/db';
-import { generateProductMeta, generateProductJsonLd, generateBreadcrumbJsonLd, SITE_NAME, SITE_URL } from '@/lib/seo';
+import { generateProductMeta, generateProductJsonLd, generateBreadcrumbJsonLd, productPath, SITE_NAME, SITE_URL } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AddToRfqButton from '@/components/AddToRfqButton';
@@ -250,7 +250,7 @@ export default async function ProductPage({ params }) {
             manufacturer: product.manufacturer,
             partNumber: { not: product.partNumber },
           },
-          select: { partNumber: true, description: true, minPrice: true, stock: true },
+          select: { partNumber: true, description: true, minPrice: true, stock: true, manufacturer: true },
           take: 6,
           orderBy: { stock: 'desc' },
         })
@@ -590,7 +590,7 @@ export default async function ProductPage({ params }) {
                       <td className="part-number">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <ProductIcon product={rp} size={28} />
-                          <Link href={`/product/${encodeURIComponent(rp.partNumber)}`}>{rp.partNumber}</Link>
+                          <Link href={productPath(rp.partNumber, rp.manufacturer)}>{rp.partNumber}</Link>
                         </div>
                       </td>
                       <td>{rp.manufacturer}</td>
@@ -640,7 +640,7 @@ export default async function ProductPage({ params }) {
               {sameManufacturerProducts.map(sp => (
                 <Link
                   key={sp.partNumber}
-                  href={`/product/${encodeURIComponent(sp.partNumber)}`}
+                  href={productPath(sp.partNumber, product.manufacturer)}
                   className="card"
                   style={{ padding: 'var(--space-md)', textDecoration: 'none', transition: 'border-color 0.2s' }}
                 >

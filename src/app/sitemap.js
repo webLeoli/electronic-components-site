@@ -1,5 +1,5 @@
 import prisma from '@/lib/db';
-import { SITE_URL } from '@/lib/seo';
+import { productPath, SITE_URL } from '@/lib/seo';
 
 /**
  * Sitemap splitting strategy:
@@ -145,13 +145,13 @@ export default async function sitemap({ id }) {
   try {
     const products = await prisma.product.findMany({
       where: { indexable: true },
-      select: { partNumber: true, updatedAt: true, qualityScore: true },
+      select: { partNumber: true, manufacturer: true, updatedAt: true, qualityScore: true },
       orderBy: [{ qualityScore: 'desc' }, { id: 'asc' }],
       skip: batchIndex * PRODUCTS_PER_SITEMAP,
       take: PRODUCTS_PER_SITEMAP,
     });
     productPages = products.map(p => ({
-      url: `${SITE_URL}/product/${encodeURIComponent(p.partNumber)}`,
+      url: `${SITE_URL}${productPath(p.partNumber, p.manufacturer)}`,
       lastModified: p.updatedAt || new Date(),
       changeFrequency: p.qualityScore >= 70 ? 'weekly' : 'monthly',
       priority: p.qualityScore >= 70 ? 0.8 : 0.6,

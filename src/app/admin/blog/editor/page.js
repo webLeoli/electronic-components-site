@@ -329,7 +329,7 @@ function BlogEditorContent() {
       ]);
       const products = (productsRes.products || []).map(p => ({
         type: 'product', label: p.partNumber, desc: p.description?.substring(0, 60) || p.manufacturer || '',
-        url: `/product/${p.partNumber}`,
+        url: `/product/${(p.manufacturer || 'unknown').toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}/${p.partNumber}`,
       }));
       const posts = (postsRes.posts || []).filter(p =>
         p.title.toLowerCase().includes(query.toLowerCase()) || p.slug?.includes(query.toLowerCase())

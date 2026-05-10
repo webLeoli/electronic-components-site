@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import prisma from '@/lib/db';
+import { productPath } from '@/lib/seo';
 
 export const metadata = {
   title: 'Product Not Found',
@@ -78,7 +79,7 @@ export default async function ProductNotFound() {
             {hotProducts.map(p => (
               <Link
                 key={p.partNumber}
-                href={`/product/${encodeURIComponent(p.partNumber)}`}
+                href={productPath(p.partNumber, p.manufacturer)}
                 className="card"
                 style={{ padding: 'var(--space-lg)', textDecoration: 'none' }}
               >

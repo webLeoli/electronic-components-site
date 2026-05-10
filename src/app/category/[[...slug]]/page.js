@@ -1,5 +1,5 @@
 import prisma from '@/lib/db';
-import { generateCategoryMeta, SITE_URL, SITE_NAME } from '@/lib/seo';
+import { generateCategoryMeta, productPath, SITE_URL, SITE_NAME } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AddToRfqButton from '@/components/AddToRfqButton';
@@ -178,7 +178,7 @@ export default async function CategoryPage({ params, searchParams }) {
       '@type': 'ListItem',
       position: i + 1,
       name: p.partNumber,
-      url: `${SITE_URL}/product/${encodeURIComponent(p.partNumber)}`,
+      url: `${SITE_URL}${productPath(p.partNumber, p.manufacturer)}`,
     })),
   };
 
@@ -341,7 +341,7 @@ export default async function CategoryPage({ params, searchParams }) {
                         <td className="part-number">
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <ProductIcon product={product} size={28} />
-                            <Link href={`/product/${encodeURIComponent(product.partNumber)}`}>{product.partNumber}</Link>
+                            <Link href={productPath(product.partNumber, product.manufacturer)}>{product.partNumber}</Link>
                           </div>
                         </td>
                         <td>{product.manufacturer}</td>

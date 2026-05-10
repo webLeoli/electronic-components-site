@@ -11,6 +11,17 @@ if (process.env.NODE_ENV === 'production' && SITE_URL.includes('localhost')) {
   );
 }
 
+// Generate URL path for product pages: /product/{manufacturer-slug}/{partNumber}
+// This is the single source of truth for product URLs across the entire site.
+export function productPath(partNumber, manufacturer) {
+  const mfrSlug = (manufacturer || 'unknown')
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  return `/product/${mfrSlug}/${encodeURIComponent(partNumber)}`;
+}
+
 export function generateProductMeta(product) {
   const mfr = product.manufacturer || 'Electronic Component';
   const encodedPN = encodeURIComponent(product.partNumber);
@@ -35,7 +46,7 @@ export function generateProductMeta(product) {
   }
   descParts.push(`No MOQ. Fast shipping from ${SITE_NAME}.`);
   const description = descParts.join(' ');
-  const productUrl = `${SITE_URL}/product/${encodedPN}`;
+  const productUrl = `${SITE_URL}${productPath(product.partNumber, product.manufacturer)}`;
 
   const meta = {
     title,
@@ -107,8 +118,7 @@ export function generateCategoryMeta(category, { page = 1 } = {}) {
 }
 
 export function generateProductJsonLd(product) {
-  const encodedPN = encodeURIComponent(product.partNumber);
-  const productUrl = `${SITE_URL}/product/${encodedPN}`;
+  const productUrl = `${SITE_URL}${productPath(product.partNumber, product.manufacturer)}`;
   const hasPrice = product.minPrice != null && product.minPrice > 0;
   const priceValid = new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0];
 

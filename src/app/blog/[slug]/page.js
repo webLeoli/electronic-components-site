@@ -2,7 +2,7 @@ import prisma from '@/lib/db';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { headers } from 'next/headers';
-import { SITE_NAME, SITE_URL } from '@/lib/seo';
+import { productPath, SITE_NAME, SITE_URL } from '@/lib/seo';
 import '../blog.css';
 
 // Markdown to HTML converter (server-side, full featured)
@@ -313,7 +313,7 @@ export default async function BlogPostPage({ params }) {
                   <h2>Related Products</h2>
                   <div className="blog-products-grid">
                     {relatedProducts.map(p => (
-                      <Link href={`/product/${encodeURIComponent(p.partNumber)}`} key={p.partNumber} className="blog-product-card">
+                      <Link href={productPath(p.partNumber, p.manufacturer)} key={p.partNumber} className="blog-product-card">
                         <div className="blog-product-pn">{p.partNumber}</div>
                         <div className="blog-product-mfr">{p.manufacturer}</div>
                         {p.description && <div className="blog-product-desc">{p.description.substring(0, 80)}</div>}

@@ -359,7 +359,7 @@ export default function AdminQualityPage() {
                     return (
                       <tr key={p.id}>
                         <td className="admin-td-mono">
-                          <a href={`/product/${p.partNumber}`} target="_blank" rel="noopener">{p.partNumber}</a>
+                          <a href={`/product/${(p.manufacturer || 'unknown').toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}/${p.partNumber}`} target="_blank" rel="noopener">{p.partNumber}</a>
                         </td>
                         <td style={{ fontSize: '12px' }}>{p.manufacturer}</td>
                         <td style={{ textAlign: 'center', fontWeight: 700, fontFamily: 'monospace' }}>
