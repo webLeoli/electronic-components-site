@@ -83,9 +83,15 @@
 
 html {
   font-size: 16px;
-  scroll-behavior: smooth;
+  /* scroll-behavior: smooth moved to data attribute for Next.js 16 compatibility.
+     The layout.js <html> tag uses data-scroll-behavior="smooth" instead,
+     so Next.js can disable it during route transitions to prevent jank. */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html[data-scroll-behavior="smooth"] {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -2730,3 +2736,160 @@ select.input option {
   }
 }
 
+
+/* --- Product Page: TOC Navigation --- */
+.product-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.product-toc-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-radius: var(--radius-full);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.product-toc-item:hover {
+  color: var(--color-accent);
+  background: var(--color-bg-tertiary);
+}
+
+.product-toc-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-accent);
+  background: rgba(255, 107, 0, 0.12);
+  border-radius: var(--radius-full);
+}
+
+/* --- Product Page: Application Area Tags --- */
+.product-app-areas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.product-app-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-fast);
+}
+
+.product-app-tag:hover {
+  color: var(--color-blue);
+  border-color: var(--color-blue);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+/* --- Product Page: FAQ Accordion --- */
+.product-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.product-faq-item {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+
+.product-faq-item[open] {
+  border-color: var(--color-accent);
+}
+
+.product-faq-q {
+  padding: var(--space-md) var(--space-lg);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.product-faq-q::-webkit-details-marker {
+  display: none;
+}
+
+.product-faq-q::before {
+  content: 'Q';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-accent);
+  background: rgba(255, 107, 0, 0.12);
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.product-faq-q::after {
+  content: '+';
+  margin-left: auto;
+  font-size: 18px;
+  color: var(--color-text-muted);
+  transition: transform var(--transition-fast);
+}
+
+.product-faq-item[open] .product-faq-q::after {
+  content: '−';
+  color: var(--color-accent);
+}
+
+.product-faq-a {
+  padding: 0 var(--space-lg) var(--space-lg) calc(var(--space-lg) + 32px);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+/* --- Product Page: Rich Description --- */
+.product-rich-desc p:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .product-toc {
+    gap: 4px;
+    padding: var(--space-sm);
+  }
+  .product-toc-item {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+}

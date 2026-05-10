@@ -1,5 +1,5 @@
 import prisma from '@/lib/db';
-import { generateCategoryMeta, SITE_URL } from '@/lib/seo';
+import { generateCategoryMeta, SITE_URL, SITE_NAME } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AddToRfqButton from '@/components/AddToRfqButton';
@@ -182,11 +182,25 @@ export default async function CategoryPage({ params, searchParams }) {
     })),
   };
 
+  // JSON-LD CollectionPage — tells Google this is a curated product listing
+  const collectionPageJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: category.seoTitle || `${category.name} - Electronic Components`,
+    description: category.seoDesc || `Browse ${category.name} electronic components at ${SITE_NAME}`,
+    url: `${SITE_URL}/category/${category.slug}`,
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: totalProducts,
+    },
+  };
+
   return (
     <div className="container" style={{ paddingTop: 'var(--space-lg)', paddingBottom: 'var(--space-3xl)' }}>
       {/* JSON-LD Structured Data */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPageJsonLd) }} />
 
       {/* Breadcrumb */}
       <nav className="breadcrumb" aria-label="Breadcrumb">
@@ -206,19 +220,24 @@ export default async function CategoryPage({ params, searchParams }) {
             <div className="filter-section">
               <h3 className="filter-title">Subcategories</h3>
               <div className="filter-list">
-                {category.children.map(child => (
+                {category.children.map(child => {
+                  // Recursive sum: L2 count = direct products + all L3 children products
+                  const totalProducts = (child._count?.products || 0)
+                    + (child.children || []).reduce((sum, gc) => sum + (gc._count?.products || 0), 0);
+                  return (
                   <Link key={child.slug} href={`/category/${child.slug}`} className="filter-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <CategoryIcon slug={child.slug} size={20} variant="badge" />
                       <span>{child.name}</span>
                     </span>
-                    {child._count?.products > 0 && (
+                    {totalProducts > 0 && (
                       <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                        {child._count.products.toLocaleString()}
+                        {totalProducts.toLocaleString()}
                       </span>
                     )}
                   </Link>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -291,14 +310,6 @@ export default async function CategoryPage({ params, searchParams }) {
               <p style={{ color: 'var(--color-text-muted)', marginTop: '4px', fontSize: '14px' }}>
                 {category.seoDesc || `Browse ${category.name} electronic components at FPGACenter.`}
               </p>
-              {page === 1 && (
-                <p style={{ color: 'var(--color-text-secondary)', marginTop: 'var(--space-sm)', fontSize: '13px', lineHeight: 1.7, maxWidth: '700px' }}>
-                  FPGACenter offers a comprehensive selection of {totalProducts.toLocaleString()} {category.name.toLowerCase()} from leading manufacturers worldwide. 
-                  Whether you need active production parts, hard-to-find obsolete components, or end-of-life {category.name.toLowerCase()}, 
-                  our global sourcing network ensures competitive pricing with no minimum order quantity. 
-                  All {category.name.toLowerCase()} undergo quality inspection per ISO 9001:2015 standards before shipment.
-                </p>
-              )}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
               <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>

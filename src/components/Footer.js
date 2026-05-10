@@ -1,13 +1,15 @@
-'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 
+/**
+ * Site Footer — Server Component (no 'use client')
+ *
+ * Previously this was a client component just for `usePathname()` to hide
+ * on admin routes. But admin has its own layout (src/app/admin/layout.js)
+ * that doesn't render the root layout's Header/Footer, so the check was
+ * redundant. Converting to Server Component ensures all 30+ internal links
+ * are present in the initial HTML for SEO crawlers.
+ */
 export default function Footer() {
-  const pathname = usePathname();
-
-  // Hide footer on admin routes
-  if (pathname?.startsWith('/admin')) return null;
-
   return (
     <footer className="footer" id="site-footer">
       <div className="container">
@@ -26,12 +28,12 @@ export default function Footer() {
 
           <div className="footer-col">
             <h4>Products</h4>
-            <Link href="/category/embedded">Embedded & Programmable</Link>
+            <Link href="/category/embedded">Embedded &amp; Programmable</Link>
             <Link href="/category/power-management">Power Management</Link>
             <Link href="/category/memory">Memory ICs</Link>
-            <Link href="/category/analog">Analog & Mixed Signal</Link>
+            <Link href="/category/analog">Analog &amp; Mixed Signal</Link>
             <Link href="/category/logic">Logic ICs</Link>
-            <Link href="/category/interface">Interface & Communication</Link>
+            <Link href="/category/interface">Interface &amp; Communication</Link>
             <Link href="/category">All Categories</Link>
           </div>
 
@@ -50,7 +52,7 @@ export default function Footer() {
             <Link href="/contact">Contact Us</Link>
             <Link href="/quality">Quality Assurance</Link>
             <Link href="/shipping">Shipping Info</Link>
-            <Link href="/terms">Terms & Conditions</Link>
+            <Link href="/terms">Terms &amp; Conditions</Link>
             <Link href="/privacy">Privacy Policy</Link>
           </div>
         </div>
@@ -67,4 +69,3 @@ export default function Footer() {
     </footer>
   );
 }
-

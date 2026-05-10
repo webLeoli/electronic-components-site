@@ -32,7 +32,8 @@ export async function generateMetadata({ params, searchParams }) {
   const ogTitle = `${manufacturer.name} Electronic Components | FPGACenter`;
   const description = `Buy ${manufacturer.name} electronic components at FPGACenter. Original parts, fast delivery, no MOQ.`;
   const baseUrl = `${SITE_URL}/manufacturer/${slug}`;
-  const canonicalUrl = page > 1 ? `${baseUrl}?page=${page}` : baseUrl;
+  // Canonical always points to the base URL — pagination is not an independent entity
+  const canonicalUrl = baseUrl;
 
   return {
     title,
@@ -110,10 +111,21 @@ export default async function ManufacturerPage({ params, searchParams }) {
     })),
   } : null;
 
+  // JSON-LD: Brand — helps Google understand manufacturer as a brand entity
+  const brandLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Brand',
+    name: manufacturer.name,
+    url: `${SITE_URL}/manufacturer/${manufacturer.slug}`,
+    ...(manufacturer.logoUrl ? { logo: manufacturer.logoUrl } : {}),
+    ...(manufacturer.description ? { description: manufacturer.description } : {}),
+  };
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       {itemListLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }} />}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(brandLd) }} />
     <div className="container" style={{ paddingTop: 'var(--space-lg)', paddingBottom: 'var(--space-3xl)' }}>
       {/* Breadcrumb */}
       <nav className="breadcrumb" aria-label="Breadcrumb">

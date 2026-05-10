@@ -35,7 +35,7 @@ export default function NotFound() {
           fontWeight: 800,
           marginBottom: 'var(--space-sm)',
         }}>
-          Part Not Found
+          Page Not Found
         </h1>
 
         <p style={{

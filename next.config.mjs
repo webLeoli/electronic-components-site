@@ -3,8 +3,13 @@ const nextConfig = {
   // Explicitly normalize URLs — redirect /path/ → /path (prevents duplicate content)
   trailingSlash: false,
 
-  // Image optimization
+  // Compression — enable gzip/brotli at the framework level
+  compress: true,
+
+  // Image optimization — AVIF > WebP > original, with aggressive caching
   images: {
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
     remotePatterns: [
       {
         protocol: 'https',
@@ -35,15 +40,29 @@ const nextConfig = {
         ],
       },
       {
-        // Static assets — long cache
+        // Static assets — immutable 1-year cache
         source: '/uploads/:path*',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
       {
-        // Robots + sitemap — short cache
-        source: '/(robots.txt|sitemap.xml)',
+        // Font files — long cache (they never change)
+        source: '/:path*.woff2',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        // Icons & manifest — medium cache
+        source: '/(icon-:size*|manifest.webmanifest|favicon.ico)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400, s-maxage=604800' },
+        ],
+      },
+      {
+        // Robots + sitemap — short cache (revalidate hourly)
+        source: '/(robots.txt|sitemap.xml|sitemap:path*)',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=3600, s-maxage=3600' },
         ],

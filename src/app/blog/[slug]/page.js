@@ -213,20 +213,29 @@ export default async function BlogPostPage({ params }) {
     });
   }
 
-  // Schema.org Article
+  // Schema.org TechArticle — more precise than generic Article for electronics content.
+  // Enables rich results for technical how-to/guide queries.
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    '@type': 'TechArticle',
     headline: post.title,
     description: post.seoDesc || post.excerpt || '',
     url: `${SITE_URL}/blog/${post.slug}`,
     datePublished: post.publishedAt?.toISOString(),
     dateModified: post.updatedAt?.toISOString(),
-    author: { '@type': 'Organization', name: post.author || SITE_NAME },
+    author: { '@type': 'Organization', name: post.author || SITE_NAME, url: SITE_URL },
     publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL, logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon-512.png` } },
     mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/blog/${post.slug}` },
     image: post.coverImage || `${SITE_URL}/og-image.png`,
     wordCount: (post.content || '').split(/\s+/).length,
+    inLanguage: 'en',
+    ...(post.category ? { articleSection: post.category.name } : {}),
+    ...(post.seoKeywords ? { keywords: post.seoKeywords } : {}),
+    // Speakable — tells Google Assistant which parts to read aloud
+    speakable: {
+      '@type': 'SpeakableSpecification',
+      cssSelector: ['.blog-article-cover + *', 'h1', '.blog-meta'],
+    },
   };
 
   const breadcrumbLd = {
@@ -282,7 +291,7 @@ export default async function BlogPostPage({ params }) {
               {/* Cover Image */}
               {post.coverImage && (
                 <div className="blog-article-cover">
-                  <img src={post.coverImage} alt={post.title} loading="lazy" />
+                  <img src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" />
                 </div>
               )}
 

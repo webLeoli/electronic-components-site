@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
+import { computeQualityScore, isIndexable } from '@/lib/quality-score';
 
 // GET: List products with search/pagination
 export async function GET(request) {
@@ -66,7 +67,15 @@ export async function POST(request) {
         imageUrl: data.imageUrl || null,
       },
     });
-    return NextResponse.json(product, { status: 201 });
+
+    // Auto-compute quality score for new product
+    const qResult = computeQualityScore(product);
+    const scored = await prisma.product.update({
+      where: { id: product.id },
+      data: { qualityScore: qResult.score, indexable: isIndexable(qResult.score) },
+    });
+
+    return NextResponse.json(scored, { status: 201 });
   } catch (e) {
     if (e.code === 'P2002') return NextResponse.json({ error: 'Part number already exists' }, { status: 409 });
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -81,27 +90,34 @@ export async function PUT(request) {
     const data = await request.json();
     if (!data.id) return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
 
+    // Whitelist of fields that pass through directly
+    const STRING_FIELDS = [
+      'manufacturer', 'description', 'categoryId', 'packageType',
+      'mountType', 'status', 'leadTime', 'specs', 'datasheet', 'imageUrl',
+    ];
     const updateData = {};
+    for (const field of STRING_FIELDS) {
+      if (data[field] !== undefined) updateData[field] = data[field];
+    }
+    // Special-case fields requiring transformation
     if (data.partNumber !== undefined) updateData.partNumber = data.partNumber.trim();
-    if (data.manufacturer !== undefined) updateData.manufacturer = data.manufacturer;
-    if (data.description !== undefined) updateData.description = data.description;
-    if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
-    if (data.packageType !== undefined) updateData.packageType = data.packageType;
-    if (data.mountType !== undefined) updateData.mountType = data.mountType;
-    if (data.status !== undefined) updateData.status = data.status;
     if (data.minPrice !== undefined) updateData.minPrice = data.minPrice ? parseFloat(data.minPrice) : null;
     if (data.stock !== undefined) updateData.stock = parseInt(data.stock);
     if (data.moq !== undefined) updateData.moq = parseInt(data.moq);
-    if (data.leadTime !== undefined) updateData.leadTime = data.leadTime;
-    if (data.specs !== undefined) updateData.specs = data.specs;
-    if (data.datasheet !== undefined) updateData.datasheet = data.datasheet;
-    if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
 
     const product = await prisma.product.update({
       where: { id: data.id },
       data: updateData,
     });
-    return NextResponse.json(product);
+
+    // Auto-recompute quality score after update
+    const qResult = computeQualityScore(product);
+    const scored = await prisma.product.update({
+      where: { id: product.id },
+      data: { qualityScore: qResult.score, indexable: isIndexable(qResult.score) },
+    });
+
+    return NextResponse.json(scored);
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

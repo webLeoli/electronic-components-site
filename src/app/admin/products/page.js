@@ -299,14 +299,15 @@ export default function AdminProductsPage() {
                 <th>Status</th>
                 <th>Stock</th>
                 <th>Price</th>
+                <th style={{ width: '80px' }}>Quality</th>
                 <th style={{ width: '100px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} className="admin-td-center">Loading...</td></tr>
+                <tr><td colSpan={10} className="admin-td-center">Loading...</td></tr>
               ) : products.length === 0 ? (
-                <tr><td colSpan={9} className="admin-td-center">No products found</td></tr>
+                <tr><td colSpan={10} className="admin-td-center">No products found</td></tr>
               ) : products.map(p => (
                 <tr key={p.id}>
                   {/* Image/Icon Column */}
@@ -333,6 +334,23 @@ export default function AdminProductsPage() {
                   <td><span className={`admin-badge-sm status-${p.status}`}>{p.status}</span></td>
                   <td>{p.stock?.toLocaleString()}</td>
                   <td>{p.minPrice ? `$${p.minPrice.toFixed(2)}` : 'RFQ'}</td>
+                  <td>
+                    {(() => {
+                      const score = p.qualityScore || 0;
+                      const tier = score >= 70 ? 'gold' : score >= 45 ? 'silver' : score >= 20 ? 'bronze' : 'noindex';
+                      const colors = { gold: '#22c55e', silver: '#3b82f6', bronze: '#eab308', noindex: '#ef4444' };
+                      const emojis = { gold: '🥇', silver: '🥈', bronze: '🥉', noindex: '⛔' };
+                      return (
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '3px',
+                          fontSize: '11px', fontWeight: 600, color: colors[tier],
+                        }}>
+                          {emojis[tier]} {score}
+                          {p.indexable && <span style={{ color: '#22c55e', marginLeft: '2px' }}>•</span>}
+                        </span>
+                      );
+                    })()}
+                  </td>
                   <td>
                     <div className="admin-actions">
                       <button className="admin-btn-sm admin-btn-primary" onClick={() => openEditor(p)}>Edit</button>

@@ -8,11 +8,9 @@ export async function generateMetadata({ searchParams }) {
   const page = Math.max(1, parseInt(sp?.page) || 1);
   const categorySlug = sp?.category || '';
   
-  const suffix = [];
-  if (page > 1) suffix.push(`page=${page}`);
-  if (categorySlug) suffix.push(`category=${categorySlug}`);
-  const qs = suffix.length > 0 ? `?${suffix.join('&')}` : '';
-  const canonicalUrl = `${SITE_URL}/blog${qs}`;
+  // Canonical always points to the base /blog URL — category filters and pagination
+  // are faceted views of the same page, not independent canonical entities.
+  const canonicalUrl = `${SITE_URL}/blog`;
   const title = page > 1 ? `Technical Articles & Guides - Page ${page}` : 'Technical Articles & Guides';
 
   return {

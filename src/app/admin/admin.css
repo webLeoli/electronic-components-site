@@ -2,6 +2,14 @@
    FPGACENTER ADMIN PANEL STYLESHEET
    ========================================== */
 
+/* Hide site-wide header, footer, and floating elements inside admin pages.
+   These Server Components render in the root layout's HTML but are irrelevant
+   in admin context. Hiding via CSS preserves their SSR output for SEO on
+   public pages while keeping admin UI clean. */
+.header,
+#site-footer,
+.rfq-float { display: none !important; }
+
 /* Admin Layout */
 .admin-layout {
   display: flex;

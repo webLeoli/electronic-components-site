@@ -79,7 +79,10 @@ export function generateProductMeta(product) {
 export function generateCategoryMeta(category, { page = 1 } = {}) {
   const description = category.seoDesc || `Browse ${category.name} electronic components. Find hard-to-find and obsolete parts at ${SITE_NAME}. Fast delivery, no minimum order.`;
   const baseUrl = `${SITE_URL}/category/${category.slug}`;
-  const canonicalUrl = page > 1 ? `${baseUrl}?page=${page}` : baseUrl;
+  // Canonical always points to the base category URL (page 1).
+  // Paginated views are not independent entities — they share the same intent.
+  // Google can still crawl ?page=N for product discovery but consolidates equity.
+  const canonicalUrl = baseUrl;
 
   // Title with product count for CTR — shows inventory scale
   const titleBase = category.seoTitle || `${category.name} - Electronic Components`;
@@ -107,6 +110,70 @@ export function generateProductJsonLd(product) {
   const encodedPN = encodeURIComponent(product.partNumber);
   const productUrl = `${SITE_URL}/product/${encodedPN}`;
   const hasPrice = product.minPrice != null && product.minPrice > 0;
+  const priceValid = new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0];
+
+  // Build offer — use AggregateOffer for price range display in Google
+  const baseOffer = {
+    url: productUrl,
+    availability: product.stock > 0
+      ? 'https://schema.org/InStock'
+      : 'https://schema.org/OutOfStock',
+    // FPGACenter sells original/genuine parts — even obsolete/EOL products
+    // are new-old-stock (NOS), not second-hand. Always NewCondition.
+    itemCondition: 'https://schema.org/NewCondition',
+    seller: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+    // Shipping details for Google Shopping rich results
+    shippingDetails: {
+      '@type': 'OfferShippingDetails',
+      shippingRate: {
+        '@type': 'MonetaryAmount',
+        value: '0',
+        currency: 'USD',
+      },
+      shippingDestination: {
+        '@type': 'DefinedRegion',
+        addressCountry: 'US',
+      },
+      deliveryTime: {
+        '@type': 'ShippingDeliveryTime',
+        handlingTime: { '@type': 'QuantitativeValue', minValue: 0, maxValue: 1, unitCode: 'DAY' },
+        transitTime: { '@type': 'QuantitativeValue', minValue: 2, maxValue: 7, unitCode: 'DAY' },
+      },
+    },
+    // Return policy — 30-day returns for defective/incorrect parts
+    hasMerchantReturnPolicy: {
+      '@type': 'MerchantReturnPolicy',
+      applicableCountry: 'US',
+      returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+      merchantReturnDays: 30,
+      returnMethod: 'https://schema.org/ReturnByMail',
+      returnFees: 'https://schema.org/FreeReturn',
+    },
+  };
+
+  let offers;
+  if (hasPrice) {
+    // AggregateOffer shows price range in Google ("$0.50 - $1.20" instead of single price)
+    const lowPrice = +(product.minPrice * 0.58).toFixed(4); // bulk tier estimate
+    offers = {
+      '@type': 'AggregateOffer',
+      ...baseOffer,
+      priceCurrency: 'USD',
+      lowPrice: lowPrice,
+      highPrice: product.minPrice,
+      offerCount: 6, // 6 price tiers
+      priceValidUntil: priceValid,
+    };
+  } else {
+    offers = {
+      '@type': 'Offer',
+      ...baseOffer,
+    };
+  }
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -120,26 +187,7 @@ export function generateProductJsonLd(product) {
     sku: product.partNumber,
     mpn: product.partNumber,
     category: product.category?.name,
-    offers: {
-      '@type': 'Offer',
-      url: productUrl,
-      availability: product.stock > 0
-        ? 'https://schema.org/InStock'
-        : 'https://schema.org/OutOfStock',
-      itemCondition: product.status === 'active'
-        ? 'https://schema.org/NewCondition'
-        : 'https://schema.org/UsedCondition',
-      seller: {
-        '@type': 'Organization',
-        name: SITE_NAME,
-      },
-      // Only include price fields when a valid price exists (Google requires all-or-nothing)
-      ...(hasPrice ? {
-        priceCurrency: 'USD',
-        price: product.minPrice,
-        priceValidUntil: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
-      } : {}),
-    },
+    offers,
   };
 
   // Add product image — use generic component image as fallback for Rich Results

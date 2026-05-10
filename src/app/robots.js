@@ -15,16 +15,27 @@ export default async function robots() {
     // If DB fails, fallback to default
   }
 
-  // If admin has set a custom robots.txt, parse it into the Next.js format
-  // Otherwise use the default structured config
+  // If admin has set a custom robots.txt, validate and use it.
+  // SAFETY: Reject if it contains a blanket "Disallow: /" — that kills the entire site.
+  // A single DB typo or bad migration should never be able to de-index everything.
   if (customContent) {
-    // Return as plain text response for custom content
-    return new Response(customContent, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
-      },
-    });
+    const hasBlanketBlock = customContent
+      .split('\n')
+      .some(line => /^\s*Disallow:\s*\/\s*$/i.test(line));
+
+    if (hasBlanketBlock) {
+      console.error(
+        '[robots.txt] BLOCKED: Custom robots.txt from DB contains "Disallow: /" which would block the entire site. Falling back to default rules. Fix the AdminSetting record with key "robots_txt".'
+      );
+      // Fall through to default rules below
+    } else {
+      return new Response(customContent, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+        },
+      });
+    }
   }
 
   return {
@@ -41,7 +52,9 @@ export default async function robots() {
           '/*?*status=',    // Lifecycle filter = low SEO value
           '/*?*mount=',     // Mount filter = low SEO value
           '/*?*stock=',     // Stock filter = low SEO value
-          '/*?*page=',      // Pagination pages = thin content
+          // NOTE: ?page= is intentionally ALLOWED — pagination pages contain
+          // unique products that need to be discovered. Dedup is handled via
+          // canonical pointing to page 1 for all paginated views.
           // NOTE: ?mfr= is intentionally ALLOWED — manufacturer×category
           // pages are high-value SEO landing pages
         ],

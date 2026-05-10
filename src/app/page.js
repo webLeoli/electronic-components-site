@@ -41,13 +41,14 @@ const FEATURES = [
 const getHomeData = unstable_cache(
   async () => {
     try {
-      const [categories, popularProducts, manufacturers, stats] = await Promise.all([
-        // Top-level categories with product counts
+      const [allCategories, popularProducts, manufacturers, stats] = await Promise.all([
+        // All categories with direct product counts (for recursive summing)
         prisma.category.findMany({
-          where: { parentId: null },
-          select: { name: true, slug: true, icon: true, _count: { select: { products: true } } },
-          orderBy: { sortOrder: 'asc' },
-          take: 12,
+          select: {
+            id: true, name: true, slug: true, icon: true,
+            parentId: true, sortOrder: true,
+            _count: { select: { products: true } },
+          },
         }),
         // Popular products (highest stock, active)
         prisma.product.findMany({
@@ -72,8 +73,37 @@ const getHomeData = unstable_cache(
         ]),
       ]);
 
+      // Build recursive product count for L1 categories
+      // L1 → sum of (L2 children → sum of L3 children direct product counts)
+      const byParent = new Map();
+      for (const cat of allCategories) {
+        const pid = cat.parentId || '__root__';
+        if (!byParent.has(pid)) byParent.set(pid, []);
+        byParent.get(pid).push(cat);
+      }
+
+      function sumProducts(catId) {
+        const cat = allCategories.find(c => c.id === catId);
+        let total = cat?._count?.products || 0;
+        const children = byParent.get(catId) || [];
+        for (const child of children) {
+          total += sumProducts(child.id);
+        }
+        return total;
+      }
+
+      const rootCategories = (byParent.get('__root__') || [])
+        .sort((a, b) => (a.sortOrder ?? 99) - (b.sortOrder ?? 99))
+        .slice(0, 12)
+        .map(cat => ({
+          name: cat.name,
+          slug: cat.slug,
+          icon: cat.icon,
+          _count: { products: sumProducts(cat.id) },
+        }));
+
       return {
-        categories: categories.length > 0 ? categories : FALLBACK_CATEGORIES,
+        categories: rootCategories.length > 0 ? rootCategories : FALLBACK_CATEGORIES,
         popularProducts: popularProducts.length > 0 ? popularProducts : null,
         manufacturers: manufacturers.length > 0 ? manufacturers : null,
         totalProducts: stats[0] || 10000,
@@ -244,7 +274,11 @@ export default async function HomePage() {
               >
                 <div className="category-icon"><CategoryIcon slug={cat.slug} size={48} variant="card" /></div>
                 <h3>{cat.name}</h3>
-                <div className="count">{formatCount(cat._count?.products || 0)}</div>
+                <div className="count">
+                  {(cat._count?.products || 0) > 0
+                    ? `${formatCount(cat._count.products)} parts`
+                    : 'Browse →'}
+                </div>
               </Link>
             ))}
           </div>

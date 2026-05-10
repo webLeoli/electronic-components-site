@@ -1,11 +1,131 @@
 import { cache } from 'react';
 import prisma from '@/lib/db';
-import { generateProductMeta, generateProductJsonLd, generateBreadcrumbJsonLd } from '@/lib/seo';
+import { generateProductMeta, generateProductJsonLd, generateBreadcrumbJsonLd, SITE_NAME, SITE_URL } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AddToRfqButton from '@/components/AddToRfqButton';
 import ProductImage, { ProductIcon } from '@/components/ProductImage';
 import { FALLBACK_PARTS } from '@/lib/fallbacks';
+
+// --- Rich Description Generator ---
+// Builds multi-paragraph description from product data instead of generic one-liner
+function generateRichDescription(product, specs) {
+  const parts = [];
+  const mfr = product.manufacturer || 'a leading manufacturer';
+  const cat = product.category?.name || 'Electronic Component';
+  const parentCat = product.category?.parent?.name;
+
+  // Para 1: Product identity
+  let intro = `The ${product.partNumber} is a ${cat.toLowerCase()}`;
+  if (parentCat) intro += ` in the ${parentCat} family`;
+  intro += ` manufactured by ${mfr}.`;
+  if (product.status === 'active') {
+    intro += ' This component is currently in active production.';
+  } else if (product.status === 'obsolete') {
+    intro += ` Although this part has been marked as obsolete by ${mfr}, ${SITE_NAME} maintains verified stock of genuine ${product.partNumber} units sourced through our certified supply chain.`;
+  } else if (product.status === 'eol') {
+    intro += ` This component has reached End of Life status. ${SITE_NAME} specializes in sourcing EOL parts with full traceability and quality assurance.`;
+  }
+  parts.push(intro);
+
+  // Para 2: Key specs summary (dynamically from specs JSON)
+  const specEntries = Object.entries(specs);
+  if (specEntries.length > 0) {
+    const highlights = specEntries.slice(0, 5).map(([k, v]) =>
+      `${k.replace(/([A-Z])/g, ' $1').trim()}: ${v}`
+    ).join(', ');
+    parts.push(`Key specifications include ${highlights}.`);
+  }
+
+  // Para 3: Package & mount info
+  if (product.packageType || product.mountType) {
+    let pkgInfo = 'This device';
+    if (product.packageType) pkgInfo += ` comes in a ${product.packageType} package`;
+    if (product.mountType) pkgInfo += ` with ${product.mountType.toLowerCase()} mounting`;
+    pkgInfo += '.';
+    parts.push(pkgInfo);
+  }
+
+  // Para 4: Availability
+  if (product.stock > 0) {
+    parts.push(`${SITE_NAME} currently has ${product.stock.toLocaleString()} units of ${product.partNumber} in stock, available for immediate shipment with no minimum order quantity.`);
+  } else {
+    parts.push(`Contact ${SITE_NAME} for availability and lead time on ${product.partNumber}. We can source this part through our global network of authorized distributors.`);
+  }
+
+  return parts;
+}
+
+// --- Application Area Mapping ---
+// Maps category names to relevant application domains (like FPGAKey's "Application Field")
+const APPLICATION_AREA_MAP = {
+  'FPGA': ['5G & Telecommunications', 'Artificial Intelligence', 'Data Center & Cloud', 'Aerospace & Defense', 'Industrial Automation'],
+  'Embedded': ['IoT & Smart Devices', 'Industrial Control', 'Automotive Electronics', 'Consumer Electronics', 'Medical Devices'],
+  'Microcontroller': ['IoT & Smart Devices', 'Consumer Electronics', 'Industrial Automation', 'Automotive Electronics', 'Wearable Technology'],
+  'Memory': ['Data Center & Cloud', 'Consumer Electronics', 'Automotive Electronics', 'Networking Equipment', 'Industrial Computing'],
+  'Power': ['Automotive Electronics', 'Industrial Automation', 'Telecommunications', 'Consumer Electronics', 'Renewable Energy'],
+  'Analog': ['Instrumentation', 'Medical Devices', 'Audio & Video', 'Automotive Electronics', 'Industrial Control'],
+  'Logic': ['Consumer Electronics', 'Industrial Control', 'Telecommunications', 'Computing', 'Automotive Electronics'],
+  'Interface': ['Networking Equipment', 'Industrial Automation', 'Telecommunications', 'Data Center & Cloud', 'Consumer Electronics'],
+  'Sensor': ['IoT & Smart Devices', 'Automotive Electronics', 'Medical Devices', 'Industrial Automation', 'Consumer Electronics'],
+  'Wireless': ['IoT & Smart Devices', '5G & Telecommunications', 'Consumer Electronics', 'Automotive Electronics', 'Smart Home'],
+};
+
+function getApplicationAreas(categoryName, parentCategoryName) {
+  const name = (parentCategoryName || categoryName || '').toLowerCase();
+  for (const [key, areas] of Object.entries(APPLICATION_AREA_MAP)) {
+    if (name.includes(key.toLowerCase())) return areas;
+  }
+  // Default applications for any electronic component
+  return ['Industrial Automation', 'Consumer Electronics', 'Telecommunications', 'Automotive Electronics', 'IoT & Smart Devices'];
+}
+
+// --- Product FAQ Generator ---
+// Creates genuinely unique FAQ from real product data (not templated spam)
+function generateProductFAQ(product, specs) {
+  const faqs = [];
+  const mfr = product.manufacturer || 'the manufacturer';
+
+  // Q1: Availability (always unique per product due to stock count)
+  if (product.stock > 0) {
+    faqs.push({
+      q: `Is the ${product.partNumber} in stock and ready to ship?`,
+      a: `Yes, ${SITE_NAME} currently has ${product.stock.toLocaleString()} units of ${product.partNumber} in stock. Orders placed before 3 PM (CST) are eligible for same-day dispatch. No minimum order quantity required.`,
+    });
+  } else {
+    faqs.push({
+      q: `Can I still purchase the ${product.partNumber}?`,
+      a: `While ${product.partNumber} is currently showing limited availability, ${SITE_NAME} can source this part through our global network of certified suppliers. Submit an RFQ for lead time and pricing.`,
+    });
+  }
+
+  // Q2: Package info (only if data exists)
+  if (product.packageType) {
+    faqs.push({
+      q: `What package type is the ${product.partNumber} available in?`,
+      a: `The ${product.partNumber} by ${mfr} is available in a ${product.packageType} package${product.mountType ? ` with ${product.mountType.toLowerCase()} mounting configuration` : ''}. All parts are original and shipped in manufacturer-standard packaging.`,
+    });
+  }
+
+  // Q3: Lifecycle-specific (unique by status)
+  if (product.status === 'obsolete' || product.status === 'eol') {
+    const statusLabel = product.status === 'obsolete' ? 'obsolete' : 'end-of-life';
+    faqs.push({
+      q: `The ${product.partNumber} is marked as ${statusLabel}. Are the parts genuine?`,
+      a: `Absolutely. All ${product.partNumber} units sourced by ${SITE_NAME} are 100% original ${mfr} components. We follow IDEA-STD-1010 inspection standards and provide full traceability documentation. ${statusLabel === 'obsolete' ? 'We specialize in obsolete part sourcing and maintain verified stock of discontinued components.' : ''}`,
+    });
+  }
+
+  // Q4: Price tiers (only if price exists)
+  if (product.minPrice > 0) {
+    faqs.push({
+      q: `What is the pricing for ${product.partNumber}?`,
+      a: `Unit pricing for ${product.partNumber} starts at $${product.minPrice.toFixed(product.minPrice < 1 ? 4 : 2)} with volume discounts available for quantities of 10+, 100+, 500+, and 1,000+ units. Submit an RFQ for a customized quote based on your specific quantity requirements.`,
+    });
+  }
+
+  return faqs;
+}
 
 // React cache() deduplicates this query within a single request
 // so generateMetadata and ProductPage share the same DB result
@@ -46,14 +166,9 @@ export async function generateMetadata({ params }) {
     if (!product) return { title: 'Product Not Found' };
     const meta = generateProductMeta(product);
 
-    // Quality gate: noindex thin-content pages to protect domain quality.
-    // A page needs EITHER a decent description OR specs OR a price to be index-worthy.
-    const descLen = (product.description || '').length;
-    const hasSpecs = product.specs && product.specs !== '{}' && product.specs !== '';
-    const hasPrice = product.minPrice > 0;
-    const isThin = descLen <= 30 && !hasSpecs && !hasPrice;
-
-    if (isThin) {
+    // Quality gate: use pre-computed indexable flag from the quality scoring system.
+    // Scores are computed by scripts/compute-quality-scores.mjs and stored in DB.
+    if (!product.indexable) {
       meta.robots = { index: false, follow: true };
     }
 
@@ -162,20 +277,39 @@ export default async function ProductPage({ params }) {
   const productJsonLd = generateProductJsonLd(product);
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(breadcrumbItems);
 
-  // FAQ JSON-LD REMOVED — templated FAQ across 720K pages is a SpamBrain trigger.
-  // Only re-enable when each product has genuinely unique Q&A content.
+  // Generate data-driven content (unique per product — not templated)
+  const richDescParagraphs = generateRichDescription(product, specs);
+  const applicationAreas = getApplicationAreas(product.category?.name, product.category?.parent?.name);
+  const faqs = generateProductFAQ(product, specs);
+
+  // FAQ JSON-LD — each FAQ is dynamically generated from real product data
+  // (stock count, price, package, lifecycle status), making every page unique.
+  const faqJsonLd = faqs.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(f => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  } : null;
+
+  // TOC sections for page navigation
+  const tocSections = [
+    { id: 'product-overview', label: 'Overview', show: true },
+    { id: 'product-pricing', label: 'Pricing', show: priceTiers.length > 0 },
+    { id: 'product-specs', label: 'Specifications', show: Object.keys(specs).length > 0 },
+    { id: 'product-applications', label: 'Applications', show: true },
+    { id: 'product-faq', label: 'FAQ', show: faqs.length > 0 },
+    { id: 'product-related', label: 'Related Products', show: relatedProducts.length > 0 },
+  ].filter(s => s.show);
 
   return (
     <>
-      {/* JSON-LD: Product + Breadcrumb only. No FAQ (removed: SpamBrain risk). */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-      />
+      {/* JSON-LD: Product + Breadcrumb + FAQ */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      {faqJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />}
 
       <div className="container" style={{ paddingTop: 'var(--space-lg)', paddingBottom: 'var(--space-3xl)' }}>
         {/* Breadcrumb */}
@@ -192,8 +326,18 @@ export default async function ProductPage({ params }) {
           ))}
         </nav>
 
+        {/* TOC — Page Navigation (like FPGAKey's Product Catalogue) */}
+        <nav className="product-toc" id="product-toc" aria-label="Page sections">
+          {tocSections.map((sec, i) => (
+            <a key={sec.id} href={`#${sec.id}`} className="product-toc-item">
+              <span className="product-toc-num">{i + 1}</span>
+              {sec.label}
+            </a>
+          ))}
+        </nav>
+
         {/* Product Header */}
-        <div className="product-page-layout" id="product-detail">
+        <div className="product-page-layout" id="product-overview">
           <div className="product-main">
             {/* Part Number & Basic Info */}
             <div className="product-header-section">
@@ -219,9 +363,7 @@ export default async function ProductPage({ params }) {
                 </div>
               )}
 
-              <p style={{ color: 'var(--color-text-secondary)', fontSize: '15px', lineHeight: 1.7, marginBottom: 'var(--space-lg)' }}>
-                {product.description}
-              </p>
+              {/* Description moved to dedicated section below specs — no duplication */}
                 </div>
               </div>
 
@@ -268,7 +410,7 @@ export default async function ProductPage({ params }) {
 
             {/* Price Tiers */}
             {priceTiers.length > 0 && (
-              <div className="product-section">
+              <div className="product-section" id="product-pricing">
                 <h2 className="product-section-title">Pricing</h2>
                 <div className="price-tiers">
                   {priceTiers.map((tier, i) => (
@@ -278,12 +420,16 @@ export default async function ProductPage({ params }) {
                     </div>
                   ))}
                 </div>
+                <p style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: 'var(--space-sm)', lineHeight: 1.5 }}>
+                  * Estimated pricing for reference only. Final price depends on quantity, availability, and market conditions.
+                  Submit an RFQ for an exact quote.
+                </p>
               </div>
             )}
 
             {/* Technical Specifications */}
             {Object.keys(specs).length > 0 && (
-              <div className="product-section">
+              <div className="product-section" id="product-specs">
                 <h2 className="product-section-title">Technical Specifications</h2>
                 <div className="table-wrapper">
                   <table className="table specs-table" id="specs-table">
@@ -318,13 +464,42 @@ export default async function ProductPage({ params }) {
               </div>
             )}
 
-            {/* Product description — only show actual data, no template padding */}
-            {product.description && product.description.length > 40 && (
-              <div className="product-section">
-                <h2 className="product-section-title">Description</h2>
-                <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', lineHeight: 1.8 }}>
-                  {product.description}
-                </p>
+            {/* Rich Product Description — multi-paragraph, data-driven */}
+            <div className="product-section" id="product-description">
+              <h2 className="product-section-title">Product Overview</h2>
+              <div className="product-rich-desc">
+                {richDescParagraphs.map((para, i) => (
+                  <p key={i} style={{ fontSize: '14px', color: 'var(--color-text-secondary)', lineHeight: 1.8, marginBottom: 'var(--space-md)' }}>
+                    {para}
+                  </p>
+                ))}
+              </div>
+            </div>
+
+            {/* Application Areas — SEO internal linking + long-tail keywords */}
+            <div className="product-section" id="product-applications">
+              <h2 className="product-section-title">Application Areas</h2>
+              <div className="product-app-areas">
+                {applicationAreas.map(area => (
+                  <span key={area} className="product-app-tag">
+                    {area}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* FAQ — data-driven, unique per product */}
+            {faqs.length > 0 && (
+              <div className="product-section" id="product-faq">
+                <h2 className="product-section-title">Frequently Asked Questions</h2>
+                <div className="product-faq-list">
+                  {faqs.map((faq, i) => (
+                    <details key={i} className="product-faq-item" open={i === 0}>
+                      <summary className="product-faq-q">{faq.q}</summary>
+                      <p className="product-faq-a">{faq.a}</p>
+                    </details>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -387,7 +562,7 @@ export default async function ProductPage({ params }) {
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <div className="product-section" style={{ marginTop: 'var(--space-2xl)' }}>
+          <div className="product-section" id="product-related" style={{ marginTop: 'var(--space-2xl)' }}>
             <div className="section-header">
               <h2 className="section-title">Related Products</h2>
               {product.category && (

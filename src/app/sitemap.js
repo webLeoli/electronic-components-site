@@ -19,14 +19,9 @@ const PRODUCTS_PER_SITEMAP = 5000;
 export async function generateSitemaps() {
   let productCount = 0;
   try {
-    // Only count products worth submitting to Google:
-    // Must have price (real commercial value) AND be active/lastbuy status
-    // Obsolete products get included after Step B (description enrichment)
+    // Only count products marked as indexable by the quality scoring system
     productCount = await prisma.product.count({
-      where: {
-        minPrice: { gt: 0 },
-        status: { in: ['active', 'lastbuy'] },
-      },
+      where: { indexable: true },
     });
   } catch {}
 
@@ -62,18 +57,18 @@ export default async function sitemap({ id }) {
     let categoryPages = [];
     try {
       const categories = await prisma.category.findMany({
-        select: { slug: true, parentId: true },
+        select: { id: true, slug: true, parentId: true },
       });
-      // Determine depth: null parentId = L1, else check parent
-      const parentIds = new Set(categories.filter(c => c.parentId === null).map(c => c.slug));
+      // Build a lookup map for parentId → category
+      const categoryById = new Map(categories.map(c => [c.id, c]));
       categoryPages = categories.map(cat => {
-        // L1: no parent, L2: parent is L1, L3: parent is L2
-        let priority = 0.8; // L3 default
-        if (!cat.parentId) priority = 0.9; // L1
-        else {
-          const parentSlug = categories.find(c => c.slug !== cat.slug && !c.parentId);
-          // Simple: if parentId exists but parent has no parent, it's L2
-          priority = 0.85;
+        // L1: no parent → 0.9, L2: parent is L1 → 0.85, L3: parent is L2 → 0.8
+        let priority = 0.8;
+        if (!cat.parentId) {
+          priority = 0.9; // L1
+        } else {
+          const parent = categoryById.get(cat.parentId);
+          priority = (parent && !parent.parentId) ? 0.85 : 0.8; // L2 vs L3
         }
         return {
           url: `${SITE_URL}/category/${cat.slug}`,
@@ -141,28 +136,25 @@ export default async function sitemap({ id }) {
   }
 
   // Sitemap 1..N: Product pages batch
-  // Only submit quality-gated products to Google.
-  // Sort by stock DESC so in-stock products get crawled first.
+  // Only submit products marked as indexable by the quality scoring system.
+  // Sort by qualityScore DESC so highest-quality pages are in earlier sitemaps.
   const numericId = typeof id === 'number' ? id : parseInt(id, 10);
   const batchIndex = numericId - 1;
   if (batchIndex < 0 || isNaN(batchIndex)) return [];
   let productPages = [];
   try {
     const products = await prisma.product.findMany({
-      where: {
-        minPrice: { gt: 0 },
-        status: { in: ['active', 'lastbuy'] },
-      },
-      select: { partNumber: true, updatedAt: true, stock: true },
-      orderBy: [{ stock: 'desc' }, { id: 'asc' }],
+      where: { indexable: true },
+      select: { partNumber: true, updatedAt: true, qualityScore: true },
+      orderBy: [{ qualityScore: 'desc' }, { id: 'asc' }],
       skip: batchIndex * PRODUCTS_PER_SITEMAP,
       take: PRODUCTS_PER_SITEMAP,
     });
     productPages = products.map(p => ({
       url: `${SITE_URL}/product/${encodeURIComponent(p.partNumber)}`,
       lastModified: p.updatedAt || new Date(),
-      changeFrequency: p.stock > 0 ? 'weekly' : 'monthly',
-      priority: p.stock > 0 ? 0.7 : 0.5,
+      changeFrequency: p.qualityScore >= 70 ? 'weekly' : 'monthly',
+      priority: p.qualityScore >= 70 ? 0.8 : 0.6,
     }));
   } catch {}
 

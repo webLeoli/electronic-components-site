@@ -12,47 +12,53 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change
 const SESSION_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
- * Verify a session token. Returns { userId, role } or null.
- * Supports:
- *   - 4-part HMAC-signed tokens: userId:role:timestamp:hmac (preferred)
- *   - 3-part legacy unsigned tokens: userId:role:timestamp-random (backward compat)
+ * Verify a session token using Web Crypto API (Edge Runtime compatible).
+ * Only accepts 4-part HMAC-SHA256 signed tokens: userId:role:timestamp:hmac
+ * Returns { userId, role } or null.
  */
-function verifySessionToken(token) {
+async function verifySessionToken(token) {
   if (!token) return null;
   try {
     const parts = token.split(':');
-    if (parts.length < 3) return null;
+    // Reject anything that isn't a 4-part signed token
+    if (parts.length < 4) return null;
 
-    // Extract role and timestamp
+    const hmac = parts[parts.length - 1];
+    const payload = parts.slice(0, -1).join(':');
+
+    // Validate structure before crypto
+    if (!hmac || hmac.length !== 64) return null;
+    if (!/^\d+:(admin|editor|viewer):\d+$/.test(payload)) return null;
+
+    // Cryptographic HMAC-SHA256 verification using Web Crypto API
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(SESSION_SECRET),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    );
+    const sigBuf = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
+    const expectedHmac = Array.from(new Uint8Array(sigBuf))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    // Constant-time comparison to prevent timing attacks
+    if (hmac.length !== expectedHmac.length) return null;
+    let mismatch = 0;
+    for (let i = 0; i < hmac.length; i++) {
+      mismatch |= hmac.charCodeAt(i) ^ expectedHmac.charCodeAt(i);
+    }
+    if (mismatch !== 0) return null;
+
+    // Extract and validate fields
     const userId = parseInt(parts[0]);
     const role = parts[1];
     const timestamp = parseInt(parts[2]);
 
-    // Check session expiry
-    if (isNaN(timestamp) || Date.now() - timestamp > SESSION_MAX_AGE) {
-      return null;
-    }
-
-    // HMAC verification for 4-part signed tokens
-    if (parts.length >= 4) {
-      const hmac = parts[parts.length - 1];
-      const payload = parts.slice(0, -1).join(':');
-      // Edge runtime doesn't have Node crypto, use Web Crypto-compatible HMAC check
-      // For middleware, we do a simple hex comparison since we can't use timingSafeEqual
-      const encoder = new TextEncoder();
-      // Compute expected HMAC using Web Crypto SubtleCrypto (async not available in sync middleware)
-      // Fallback: use a simple string comparison here (middleware runs in edge, not Node)
-      // The actual cryptographic verification happens in admin-auth.js (Node runtime)
-      // Middleware serves as a first-pass gate; admin-auth.js is the definitive check
-      const expectedPayloadFormat = /^\d+:(admin|editor|viewer):\d+$/.test(payload);
-      if (!expectedPayloadFormat || !hmac || hmac.length !== 64) {
-        return null;
-      }
-    }
-
-    if (isNaN(userId) || !['admin', 'editor', 'viewer'].includes(role)) {
-      return null;
-    }
+    if (isNaN(userId) || isNaN(timestamp)) return null;
+    if (Date.now() - timestamp > SESSION_MAX_AGE) return null;
 
     return { userId, role };
   } catch {
@@ -60,13 +66,13 @@ function verifySessionToken(token) {
   }
 }
 
-export function middleware(request) {
+export async function proxy(request) {
   const { pathname } = request.nextUrl;
 
   // Only protect /admin/* routes (except login page)
   if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
     const sessionToken = request.cookies.get('admin_session')?.value;
-    const session = verifySessionToken(sessionToken);
+    const session = await verifySessionToken(sessionToken);
 
     if (!session) {
       const loginUrl = new URL('/admin/login', request.url);
@@ -93,7 +99,7 @@ export function middleware(request) {
   // Protect /api/admin/* (except auth endpoints)
   if (pathname.startsWith('/api/admin') && !pathname.startsWith('/api/admin/auth')) {
     const sessionToken = request.cookies.get('admin_session')?.value;
-    const session = verifySessionToken(sessionToken);
+    const session = await verifySessionToken(sessionToken);
 
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -121,5 +127,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/api/admin/:path*'],
+  matcher: ['/admin', '/admin/:path*', '/api/admin/:path*'],
 };

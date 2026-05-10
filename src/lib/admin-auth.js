@@ -5,7 +5,7 @@ import crypto from 'crypto';
  * Shared admin authentication helper for API routes.
  *
  * Token format: `userId:role:timestamp:hmac` (HMAC-SHA256 signed)
- * Falls back gracefully for legacy 3-part tokens (no hmac).
+ * Only 4-part signed tokens are accepted — unsigned tokens are rejected.
  */
 
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-in-production';
@@ -18,25 +18,22 @@ function verifyToken(token) {
   if (!token) return null;
   try {
     const parts = token.split(':');
-    // New format: userId:role:timestamp:hmac (4 parts)
-    if (parts.length >= 4) {
-      const hmac = parts[parts.length - 1];
-      const payload = parts.slice(0, -1).join(':');
-      const expectedHmac = crypto
-        .createHmac('sha256', SESSION_SECRET)
-        .update(payload)
-        .digest('hex');
-      // Use timingSafeEqual to prevent timing attacks
-      const hmacBuf = Buffer.from(hmac, 'hex');
-      const expectedBuf = Buffer.from(expectedHmac, 'hex');
-      if (hmacBuf.length !== expectedBuf.length) return null;
-      if (!crypto.timingSafeEqual(hmacBuf, expectedBuf)) return null;
-    }
-    // Accept 3-part legacy tokens (userId:role:timestamp-random)
-    if (parts.length >= 2) {
-      return { userId: parseInt(parts[0]), role: parts[1] };
-    }
-    return null;
+    // Require 4-part HMAC-signed format: userId:role:timestamp:hmac
+    if (parts.length < 4) return null;
+
+    const hmac = parts[parts.length - 1];
+    const payload = parts.slice(0, -1).join(':');
+    const expectedHmac = crypto
+      .createHmac('sha256', SESSION_SECRET)
+      .update(payload)
+      .digest('hex');
+    // Use timingSafeEqual to prevent timing attacks
+    const hmacBuf = Buffer.from(hmac, 'hex');
+    const expectedBuf = Buffer.from(expectedHmac, 'hex');
+    if (hmacBuf.length !== expectedBuf.length) return null;
+    if (!crypto.timingSafeEqual(hmacBuf, expectedBuf)) return null;
+
+    return { userId: parseInt(parts[0]), role: parts[1] };
   } catch {
     return null;
   }

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import prisma from '@/lib/db';
 import { SITE_NAME, SITE_URL, generateOrganizationJsonLd } from '@/lib/seo';
 
 export const metadata = {
@@ -28,23 +29,42 @@ const VALUES = [
   { icon: '⚡', title: 'Speed & Agility', desc: 'Same-day quoting and rapid fulfillment to keep your production lines running.' },
 ];
 
-const STATS = [
-  { value: '8+', label: 'Years in Business' },
-  { value: '10K+', label: 'Part Numbers Listed' },
-  { value: '500+', label: 'Manufacturers Covered' },
-  { value: '60+', label: 'Countries Served' },
-  { value: '5K+', label: 'Orders Fulfilled' },
-  { value: '99.2%', label: 'Customer Satisfaction' },
-];
+// Dynamic stats are fetched from DB; static stats are hardcoded
+function formatCount(n) {
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M+`;
+  if (n >= 1000) return `${Math.round(n / 1000).toLocaleString()}K+`;
+  return n.toLocaleString();
+}
 
-const CERTS = [
-  { name: 'ISO 9001:2015', desc: 'Quality Management System' },
-  { name: 'IDEA-STD-1010', desc: 'Component Inspection Standard' },
-  { name: 'ERAI Member', desc: 'Electronic Resellers Association' },
-  { name: 'ECIA Authorized', desc: 'Industry Association Member' },
-];
+export const revalidate = 3600;
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  // Fetch live counts so stats are consistent with homepage
+  let totalProducts = 10000;
+  let totalManufacturers = 500;
+  try {
+    [totalProducts, totalManufacturers] = await Promise.all([
+      prisma.product.count(),
+      prisma.manufacturer.count(),
+    ]);
+  } catch {}
+
+  const STATS = [
+    { value: '8+', label: 'Years in Business' },
+    { value: formatCount(totalProducts), label: 'Part Numbers Listed' },
+    { value: formatCount(totalManufacturers), label: 'Manufacturers Covered' },
+    { value: '60+', label: 'Countries Served' },
+    { value: '5K+', label: 'Orders Fulfilled' },
+    { value: '99.2%', label: 'Customer Satisfaction' },
+  ];
+
+  const CERTS = [
+    { name: 'ISO 9001:2015', desc: 'Quality Management System' },
+    { name: 'IDEA-STD-1010', desc: 'Component Inspection Standard' },
+    { name: 'ERAI Member', desc: 'Electronic Resellers Association' },
+    { name: 'ECIA Authorized', desc: 'Industry Association Member' },
+  ];
+
   const jsonLd = generateOrganizationJsonLd();
 
   const breadcrumbJsonLd = {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { getAdminSession } from '@/lib/admin-auth';
 
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-in-production';
 
@@ -123,24 +124,18 @@ export async function POST(request) {
   }
 }
 
-// GET: Get current user info from session
+// GET: Get current user info from session (uses shared HMAC verification)
 export async function GET(request) {
   try {
-    const sessionToken = request.cookies.get('admin_session')?.value;
-    if (!sessionToken) {
+    const session = getAdminSession(request);
+    if (!session) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const parts = sessionToken.split(':');
-    if (parts.length < 3) {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
-    }
-
-    const userId = parseInt(parts[0]);
-    const role = parts[1];
+    const { userId, role } = session;
 
     if (userId === 0) {
-      // Legacy mode
+      // Legacy master admin mode
       return NextResponse.json({ user: { id: 0, email: 'admin', name: 'Admin', role: 'admin' } });
     }
 
