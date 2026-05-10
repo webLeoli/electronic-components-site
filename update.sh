@@ -16,10 +16,15 @@ echo "🗄️ 3. 同步数据库结构并生成客户端..."
 npx prisma db push --accept-data-loss
 npx prisma generate
 
-echo "🏗️ 4. 重新编译 Next.js 项目..."
+echo "🔧 4. 修复厂商数据..."
+node scripts/fix-all-manufacturers.mjs
+echo "验证数据完整性..."
+node scripts/ultimate-verify.mjs 2>&1 | tail -5
+
+echo "🏗️ 5. 重新编译 Next.js 项目..."
 npm run build
 
-echo "🔄 5. 重启运行容器/服务..."
+echo "🔄 6. 重启运行容器/服务..."
 # 尝试使用 PM2 重启（如果安装了PM2）
 if command -v pm2 &> /dev/null
 then
