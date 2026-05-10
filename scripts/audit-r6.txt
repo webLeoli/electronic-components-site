@@ -1,0 +1,186 @@
+﻿================================================================================
+  绗叚杞┓灏芥牳鏌?鈥?鍏ㄦ柊瑙掑害
+================================================================================
+
+=== A. 鍙嶅悜鎻忚堪楠岃瘉锛堜粠鎻忚堪鎻愬彇鍘傚晢鍚嶄笌瀛楁瀵规瘮锛?==
+
+  鉁?Altera: 200 涓牱鏈?鈥?鎻忚堪姝ｇ‘
+  鉁?Atmel: 200 涓牱鏈?鈥?鎻忚堪姝ｇ‘
+  鉁?Linear Technology: 200 涓牱鏈?鈥?鎻忚堪姝ｇ‘
+  鉁?Maxim Integrated: 200 涓牱鏈?鈥?鎻忚堪姝ｇ‘
+  鉁?Xilinx: 200 涓牱鏈?鈥?鎻忚堪姝ｇ‘
+  鉁?Cypress Semiconductor: 200 涓牱鏈?鈥?鎻忚堪姝ｇ‘
+  鉁?Spansion: 200 涓牱鏈?鈥?鎻忚堪姝ｇ‘
+  鉁?Intersil: 200 涓牱鏈?鈥?鎻忚堪姝ｇ‘
+  鉁?Fairchild Semiconductor: 200 涓牱鏈?鈥?鎻忚堪姝ｇ‘
+  鉁?International Rectifier: 200 涓牱鏈?鈥?鎻忚堪姝ｇ‘
+  鉁?IDT: 200 涓牱鏈?鈥?鎻忚堪姝ｇ‘
+  馃敶 Microsemi: 198/200 涓牱鏈弿杩板惈閿欒鍘傚晢鍚?     A3P250-FGG256: "...A3P250-FGG256 by Microchip, 250000 gates, 157 I/O, 1.425V ~ 1.575V sup..."
+     A3P1000-FGG484: "...A3P1000-FGG484 by Microchip, 1000000 gates, 300 I/O, 1.425V ~ 1.575V s..."
+  鉁?ISSI: 200 涓牱鏈?鈥?鎻忚堪姝ｇ‘
+
+=== B. 鍙嶅悜涓€鑷存€э紙鎻忚堪璇存槸X鍝佺墝锛宮anufacturer瀛楁涔熷簲璇ユ槸X锛?==
+
+  鉁?"by Altera," 鈥?鎵€鏈夊尮閰嶄骇鍝侀兘鍦?Altera 涓?  鉁?"by Atmel," 鈥?鎵€鏈夊尮閰嶄骇鍝侀兘鍦?Atmel 涓?  鉁?"by Linear Technology," 鈥?鎵€鏈夊尮閰嶄骇鍝侀兘鍦?Linear Technology 涓?  鉁?"by Maxim Integrated" 鈥?鎵€鏈夊尮閰嶄骇鍝侀兘鍦?Maxim Integrated 涓?  鉁?"by Xilinx," 鈥?鎵€鏈夊尮閰嶄骇鍝侀兘鍦?Xilinx 涓?  馃敶 9893x 鎻忚堪鍚?by Cypress Semiconductor,"浣嗗巶鍟嗛潪 Cypress Semiconductor:
+     "MB90F543GSPF-GS" 鈫?鍘傚晢="Spansion"
+     "MB9BF121JWQN-G-JNE2" 鈫?鍘傚晢="Spansion"
+     "MB9AF132KBQN-G-AVE2" 鈫?鍘傚晢="Spansion"
+     "MB9AF421KWQN-G-JNE2" 鈫?鍘傚晢="Spansion"
+     "S25FL032P0XBHI030" 鈫?鍘傚晢="Spansion"
+  鉁?"by Spansion," 鈥?鎵€鏈夊尮閰嶄骇鍝侀兘鍦?Spansion 涓?  鉁?"by Intersil," 鈥?鎵€鏈夊尮閰嶄骇鍝侀兘鍦?Intersil 涓?  鉁?"by Fairchild Semiconductor," 鈥?鎵€鏈夊尮閰嶄骇鍝侀兘鍦?Fairchild Semiconductor 涓?  鉁?"by International Rectifier," 鈥?鎵€鏈夊尮閰嶄骇鍝侀兘鍦?International Rectifier 涓?  鉁?"by IDT," 鈥?鎵€鏈夊尮閰嶄骇鍝侀兘鍦?IDT 涓?
+=== C. 鏃犳弿杩?鏋佺煭鎻忚堪浜у搧 ===
+
+  NULL 鎻忚堪: 1
+  绌烘弿杩? 0
+  鏋佺煭鎻忚堪(<20瀛楃): 3359
+
+=== D. 鏍稿績鍘傚晢浜у搧鎶芥牱鐩妫€鏌?===
+
+
+  銆怰ochester Electronics銆?(106,452 products)
+    0000006K3041 鈫?4MB SRAM   PBGA 128KX36
+    0000009K2871 鈫?CMOS6X1 CHINOO 4M SRAM PBG
+    0000021L0603 鈫?HURRICANE-CMOS6S0  PBGA BARE CU
+
+  銆怲exas Instruments銆?(76,459 products)
+    100114FC 鈫?100114FC is a Receiver by Texas Instruments, -4.2V ~ -5.7V supply voltage, in 24
+    100122FC 鈫?100122FC by Texas Instruments, -4.2V ~ -5.7V supply voltage, in 24-CFlatPack pac
+    100126FC 鈫?100126FC is a Driver by Texas Instruments, -4.2V ~ -5.7V supply voltage, in 24-C
+
+  銆怰enesas銆?(64,488 products)
+    054-51760-51 鈫?054-51760-51 by Renesas. This part is discontinued. FPGACenter specializes in so
+    054-51760-57 鈫?054-51760-57 by Renesas. This part is discontinued. FPGACenter specializes in so
+    1337ACSRI 鈫?1337ACSRI is a Clock/Calendar by Renesas, 1.8V ~ 5.5V supply voltage, with I虏C i
+
+  銆怣icrochip銆?(52,846 products)
+    090-02984-007 鈫?090-02984-007 is a Embedded Atomic Clocks by Microchip in 12-DIP Module, 9 Leads
+    090-03240-001 鈫?090-03240-001 is a Embedded Atomic Clocks by Microchip in 12-DIP Module, 9 Leads
+    090-03240-003 鈫?090-03240-003 is a Embedded Atomic Clocks by Microchip in 12-DIP Module, 9 Leads
+
+  銆怲orex Semiconductor銆?(44,635 products)
+    XB1117K12BFR-G 鈫?XB1117K12BFR-G by Torex Semiconductor, in TO-261-4, TO-261AA package, rated for 
+    XB1117P181FR-G 鈫?XB1117P181FR-G by Torex Semiconductor, in TO-261-4, TO-261AA package, rated for 
+    XB1117P251FR-G 鈫?XB1117P251FR-G by Torex Semiconductor, in TO-261-4, TO-261AA package, rated for 
+
+  銆怣axim Integrated銆?(42,668 products)
+    203-2815-91 鈫?203-2815-91 by Maxim Integrated. This part is discontinued. FPGACenter specializ
+    203-2859-03 鈫?203-2859-03 by Maxim Integrated. This part is discontinued. FPGACenter specializ
+    203-2859-22+TD 鈫?203-2859-22+TD by Maxim Integrated. This part is discontinued. FPGACenter specia
+
+  銆怢inear Technology銆?(25,302 products)
+    LT1001ACH 鈫?LT1001ACH by Linear Technology, in TO-205-8, TO-5-8 Metal Can package, rated for
+    LT1001ACJ8 鈫?LT1001ACJ8 by Linear Technology, in 8-CDIP (0.300", 7.62mm) package, rated for 0
+    LT1001ACN8#PBF 鈫?LT1001ACN8#PBF by Linear Technology, in 8-DIP (0.300", 7.62mm) package, rated fo
+
+  銆怉ltera銆?(13,323 products)
+    10AS016C3U19E2LG 鈫?10AS016C3U19E2LG is a Dual ARM庐 Cortex庐-A9 MPCore鈩?with CoreSight鈩?device by Alt
+    10AS016C3U19E2SG 鈫?10AS016C3U19E2SG is a Dual ARM庐 Cortex庐-A9 MPCore鈩?with CoreSight鈩?device by Alt
+    10AS016C3U19I2LG 鈫?10AS016C3U19I2LG is a Dual ARM庐 Cortex庐-A9 MPCore鈩?with CoreSight鈩?device by Alt
+
+  銆怷ilinx銆?(6,503 products)
+    27S13A/BEA 鈫?27S13A/BEA by Xilinx, featuring 2Kbit memory, 4.5V ~ 5.5V supply voltage, in 16-
+    31018-07-3418 鈫?31018-07-3418 by Xilinx.
+    5962-9957201NNA 鈫?5962-9957201NNA by Xilinx, 6912 logic elements, 260 I/O, 2.375V ~ 2.625V supply 
+
+  銆怉tmel銆?(10,478 products)
+    AT17C002-10CC 鈫?AT17C002-10CC by Atmel, featuring 2MB memory, 4.75V ~ 5.25V supply voltage, in 8
+    AT17C002-10CI 鈫?AT17C002-10CI by Atmel, featuring 2MB memory, 4.5V ~ 5.5V supply voltage, in 8-T
+    AT17C002-10JC 鈫?AT17C002-10JC by Atmel, featuring 2MB memory, 4.75V ~ 5.25V supply voltage, in 2
+
+  銆怌ypress Semiconductor銆?(13,219 products)
+    00001922424 鈫?00001922424 by Cypress Semiconductor. This part is discontinued. FPGACenter spec
+    00002161516 鈫?00002161516 by Cypress Semiconductor. This part is discontinued. FPGACenter spec
+    00002161771 鈫?00002161771 by Cypress Semiconductor. This part is discontinued. FPGACenter spec
+
+  銆怱pansion銆?(13,314 products)
+    IS29GL256S-90TFI01 鈫?IS29GL256S-90TFI01 by Spansion庐 part of the * series.
+    MB1504PF-G-BND-JN-EFE1 鈫?MB1504PF-G-BND-JN-EFE1 by Cypress Semiconductor. This part is discontinued. FPGA
+    MB1504PF-G-BND-JN-ERE1 鈫?MB1504PF-G-BND-JN-ERE1 by Cypress Semiconductor. This part is discontinued. FPGA
+
+  銆怚ntersil銆?(11,210 products)
+    AD7541SD 鈫?AD7541SD by Harris Semiconductor, in 18-DIP (0.300, 7.62mm) package, rated for 0
+    CA22M3494MQAS2554 鈫?CA22M3494MQAS2554 by Intersil Corporation part of the * series.
+    CA2524EX 鈫?CA2524EX by Harris Semiconductor, in 16-DIP (0.300, 7.62mm) package, rated for 0
+
+  銆怚DT銆?(3,265 products)
+    89H16NT16G2ZCHL 鈫?89H16NT16G2ZCHL by Waldom Electronics, 3.3V supply voltage, with PCI Express int
+    89H32H8G3YCHLG 鈫?89H32H8G3YCHLG by Waldom Electronics, with PCI Express interface, in 484-BBGA, F
+    89H48H12G2ZCBLI 鈫?89H48H12G2ZCBLI by Waldom Electronics, 3.3V supply voltage, with PCI Express int
+
+  銆怓airchild Semiconductor銆?(928 products)
+    100352PC 鈫?100352PC by Fairchild Semiconductor. This part is discontinued. FPGACenter speci
+    100352QC 鈫?100352QC by Fairchild Semiconductor, -4.2V ~ -5.7V supply voltage, in 28-LCC (J-
+    74F398SCX 鈫?74F398SCX is a Multiplexer by Fairchild Semiconductor, 4.5V ~ 5.5V supply voltag
+
+  銆怚nternational Rectifier銆?(1,191 products)
+    AUIR08152STR 鈫?AUIR08152STR by International Rectifier, 13V ~ 25V supply voltage, in 8-SOIC (0.
+    AUIR2085S 鈫?AUIR2085S by International Rectifier, 10V ~ 15V supply voltage, in 8-SOIC (0.154
+    AUIR2085STR 鈫?AUIR2085STR by International Rectifier, 10V ~ 15V supply voltage, in 8-SOIC (0.1
+
+  銆怣icrosemi銆?(3,078 products)
+    A1010B-2PQG100C 鈫?A1010B-2PQG100C by Microsemi Corporation, 57 I/O, in 100-BQFP package, rated for
+    A1010B-VQG80C 鈫?A1010B-VQG80C by Microsemi Corporation, 57 I/O, 4.5V ~ 5.5V supply voltage, in 8
+    A1020B-1PQ100C 鈫?A1020B-1PQ100C by Microsemi Corporation, 69 I/O, in 100-BQFP package, rated for 
+
+  銆怉nalog Devices銆?(18,099 products)
+    18092 鈫?18092 by Analog Devices Inc.. This part is discontinued. FPGACenter specializes 
+    18093 鈫?18093 by Analog Devices Inc.. This part is discontinued. FPGACenter specializes 
+    18094 鈫?18094 by Analog Devices Inc.. This part is discontinued. FPGACenter specializes 
+
+  銆怢attice Semiconductor銆?(5,929 products)
+    AQC108-B1-C 鈫?AQC108-B1-C by Lattice Semiconductor Corporation with Ethernet interface.
+    AQC112C-B0-C 鈫?AQC112C-B0-C by Lattice Semiconductor Corporation with Ethernet interface.
+    AQR111C-B0-C 鈫?SINGLE PORT 5G/2.5G/1G/100M AQRA
+
+
+=== E. 鍘傚晢鎺掑悕 Top 30 ===
+
+鎬讳骇鍝? 719,342 | 鍘傚晢: 348
+
+   106452  (14.8%)  Rochester Electronics
+    76459  (10.6%)  Texas Instruments
+    64488  ( 9.0%)  Renesas
+    52846  ( 7.3%)  Microchip
+    44635  ( 6.2%)  Torex Semiconductor
+    42668  ( 5.9%)  Maxim Integrated
+    25302  ( 3.5%)  Linear Technology
+    22910  ( 3.2%)  Skyworks Solutions
+    21029  ( 2.9%)  Onsemi
+    18099  ( 2.5%)  Analog Devices
+    16655  ( 2.3%)  ABLIC Inc.
+    16013  ( 2.2%)  NXP Semiconductors
+    15436  ( 2.1%)  STMicroelectronics
+    13323  ( 1.9%)  Altera
+    13314  ( 1.9%)  Spansion
+    13219  ( 1.8%)  Cypress Semiconductor
+    11210  ( 1.6%)  Intersil
+    11094  ( 1.5%)  Diodes Incorporated
+    10478  ( 1.5%)  Atmel
+     9958  ( 1.4%)  Micron Technology Inc.
+     8349  ( 1.2%)  Nisshinbo Micro Devices Inc.
+     6943  ( 1.0%)  Silicon Labs
+     6925  ( 1.0%)  Infineon Technologies
+     6681  ( 0.9%)  ROHM Semiconductor
+     6503  ( 0.9%)  Xilinx
+     5929  ( 0.8%)  Lattice Semiconductor
+     4663  ( 0.6%)  ISSI, Integrated Silicon Solution Inc
+     4270  ( 0.6%)  Monolithic Power Systems Inc.
+     4262  ( 0.6%)  Freescale Semiconductor
+     3967  ( 0.6%)  Nexperia USA Inc.
+
+=== F. 鍏ㄩ潰鎻忚堪鍝佺墝娉勯湶鎵弿 ===
+
+  鉁?Altera: 鎻忚堪涓棤 "Intel" 娉勯湶
+  鉁?Atmel: 鎻忚堪涓棤 "Microchip" 娉勯湶
+  鉁?Linear Technology: 鎻忚堪涓棤 "Analog Devices" 娉勯湶
+  鉁?Maxim Integrated: 鎻忚堪涓棤 "Analog Devices" 娉勯湶
+  鉁?Xilinx: 鎻忚堪涓棤 "AMD" 娉勯湶
+  鉁?Cypress Semiconductor: 鎻忚堪涓棤 "Infineon" 娉勯湶
+  鉁?Spansion: 鎻忚堪涓棤 "Infineon" 娉勯湶
+  鉁?Intersil: 鎻忚堪涓棤 "Renesas" 娉勯湶
+  鉁?Fairchild Semiconductor: 鎻忚堪涓棤 "Onsemi" 娉勯湶
+  鉁?International Rectifier: 鎻忚堪涓棤 "Infineon" 娉勯湶
+  鉁?IDT: 鎻忚堪涓棤 "Renesas" 娉勯湶
+
+================================================================================
+  鏍告煡瀹屾垚 鈥?鍙戠幇 2 涓棶棰?================================================================================
