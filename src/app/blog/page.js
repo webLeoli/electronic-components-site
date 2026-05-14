@@ -56,7 +56,7 @@ export default async function BlogPage({ searchParams }) {
     }),
     prisma.blogPost.count({ where }),
     prisma.blogCategory.findMany({
-      include: { _count: { select: { posts: { where: { status: 'published' } } } } },
+      select: { id: true, name: true, slug: true, _count: { select: { posts: { where: { status: 'published' } } } } },
       orderBy: { name: 'asc' },
     }),
   ]);

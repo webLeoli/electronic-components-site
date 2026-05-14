@@ -71,7 +71,7 @@ async function verifySessionToken(token) {
   }
 }
 
-export async function middleware(request) {
+export async function proxy(request) {
   const { pathname } = request.nextUrl;
 
   // Only protect /admin/* routes (except login page)

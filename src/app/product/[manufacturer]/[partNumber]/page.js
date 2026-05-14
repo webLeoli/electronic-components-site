@@ -239,6 +239,7 @@ export default async function ProductPage({ params }) {
             categoryId: product.categoryId,
             partNumber: { not: product.partNumber },
           },
+          select: { partNumber: true, manufacturer: true, description: true, stock: true, minPrice: true, status: true, imageUrl: true },
           take: 6,
           orderBy: { stock: 'desc' },
         })

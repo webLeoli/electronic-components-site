@@ -14,7 +14,10 @@ function slugifyManufacturer(name) {
 }
 
 const getManufacturer = cache(async (slug) => {
-  const manufacturer = await prisma.manufacturer.findUnique({ where: { slug } });
+  const manufacturer = await prisma.manufacturer.findUnique({
+    where: { slug },
+    select: { name: true, slug: true, description: true, website: true, founded: true, headquarters: true, specialties: true, stockNote: true },
+  });
   if (manufacturer) return manufacturer;
 
   const distinctMfrs = await prisma.$queryRawUnsafe(
@@ -93,7 +96,7 @@ export default async function ManufacturerPage({ params, searchParams }) {
     prisma.product.count({ where: { manufacturer: manufacturer.name } }),
     prisma.product.findMany({
       where: { manufacturer: manufacturer.name },
-      include: { category: true },
+      include: { category: { select: { slug: true, name: true } } },
       orderBy: { partNumber: 'asc' },
       skip: (page - 1) * ITEMS_PER_PAGE,
       take: ITEMS_PER_PAGE,
@@ -111,7 +114,7 @@ export default async function ManufacturerPage({ params, searchParams }) {
 
   const categoryIds = categories.map(c => c.categoryId).filter(Boolean);
   const categoryData = categoryIds.length > 0
-    ? await prisma.category.findMany({ where: { id: { in: categoryIds } } })
+    ? await prisma.category.findMany({ where: { id: { in: categoryIds } }, select: { id: true, slug: true, name: true } })
     : [];
   const categoryMap = Object.fromEntries(categoryData.map(c => [c.id, c]));
 

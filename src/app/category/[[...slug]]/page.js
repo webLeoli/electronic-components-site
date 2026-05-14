@@ -44,7 +44,7 @@ export async function generateMetadata({ params, searchParams }) {
     },
   };
   
-  let category = await prisma.category.findUnique({ where: { slug: categorySlug } });
+  let category = await prisma.category.findUnique({ where: { slug: categorySlug }, select: { slug: true, name: true, seoTitle: true, seoDesc: true } });
   
   if (!category) {
     const fallback = FALLBACK_CATEGORIES.find(c => c.slug === categorySlug);
@@ -150,7 +150,7 @@ export default async function CategoryPage({ params, searchParams }) {
     orderBy,
     skip: (page - 1) * ITEMS_PER_PAGE,
     take: ITEMS_PER_PAGE,
-    include: { category: true },
+    include: { category: { select: { slug: true, name: true } } },
   });
 
   // Breadcrumb — flat URLs, hierarchy expressed via breadcrumb trail

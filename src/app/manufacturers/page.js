@@ -29,7 +29,7 @@ export const revalidate = 3600;
 const getManufacturersData = unstable_cache(
   async () => {
     const [manufacturers, productCounts] = await Promise.all([
-      prisma.manufacturer.findMany({ orderBy: { name: 'asc' } }),
+      prisma.manufacturer.findMany({ select: { name: true, slug: true }, orderBy: { name: 'asc' } }),
       // Raw SQL instead of groupBy — avoids full 720K row scan timeout
       prisma.$queryRawUnsafe(
         `SELECT "manufacturer", COUNT(*)::int as "count" FROM "Product" GROUP BY "manufacturer"`

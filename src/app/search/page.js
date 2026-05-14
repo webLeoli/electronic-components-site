@@ -69,7 +69,7 @@ export default async function SearchPage({ searchParams }) {
         orderBy,
         skip: (page - 1) * ITEMS_PER_PAGE,
         take: ITEMS_PER_PAGE,
-        include: { category: true },
+        include: { category: { select: { slug: true, name: true } } },
       });
     }
   }
