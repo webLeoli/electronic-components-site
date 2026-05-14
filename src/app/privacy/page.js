@@ -11,6 +11,14 @@ export const metadata = {
     description: 'How FPGACenter collects, uses, and protects your personal information. GDPR & CCPA compliant.',
     url: `${SITE_URL}/privacy`,
     siteName: SITE_NAME,
+    type: 'website',
+    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: `${SITE_NAME} Privacy` }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `Privacy Policy | ${SITE_NAME}`,
+    description: 'How FPGACenter collects, uses, and protects your personal information.',
+    images: [`${SITE_URL}/og-image.png`],
   },
 };
 

@@ -54,12 +54,17 @@ model Category {
 }
 
 model Manufacturer {
-  id      Int     @id @default(autoincrement())
-  name    String  @unique
-  slug    String  @unique
-  logo    String?
-  website String?
-  country String?
+  id            Int     @id @default(autoincrement())
+  name          String  @unique
+  slug          String  @unique
+  logo          String?
+  website       String?
+  country       String?
+  description   String?
+  specialties   String?   // JSON array: ["Power Management", "MCUs", ...]
+  founded       String?
+  headquarters  String?
+  stockNote     String?   // Sourcing note for this brand at FPGACenter
 
   @@index([slug])
 }

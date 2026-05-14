@@ -1,5 +1,6 @@
 import './globals.css';
 import { Suspense } from 'react';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import TrackingProvider from '@/components/TrackingProvider';
@@ -7,6 +8,26 @@ import FloatingRfqButton from '@/components/FloatingRfqButton';
 import CodeInjection from '@/components/CodeInjection';
 import { RfqCartProvider } from '@/lib/rfq-cart';
 import { SITE_NAME, SITE_DESC, SITE_URL } from '@/lib/seo';
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-jetbrains-mono',
+  display: 'swap',
+});
+
+export const viewport = {
+  themeColor: '#3B82F6',
+  width: 'device-width',
+  initialScale: 1,
+};
 
 export const metadata = {
   title: {
@@ -23,13 +44,13 @@ export const metadata = {
     siteName: SITE_NAME,
     locale: 'en_US',
     type: 'website',
-
+    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: SITE_NAME }],
   },
   twitter: {
     card: 'summary_large_image',
     title: `${SITE_NAME} - Hard-to-Find & Obsolete Electronic Components`,
     description: SITE_DESC,
-
+    images: [`${SITE_URL}/og-image.png`],
   },
   // robots.txt is handled by src/app/robots.js
   // Note: do NOT set alternates.canonical here — it would be inherited by all
@@ -42,22 +63,8 @@ export default function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         {/* DNS prefetch + preconnect for fastest possible font delivery */}
-        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Preload font CSS → browser starts download before parser reaches stylesheet link */}
-        <link
-          rel="preload"
-          as="style"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400&display=swap"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400&display=swap"
-          rel="stylesheet"
-        />
         <link rel="manifest" href="/manifest.webmanifest" />
-        <meta name="theme-color" content="#3B82F6" />
         {/* Site navigation schema for Google sitelinks accuracy */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
           '@context': 'https://schema.org',
@@ -87,7 +94,7 @@ export default function RootLayout({ children }) {
           <CodeInjection />
         </Suspense>
       </head>
-      <body suppressHydrationWarning>
+      <body suppressHydrationWarning className={`${inter.variable} ${jetBrainsMono.variable}`}>
         <RfqCartProvider>
           <Suspense fallback={null}>
             <TrackingProvider />

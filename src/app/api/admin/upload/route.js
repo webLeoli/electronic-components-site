@@ -6,7 +6,27 @@ import { requireAuth } from '@/lib/admin-auth';
 
 // Max file size: 5MB
 const MAX_SIZE = 5 * 1024 * 1024;
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/gif'];
+const ALLOWED_FILE_TYPES = {
+  'image/jpeg': ['.jpg', '.jpeg'],
+  'image/png': ['.png'],
+  'image/webp': ['.webp'],
+  'image/gif': ['.gif'],
+};
+
+function hasValidImageSignature(buffer, type) {
+  if (type === 'image/jpeg') return buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF;
+  if (type === 'image/png') {
+    return buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]));
+  }
+  if (type === 'image/gif') {
+    const header = buffer.subarray(0, 6).toString('ascii');
+    return header === 'GIF87a' || header === 'GIF89a';
+  }
+  if (type === 'image/webp') {
+    return buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP';
+  }
+  return false;
+}
 
 /**
  * Generate an SEO-friendly filename from product/category metadata.
@@ -70,11 +90,20 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    // Validate type
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const ext = path.extname(file.name).toLowerCase();
+
+    // Validate type and extension. SVG is intentionally not allowed because
+    // public SVG uploads can execute script in some browser contexts.
+    if (!ALLOWED_FILE_TYPES[file.type] || !ALLOWED_FILE_TYPES[file.type].includes(ext)) {
       return NextResponse.json({
-        error: `Invalid file type: ${file.type}. Allowed: JPEG, PNG, WebP, SVG, GIF`,
+        error: 'Invalid file type. Allowed: JPEG, PNG, WebP, GIF',
       }, { status: 400 });
+    }
+
+    if (!hasValidImageSignature(buffer, file.type)) {
+      return NextResponse.json({ error: 'File content does not match the declared image type' }, { status: 400 });
     }
 
     // Validate size
@@ -94,15 +123,12 @@ export async function POST(request) {
     }
 
     // Generate SEO filename
-    const ext = path.extname(file.name).toLowerCase() || '.jpg';
     const filename = generateSeoFilename(
       { partNumber, manufacturer, categoryName, categorySlug, folder: safeFolder },
       ext
     );
 
     // Write file
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
     const filePath = path.join(uploadDir, filename);
     await writeFile(filePath, buffer);
 

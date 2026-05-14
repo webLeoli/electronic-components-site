@@ -8,8 +8,13 @@ const ROLE_RESTRICTED_PAGES = {
   editor_and_above: ['/admin/blog', '/admin/analytics'],
 };
 
-const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-in-production';
+const SESSION_SECRET = process.env.SESSION_SECRET;
+const EFFECTIVE_SESSION_SECRET = SESSION_SECRET || 'dev-only-session-secret';
 const SESSION_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
+
+if (!SESSION_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('SESSION_SECRET is required in production.');
+}
 
 /**
  * Verify a session token using Web Crypto API (Edge Runtime compatible).
@@ -34,7 +39,7 @@ async function verifySessionToken(token) {
     const encoder = new TextEncoder();
     const key = await crypto.subtle.importKey(
       'raw',
-      encoder.encode(SESSION_SECRET),
+      encoder.encode(EFFECTIVE_SESSION_SECRET),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
       ['sign'],
@@ -66,7 +71,7 @@ async function verifySessionToken(token) {
   }
 }
 
-export async function proxy(request) {
+export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
   // Only protect /admin/* routes (except login page)

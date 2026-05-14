@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
 import { computeQualityScore, isIndexable } from '@/lib/quality-score';
+import { manufacturerSlug, standardizeName } from '@/lib/manufacturer-map';
 
 // GET: List products with search/pagination
 export async function GET(request) {
@@ -68,6 +69,20 @@ export async function POST(request) {
       },
     });
 
+    // Auto-sync: ensure manufacturer exists in Manufacturer table
+    const mfrName = data.manufacturer?.trim();
+    if (mfrName) {
+      const stdName = standardizeName(mfrName);
+      const exists = await prisma.manufacturer.findFirst({
+        where: { name: stdName },
+      });
+      if (!exists) {
+        await prisma.manufacturer.create({
+          data: { name: stdName, slug: manufacturerSlug(stdName) },
+        });
+      }
+    }
+
     // Auto-compute quality score for new product
     const qResult = computeQualityScore(product);
     const scored = await prisma.product.update({
@@ -116,6 +131,19 @@ export async function PUT(request) {
       where: { id: product.id },
       data: { qualityScore: qResult.score, indexable: isIndexable(qResult.score) },
     });
+
+    // Auto-sync: ensure manufacturer exists in Manufacturer table
+    if (data.manufacturer) {
+      const stdName = standardizeName(data.manufacturer.trim());
+      const exists = await prisma.manufacturer.findFirst({
+        where: { name: stdName },
+      });
+      if (!exists) {
+        await prisma.manufacturer.create({
+          data: { name: stdName, slug: manufacturerSlug(stdName) },
+        });
+      }
+    }
 
     return NextResponse.json(scored);
   } catch (e) {

@@ -8,7 +8,14 @@ import crypto from 'crypto';
  * Only 4-part signed tokens are accepted — unsigned tokens are rejected.
  */
 
-const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-in-production';
+const SESSION_SECRET = process.env.SESSION_SECRET;
+
+if (!SESSION_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('SESSION_SECRET is required in production.');
+}
+
+const EFFECTIVE_SESSION_SECRET = SESSION_SECRET || 'dev-only-session-secret';
+const SESSION_MAX_AGE = 24 * 60 * 60 * 1000;
 
 /**
  * Verify and parse a signed session token.
@@ -23,8 +30,11 @@ function verifyToken(token) {
 
     const hmac = parts[parts.length - 1];
     const payload = parts.slice(0, -1).join(':');
+    if (!hmac || hmac.length !== 64) return null;
+    if (!/^\d+:(admin|editor|viewer):\d+$/.test(payload)) return null;
+
     const expectedHmac = crypto
-      .createHmac('sha256', SESSION_SECRET)
+      .createHmac('sha256', EFFECTIVE_SESSION_SECRET)
       .update(payload)
       .digest('hex');
     // Use timingSafeEqual to prevent timing attacks
@@ -33,7 +43,13 @@ function verifyToken(token) {
     if (hmacBuf.length !== expectedBuf.length) return null;
     if (!crypto.timingSafeEqual(hmacBuf, expectedBuf)) return null;
 
-    return { userId: parseInt(parts[0]), role: parts[1] };
+    const userId = parseInt(parts[0]);
+    const role = parts[1];
+    const timestamp = parseInt(parts[2]);
+    if (isNaN(userId) || isNaN(timestamp)) return null;
+    if (Date.now() - timestamp > SESSION_MAX_AGE) return null;
+
+    return { userId, role };
   } catch {
     return null;
   }

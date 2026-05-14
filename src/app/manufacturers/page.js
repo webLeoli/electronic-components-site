@@ -12,6 +12,14 @@ export const metadata = {
     description: 'Browse 3000+ electronic component manufacturers. Find parts by brand at FPGACenter.',
     url: `${SITE_URL}/manufacturers`,
     siteName: SITE_NAME,
+    type: 'website',
+    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: `${SITE_NAME} Manufacturers` }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `Electronic Component Manufacturers | ${SITE_NAME}`,
+    description: 'Browse 3000+ electronic component manufacturers. Find parts by brand at FPGACenter.',
+    images: [`${SITE_URL}/og-image.png`],
   },
 };
 
@@ -22,9 +30,12 @@ const getManufacturersData = unstable_cache(
   async () => {
     const [manufacturers, productCounts] = await Promise.all([
       prisma.manufacturer.findMany({ orderBy: { name: 'asc' } }),
-      prisma.product.groupBy({ by: ['manufacturer'], _count: true }),
+      // Raw SQL instead of groupBy — avoids full 720K row scan timeout
+      prisma.$queryRawUnsafe(
+        `SELECT "manufacturer", COUNT(*)::int as "count" FROM "Product" GROUP BY "manufacturer"`
+      ),
     ]);
-    const countMap = Object.fromEntries(productCounts.map(p => [p.manufacturer, p._count]));
+    const countMap = Object.fromEntries(productCounts.map(p => [p.manufacturer, p.count]));
 
     // Group by first letter
     const grouped = {};

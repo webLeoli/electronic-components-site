@@ -39,15 +39,15 @@ export async function PUT(request) {
       return NextResponse.json({ success: true, message: 'Password updated successfully' });
     } else {
       // === Legacy mode: change shared password ===
-      let adminPassword = process.env.ADMIN_PASSWORD;
-      if (!adminPassword) {
-        console.warn('[Auth] ADMIN_PASSWORD env var is not set! Using insecure default.');
-        adminPassword = 'fpgacenter2026';
-      }
+      let adminPassword = process.env.ADMIN_PASSWORD || null;
       try {
         const setting = await prisma.adminSetting.findUnique({ where: { key: 'admin_password' } });
         if (setting) adminPassword = setting.value;
       } catch {}
+
+      if (!adminPassword) {
+        return NextResponse.json({ error: 'Admin password is not configured' }, { status: 503 });
+      }
 
       if (currentPassword !== adminPassword) {
         return NextResponse.json({ error: 'Current password is incorrect' }, { status: 401 });

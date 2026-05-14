@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @next/next/no-img-element -- Product admin previews render user-entered image URLs directly without enabling a global remote image optimizer. */
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { getProductVisualType, getComponentSvg, generateProductAlt, generateImageFilename } from '@/lib/component-images';
 
@@ -324,7 +325,7 @@ export default function AdminProductsPage() {
                     )}
                   </td>
                   <td className="admin-td-mono">
-                    <a href={`/product/${(p.manufacturer || 'unknown').toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}/${p.partNumber}`} target="_blank">{p.partNumber}</a>
+                    <a href={`/product/${(p.manufacturer || 'unknown').toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}/${encodeURIComponent(p.partNumber)}`} target="_blank">{p.partNumber}</a>
                   </td>
                   <td>{p.manufacturer}</td>
                   <td>{p.category?.name || <span style={{ color: '#475569' }}>—</span>}</td>

@@ -11,6 +11,14 @@ export const metadata = {
     description: 'Terms and conditions for FPGACenter electronic component distribution services.',
     url: `${SITE_URL}/terms`,
     siteName: SITE_NAME,
+    type: 'website',
+    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: `${SITE_NAME} Terms` }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `Terms & Conditions | ${SITE_NAME}`,
+    description: 'Terms and conditions for FPGACenter electronic component distribution services.',
+    images: [`${SITE_URL}/og-image.png`],
   },
 };
 

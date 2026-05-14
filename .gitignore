@@ -51,7 +51,16 @@ build-log*.txt
 
 # database dumps
 *.sql
+*.sql.gz
+*.tar
+*.tar.gz
+*.tgz
+*.zip
 
 # user uploaded files (BOM files, etc.)
 /data/
-/public/uploads/bom/
+/public/uploads/
+!/public/uploads/.gitkeep
+
+# local server logs
+server.*.log

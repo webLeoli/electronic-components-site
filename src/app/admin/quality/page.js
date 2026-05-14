@@ -96,8 +96,18 @@ export default function AdminQualityPage() {
     setLoading(false);
   }, [prodPage, tierFilter, search]);
 
-  useEffect(() => { fetchStats(); }, [fetchStats]);
-  useEffect(() => { fetchProducts(); }, [fetchProducts]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchStats();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchStats]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchProducts();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchProducts]);
 
   // Batch operations
   const handleOperation = async (action, threshold) => {

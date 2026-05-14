@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @next/next/no-img-element -- Admin previews render user-entered image URLs directly without enabling a global remote image optimizer. */
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 

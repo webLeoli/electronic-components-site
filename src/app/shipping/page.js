@@ -10,6 +10,14 @@ export const metadata = {
     description: 'Fast worldwide shipping for electronic components to 60+ countries.',
     url: `${SITE_URL}/shipping`,
     siteName: SITE_NAME,
+    type: 'website',
+    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: `${SITE_NAME} Shipping` }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `Shipping & Delivery | ${SITE_NAME}`,
+    description: 'Fast worldwide shipping for electronic components to 60+ countries.',
+    images: [`${SITE_URL}/og-image.png`],
   },
 };
 

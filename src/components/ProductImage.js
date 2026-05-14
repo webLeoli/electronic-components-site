@@ -15,6 +15,8 @@
  *   <ProductImage product={product} size={200} alt="Custom alt override" />
  */
 
+/* eslint-disable @next/next/no-img-element -- Product images may come from arbitrary supplier URLs; the Next image optimizer is intentionally not used. */
+
 import {
   getProductVisualType,
   getComponentSvg,

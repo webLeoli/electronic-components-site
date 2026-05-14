@@ -4,7 +4,13 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { getAdminSession } from '@/lib/admin-auth';
 
-const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-in-production';
+const SESSION_SECRET = process.env.SESSION_SECRET;
+
+if (!SESSION_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('SESSION_SECRET is required in production.');
+}
+
+const EFFECTIVE_SESSION_SECRET = SESSION_SECRET || 'dev-only-session-secret';
 
 /**
  * Create a signed session token: userId:role:timestamp:hmac
@@ -13,7 +19,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change
 function createSignedToken(userId, role) {
   const payload = `${userId}:${role}:${Date.now()}`;
   const hmac = crypto
-    .createHmac('sha256', SESSION_SECRET)
+    .createHmac('sha256', EFFECTIVE_SESSION_SECRET)
     .update(payload)
     .digest('hex');
   return `${payload}:${hmac}`;
@@ -91,14 +97,16 @@ export async function POST(request) {
     // We allow this if the email/username is explicitly 'admin'
     // or if the user simply types the master password (acting as master admin).
     if (email === 'admin' || !user) {
-      let adminPassword = process.env.ADMIN_PASSWORD;
-      if (!adminPassword) {
-        adminPassword = 'fpgacenter2026';
-      }
+      let adminPassword = process.env.ADMIN_PASSWORD || null;
       try {
         const setting = await prisma.adminSetting.findUnique({ where: { key: 'admin_password' } });
         if (setting) adminPassword = setting.value;
       } catch {}
+
+      if (!adminPassword) {
+        console.error('[Auth] Legacy admin password is not configured.');
+        return NextResponse.json({ error: 'Admin login is not configured' }, { status: 503 });
+      }
 
       // Timing-safe comparison to prevent timing attacks on password
       const passwordMatch = password.length === adminPassword.length &&

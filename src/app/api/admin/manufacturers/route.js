@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
+import { manufacturerSlug } from '@/lib/manufacturer-map';
 
 // GET: List all manufacturers
 export async function GET(request) {
   const authError = requireAuth(request);
   if (authError) return authError;
   try {
-    // Count products per manufacturer via raw query
     const manufacturers = await prisma.manufacturer.findMany({
       orderBy: { name: 'asc' },
     });
@@ -38,14 +38,20 @@ export async function POST(request) {
     const data = await request.json();
     if (!data.name) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
 
-    const slug = data.slug || data.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const name = data.name.trim();
+    const slug = data.slug || manufacturerSlug(name);
     const manufacturer = await prisma.manufacturer.create({
       data: {
-        name: data.name.trim(),
+        name,
         slug,
         logo: data.logo || null,
         website: data.website || null,
         country: data.country || null,
+        description: data.description || null,
+        specialties: data.specialties || null,
+        founded: data.founded || null,
+        headquarters: data.headquarters || null,
+        stockNote: data.stockNote || null,
       },
     });
     return NextResponse.json(manufacturer, { status: 201 });
@@ -63,17 +69,40 @@ export async function PUT(request) {
     const data = await request.json();
     if (!data.id) return NextResponse.json({ error: 'Manufacturer ID required' }, { status: 400 });
 
+    // Fetch old name before update for product sync
+    const oldMfr = data.name !== undefined ? await prisma.manufacturer.findUnique({ where: { id: data.id }, select: { name: true } }) : null;
+
     const updateData = {};
-    if (data.name !== undefined) updateData.name = data.name.trim();
-    if (data.slug !== undefined) updateData.slug = data.slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    if (data.name !== undefined) {
+      updateData.name = data.name.trim();
+      // Auto-update slug when name changes (unless slug explicitly provided)
+      if (data.slug === undefined) {
+        updateData.slug = manufacturerSlug(data.name.trim());
+      }
+    }
+    if (data.slug !== undefined) updateData.slug = manufacturerSlug(data.slug.trim());
     if (data.logo !== undefined) updateData.logo = data.logo;
     if (data.website !== undefined) updateData.website = data.website;
     if (data.country !== undefined) updateData.country = data.country;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.specialties !== undefined) updateData.specialties = data.specialties;
+    if (data.founded !== undefined) updateData.founded = data.founded;
+    if (data.headquarters !== undefined) updateData.headquarters = data.headquarters;
+    if (data.stockNote !== undefined) updateData.stockNote = data.stockNote;
 
     const manufacturer = await prisma.manufacturer.update({
       where: { id: data.id },
       data: updateData,
     });
+
+    // Sync Product.manufacturer field when manufacturer name changes
+    if (data.name !== undefined && oldMfr && oldMfr.name !== data.name.trim()) {
+      await prisma.product.updateMany({
+        where: { manufacturer: oldMfr.name },
+        data: { manufacturer: data.name.trim() },
+      });
+    }
+
     return NextResponse.json(manufacturer);
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });

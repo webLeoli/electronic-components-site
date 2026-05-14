@@ -22,6 +22,14 @@ export async function generateMetadata({ searchParams }) {
       description: 'Expert guides, product comparisons, and technical articles about FPGAs, MCUs, and electronic components.',
       url: canonicalUrl,
       siteName: SITE_NAME,
+      type: 'website',
+      images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: `${SITE_NAME} Blog` }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} | ${SITE_NAME}`,
+      description: 'Expert guides, product comparisons, and technical articles about FPGAs, MCUs, and electronic components.',
+      images: [`${SITE_URL}/og-image.png`],
     },
   };
 }
@@ -89,7 +97,7 @@ export default async function BlogPage({ searchParams }) {
             <div className="blog-category-tabs">
               <Link href="/blog" className={`blog-cat-tab ${!categorySlug ? 'active' : ''}`}>All</Link>
               {categories.filter(c => c._count.posts > 0).map(c => (
-                <Link key={c.id} href={`/blog?category=${c.slug}`} rel="nofollow" className={`blog-cat-tab ${categorySlug === c.slug ? 'active' : ''}`}>
+                <Link key={c.id} href={`/blog?category=${c.slug}`} className={`blog-cat-tab ${categorySlug === c.slug ? 'active' : ''}`}>
                   {c.name} <span className="blog-cat-count">({c._count.posts})</span>
                 </Link>
               ))}
@@ -146,9 +154,9 @@ export default async function BlogPage({ searchParams }) {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="blog-pagination">
-              {page > 1 && <Link href={`/blog?page=${page - 1}${categorySlug ? `&category=${categorySlug}` : ''}`} rel="nofollow" className="blog-page-btn">← Previous</Link>}
+              {page > 1 && <Link href={`/blog?page=${page - 1}${categorySlug ? `&category=${categorySlug}` : ''}`} className="blog-page-btn">← Previous</Link>}
               <span className="blog-page-info">Page {page} of {totalPages}</span>
-              {page < totalPages && <Link href={`/blog?page=${page + 1}${categorySlug ? `&category=${categorySlug}` : ''}`} rel="nofollow" className="blog-page-btn">Next →</Link>}
+              {page < totalPages && <Link href={`/blog?page=${page + 1}${categorySlug ? `&category=${categorySlug}` : ''}`} className="blog-page-btn">Next →</Link>}
             </div>
           )}
         </div>

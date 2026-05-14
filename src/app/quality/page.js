@@ -10,6 +10,14 @@ export const metadata = {
     description: 'ISO 9001 certified quality management. Every component inspected and traceable.',
     url: `${SITE_URL}/quality`,
     siteName: SITE_NAME,
+    type: 'website',
+    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: `${SITE_NAME} Quality Assurance` }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `Quality Assurance | ${SITE_NAME}`,
+    description: 'ISO 9001 certified quality management. Every component inspected and traceable.',
+    images: [`${SITE_URL}/og-image.png`],
   },
 };
 

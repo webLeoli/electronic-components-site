@@ -14,6 +14,14 @@ export const metadata = {
     description: 'Search 1M+ electronic components by part number, manufacturer, or keyword.',
     url: `${SITE_URL}/search`,
     siteName: SITE_NAME,
+    type: 'website',
+    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: `${SITE_NAME} Search` }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `Search Electronic Components | ${SITE_NAME}`,
+    description: 'Search 1M+ electronic components by part number, manufacturer, or keyword.',
+    images: [`${SITE_URL}/og-image.png`],
   },
 };
 

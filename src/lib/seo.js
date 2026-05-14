@@ -110,6 +110,13 @@ export function generateCategoryMeta(category, { page = 1 } = {}) {
       url: canonicalUrl,
       siteName: SITE_NAME,
       type: 'website',
+      images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: `${category.name} Electronic Components` }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${category.name} | ${SITE_NAME}`,
+      description,
+      images: [`${SITE_URL}/og-image.png`],
     },
     alternates: {
       canonical: canonicalUrl,
@@ -136,18 +143,18 @@ export function generateProductJsonLd(product) {
       name: SITE_NAME,
       url: SITE_URL,
     },
-    // Shipping details for Google Shopping rich results
+    // Shipping details for Google Shopping rich results — global shipping
     shippingDetails: {
       '@type': 'OfferShippingDetails',
-      shippingRate: {
-        '@type': 'MonetaryAmount',
-        value: '0',
-        currency: 'USD',
-      },
-      shippingDestination: {
-        '@type': 'DefinedRegion',
-        addressCountry: 'US',
-      },
+      shippingDestination: [
+        { '@type': 'DefinedRegion', addressCountry: 'US' },
+        { '@type': 'DefinedRegion', addressCountry: 'CN' },
+        { '@type': 'DefinedRegion', addressCountry: 'DE' },
+        { '@type': 'DefinedRegion', addressCountry: 'GB' },
+        { '@type': 'DefinedRegion', addressCountry: 'JP' },
+        { '@type': 'DefinedRegion', addressCountry: 'KR' },
+        { '@type': 'DefinedRegion', addressCountry: 'CA' },
+      ],
       deliveryTime: {
         '@type': 'ShippingDeliveryTime',
         handlingTime: { '@type': 'QuantitativeValue', minValue: 0, maxValue: 1, unitCode: 'DAY' },
@@ -157,7 +164,6 @@ export function generateProductJsonLd(product) {
     // Return policy — 30-day returns for defective/incorrect parts
     hasMerchantReturnPolicy: {
       '@type': 'MerchantReturnPolicy',
-      applicableCountry: 'US',
       returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
       merchantReturnDays: 30,
       returnMethod: 'https://schema.org/ReturnByMail',

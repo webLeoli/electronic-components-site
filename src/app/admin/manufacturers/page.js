@@ -21,10 +21,16 @@ export default function AdminManufacturersPage() {
     fetchManufacturers(); 
   }, []);
 
-  const openEditor = (mfr) => { setEditMfr({ ...mfr }); setSaveMsg(null); };
+  const openEditor = (mfr) => {
+    // Parse specialties JSON for editing
+    let specialtiesText = '';
+    try { specialtiesText = mfr.specialties ? JSON.parse(mfr.specialties).join(', ') : ''; } catch { specialtiesText = mfr.specialties || ''; }
+    setEditMfr({ ...mfr, specialtiesText });
+    setSaveMsg(null);
+  };
 
   const openCreateForm = () => {
-    setEditMfr({ id: null, name: '', slug: '', logo: '', website: '', country: '' });
+    setEditMfr({ id: null, name: '', slug: '', logo: '', website: '', country: '', description: '', specialtiesText: '', founded: '', headquarters: '', stockNote: '' });
     setSaveMsg(null);
   };
 
@@ -34,8 +40,13 @@ export default function AdminManufacturersPage() {
     setSaveMsg(null);
 
     const slug = editMfr.slug?.trim() || editMfr.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const body = { ...editMfr, slug };
+    // Convert specialtiesText to JSON array
+    const specialties = editMfr.specialtiesText?.trim()
+      ? JSON.stringify(editMfr.specialtiesText.split(',').map(s => s.trim()).filter(Boolean))
+      : null;
+    const body = { ...editMfr, slug, specialties };
     delete body.productCount;
+    delete body.specialtiesText;
 
     const method = editMfr.id ? 'PUT' : 'POST';
     const res = await fetch('/api/admin/manufacturers', {
@@ -151,6 +162,28 @@ export default function AdminManufacturersPage() {
               <div className="admin-form-group">
                 <label>Website</label>
                 <input className="admin-input" value={editMfr.website || ''} onChange={e => setEditMfr({ ...editMfr, website: e.target.value })} placeholder="https://www.st.com" />
+              </div>
+              <div className="admin-form-group admin-form-full">
+                <label>Description <span style={{ color: '#64748b', fontWeight: 400 }}>(SEO — shown on manufacturer page)</span></label>
+                <textarea className="admin-input admin-textarea" rows={3} value={editMfr.description || ''} onChange={e => setEditMfr({ ...editMfr, description: e.target.value })} placeholder="Company overview and key product lines..." />
+              </div>
+              <div className="admin-form-grid">
+                <div className="admin-form-group">
+                  <label>Founded</label>
+                  <input className="admin-input" value={editMfr.founded || ''} onChange={e => setEditMfr({ ...editMfr, founded: e.target.value })} placeholder="e.g. 1987" />
+                </div>
+                <div className="admin-form-group">
+                  <label>Headquarters</label>
+                  <input className="admin-input" value={editMfr.headquarters || ''} onChange={e => setEditMfr({ ...editMfr, headquarters: e.target.value })} placeholder="e.g. Geneva, Switzerland" />
+                </div>
+              </div>
+              <div className="admin-form-group admin-form-full">
+                <label>Specialties <span style={{ color: '#64748b', fontWeight: 400 }}>(comma-separated, stored as JSON array)</span></label>
+                <input className="admin-input" value={editMfr.specialtiesText || ''} onChange={e => setEditMfr({ ...editMfr, specialtiesText: e.target.value })} placeholder="e.g. Power Management, MCUs, FPGAs, Sensors" />
+              </div>
+              <div className="admin-form-group admin-form-full">
+                <label>Sourcing Note <span style={{ color: '#64748b', fontWeight: 400 }}>(shown as highlight box on manufacturer page)</span></label>
+                <textarea className="admin-input admin-textarea" rows={3} value={editMfr.stockNote || ''} onChange={e => setEditMfr({ ...editMfr, stockNote: e.target.value })} placeholder="e.g. We maintain deep stock of STM32 series with same-day dispatch..." />
               </div>
             </div>
             <div className="admin-modal-footer">

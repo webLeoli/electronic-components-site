@@ -26,13 +26,21 @@ export async function generateMetadata({ params, searchParams }) {
   const categorySlug = slug?.[slug.length - 1];
   if (!categorySlug) return {
     title: 'All Categories',
-    description: 'Browse all electronic component categories at FPGACenter. ICs, semiconductors, capacitors, resistors, connectors, and more.',
+    description: `Browse all electronic component categories at ${SITE_NAME}. ICs, semiconductors, capacitors, resistors, connectors, and more.`,
     alternates: { canonical: `${SITE_URL}/category` },
     openGraph: {
-      title: 'All Electronic Component Categories | FPGACenter',
-      description: 'Browse ICs, semiconductors, capacitors, resistors, connectors, sensors and more at FPGACenter.',
+      title: `All Electronic Component Categories | ${SITE_NAME}`,
+      description: `Browse ICs, semiconductors, capacitors, resistors, connectors, sensors and more at ${SITE_NAME}.`,
       url: `${SITE_URL}/category`,
-      siteName: 'FPGACenter',
+      siteName: SITE_NAME,
+      type: 'website',
+      images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: `${SITE_NAME} Categories` }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `All Electronic Component Categories | ${SITE_NAME}`,
+      description: 'Browse ICs, semiconductors, capacitors, resistors, connectors, sensors and more.',
+      images: [`${SITE_URL}/og-image.png`],
     },
   };
   
@@ -308,7 +316,7 @@ export default async function CategoryPage({ params, searchParams }) {
                 {category.name}
               </h1>
               <p style={{ color: 'var(--color-text-muted)', marginTop: '4px', fontSize: '14px' }}>
-                {category.seoDesc || `Browse ${category.name} electronic components at FPGACenter.`}
+                {category.seoDesc || `Browse ${category.name} electronic components at ${SITE_NAME}.`}
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
@@ -478,8 +486,7 @@ function SortLink({ field, current, order, slug, statusFilter, mountFilter, chil
   return (
     <Link
       href={`/category/${slug}?${params}`}
-      rel="nofollow"
-      style={{ color: current === field ? 'var(--color-accent)' : 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '2px' }}
+           style={{ color: current === field ? 'var(--color-accent)' : 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '2px' }}
     >
       {children}{arrow}
     </Link>
@@ -506,8 +513,7 @@ function SortDropdown({ current, order, slug, statusFilter, mountFilter }) {
           <Link
             key={opt.value}
             href={`/category/${slug}?${params}`}
-            rel="nofollow"
-            className={`btn btn-sm ${current === opt.value ? 'btn-primary' : 'btn-secondary'}`}
+                       className={`btn btn-sm ${current === opt.value ? 'btn-primary' : 'btn-secondary'}`}
             style={{ padding: '4px 10px', fontSize: '11px' }}
           >
             {opt.label} {current === opt.value ? (order === 'asc' ? '↑' : '↓') : ''}
@@ -540,7 +546,7 @@ function Pagination({ current, total, slug, sort, order, statusFilter, mountFilt
   return (
     <div className="pagination">
       {current > 1 && (
-        <Link href={buildUrl(current - 1)} className="pagination-btn" rel="nofollow">← Prev</Link>
+        <Link href={buildUrl(current - 1)} className="pagination-btn">← Prev</Link>
       )}
       {pages.map((p, i) =>
         p === '...' ? (
@@ -549,15 +555,14 @@ function Pagination({ current, total, slug, sort, order, statusFilter, mountFilt
           <Link
             key={p}
             href={buildUrl(p)}
-            rel="nofollow"
-            className={`pagination-btn ${p === current ? 'active' : ''}`}
+                       className={`pagination-btn ${p === current ? 'active' : ''}`}
           >
             {p}
           </Link>
         )
       )}
       {current < total && (
-        <Link href={buildUrl(current + 1)} className="pagination-btn" rel="nofollow">Next →</Link>
+        <Link href={buildUrl(current + 1)} className="pagination-btn">Next →</Link>
       )}
     </div>
   );

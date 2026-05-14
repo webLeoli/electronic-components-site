@@ -41,23 +41,27 @@ export default async function robots() {
   return {
     rules: [
       {
+        // NOTE: * wildcard in Disallow is supported by Google, Bing, Yandex
+        // (the vast majority of search traffic). RFC 9309-compliant crawlers
+        // interpret * literally, so these patterns only work for major engines.
+        // Non-Google dedup is handled via <link rel="canonical"> on each page.
         userAgent: '*',
         allow: '/',
         disallow: [
           '/admin/',
           '/api/',
-          '/search',
-          '/*?*sort=',      // Sort variations = duplicate content
-          '/*?*order=',     // Order variations = duplicate content
-          '/*?*status=',    // Lifecycle filter = low SEO value
-          '/*?*mount=',     // Mount filter = low SEO value
-          '/*?*stock=',     // Stock filter = low SEO value
-          // NOTE: ?page= is intentionally ALLOWED — pagination pages contain
-          // unique products that need to be discovered. Dedup is handled via
-          // canonical pointing to page 1 for all paginated views.
+          '/search',          // Search results — noindex via meta robots
+          '/*?*sort=',        // Sort variations → canonical to base
+          '/*?*order=',
+          '/*?*status=',      // Lifecycle filter → canonical to base
+          '/*?*mount=',       // Mount filter → canonical to base
+          '/*?*stock=',
+          // NOTE: ?page= is intentionally ALLOWED — pagination contains
+          // unique product links that crawlers need to discover.
           // NOTE: ?mfr= is intentionally ALLOWED — manufacturer×category
-          // pages are high-value SEO landing pages
+          // pages are high-value SEO landing pages.
         ],
+        crawlDelay: 2,
       },
       {
         userAgent: 'AhrefsBot',

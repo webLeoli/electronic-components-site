@@ -256,7 +256,11 @@ export default async function ProductPage({ params }) {
         })
       : [],
   ]);
-  const manufacturerSlug = manufacturerRecord?.slug || (product.manufacturer || 'unknown').toLowerCase().replace(/[\s\/]+/g, '-');
+  const manufacturerSlug = manufacturerRecord?.slug || (product.manufacturer || 'unknown')
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 
   // Build breadcrumb items
   const breadcrumbItems = [{ name: 'Home', url: '/' }];

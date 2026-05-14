@@ -31,9 +31,6 @@ export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Hide header on admin routes
-  if (pathname?.startsWith('/admin')) return null;
-
   // Close dropdown on outside click
   useEffect(() => {
     const handleClick = (e) => {
@@ -44,6 +41,9 @@ export default function Header() {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
+
+  // Hide header on admin routes
+  if (pathname?.startsWith('/admin')) return null;
 
   const handleSearch = (e) => {
     e.preventDefault();

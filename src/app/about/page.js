@@ -11,6 +11,14 @@ export const metadata = {
     description: 'Your trusted partner for hard-to-find and obsolete electronic components.',
     url: `${SITE_URL}/about`,
     siteName: SITE_NAME,
+    type: 'website',
+    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: `${SITE_NAME} About Us` }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `About Us | ${SITE_NAME}`,
+    description: 'Your trusted partner for hard-to-find and obsolete electronic components.',
+    images: [`${SITE_URL}/og-image.png`],
   },
 };
 

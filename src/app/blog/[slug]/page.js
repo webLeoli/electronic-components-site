@@ -1,9 +1,50 @@
 import prisma from '@/lib/db';
+/* eslint-disable @next/next/no-img-element -- Blog cover images may be uploaded or externally hosted; remote image optimization is intentionally disabled. */
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { headers } from 'next/headers';
+import sanitizeHtml from 'sanitize-html';
 import { productPath, SITE_NAME, SITE_URL } from '@/lib/seo';
 import '../blog.css';
+
+const BLOG_HTML_SANITIZE_OPTIONS = {
+  allowedTags: [
+    'h2', 'h3', 'h4', 'p', 'br', 'strong', 'em', 'code', 'pre', 'blockquote',
+    'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'figure',
+    'figcaption', 'img', 'a', 'hr', 'div', 'span',
+  ],
+  allowedAttributes: {
+    a: ['href', 'name', 'target', 'rel', 'class'],
+    img: ['src', 'alt', 'title', 'loading', 'width', 'height', 'class'],
+    code: ['class'],
+    pre: ['class'],
+    div: ['class'],
+    span: ['class'],
+    table: ['class'],
+    th: ['class'],
+    td: ['class'],
+    blockquote: ['class'],
+    figure: ['class'],
+    h2: ['id', 'class'],
+    h3: ['id', 'class'],
+    h4: ['id', 'class'],
+    ul: ['class'],
+    ol: ['class'],
+    li: ['class'],
+    hr: ['class'],
+  },
+  allowedSchemes: ['http', 'https', 'mailto'],
+  allowedSchemesByTag: {
+    img: ['http', 'https'],
+  },
+  allowedClasses: {
+    '*': [/^blog-/],
+    code: [/^lang-/],
+  },
+  transformTags: {
+    a: sanitizeHtml.simpleTransform('a', { rel: 'noopener noreferrer' }, true),
+  },
+};
 
 // Markdown to HTML converter (server-side, full featured)
 // Safely handles mixed HTML+markdown content by protecting existing HTML blocks
@@ -112,7 +153,8 @@ export async function generateMetadata({ params }) {
     title,
     description,
     keywords: post.seoKeywords || undefined,
-    openGraph: { title, description, url: `${SITE_URL}/blog/${post.slug}`, siteName: SITE_NAME, type: 'article', images: post.coverImage ? [{ url: post.coverImage }] : undefined },
+    openGraph: { title, description, url: `${SITE_URL}/blog/${post.slug}`, siteName: SITE_NAME, type: 'article', images: post.coverImage ? [{ url: post.coverImage }] : [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: title }] },
+    twitter: { card: 'summary_large_image', title, description, images: post.coverImage ? [post.coverImage] : [`${SITE_URL}/og-image.png`] },
     alternates: { canonical: `${SITE_URL}/blog/${post.slug}` },
   };
 }
@@ -160,6 +202,7 @@ export default async function BlogPostPage({ params }) {
   // Convert remaining markdown bold/italic if any
   contentHtml = contentHtml.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   contentHtml = contentHtml.replace(/(^|[\s>])\*([^*]+?)\*(?=[\s<.,;!?)]|$)/gm, '$1<em>$2</em>');
+  contentHtml = sanitizeHtml(contentHtml, BLOG_HTML_SANITIZE_OPTIONS);
   
   // Strip HTML tags from a string to get plain text
   const stripHtml = (html) => html.replace(/<[^>]+>/g, '').trim();
@@ -223,7 +266,7 @@ export default async function BlogPostPage({ params }) {
     url: `${SITE_URL}/blog/${post.slug}`,
     datePublished: post.publishedAt?.toISOString(),
     dateModified: post.updatedAt?.toISOString(),
-    author: { '@type': 'Organization', name: post.author || SITE_NAME, url: SITE_URL },
+    author: { '@type': 'Person', name: post.author || SITE_NAME },
     publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL, logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon-512.png` } },
     mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/blog/${post.slug}` },
     image: post.coverImage || `${SITE_URL}/og-image.png`,
@@ -234,7 +277,7 @@ export default async function BlogPostPage({ params }) {
     // Speakable — tells Google Assistant which parts to read aloud
     speakable: {
       '@type': 'SpeakableSpecification',
-      cssSelector: ['.blog-article-cover + *', 'h1', '.blog-meta'],
+      cssSelector: ['h1', '.blog-article-meta'],
     },
   };
 

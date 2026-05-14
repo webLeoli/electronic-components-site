@@ -21,7 +21,12 @@ export default function AdminContactsPage() {
     setLoading(false);
   }, [page, statusFilter]);
 
-  useEffect(() => { fetchContacts(); }, [fetchContacts]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchContacts();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchContacts]);
 
   const updateStatus = async (id, status) => {
     await fetch('/api/admin/contacts', {
