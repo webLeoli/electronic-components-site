@@ -28,7 +28,7 @@ export async function generateMetadata({ params, searchParams }) {
 
   const title = page > 1
     ? `${manufacturer.name} Electronic Components - Page ${page}`
-    : `${manufacturer.name} Electronic Components`;
+    : `Buy ${manufacturer.name} Electronic Components`;
   const ogTitle = `${manufacturer.name} Electronic Components | FPGACenter`;
   const description = `Buy ${manufacturer.name} electronic components at FPGACenter. Original parts, fast delivery, no MOQ.`;
   const baseUrl = `${SITE_URL}/manufacturer/${slug}`;
