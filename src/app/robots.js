@@ -1,6 +1,10 @@
 import prisma from '@/lib/db';
 import { SITE_URL } from '@/lib/seo';
 
+// Force dynamic — so admin panel changes take effect without rebuild
+export const dynamic = 'force-dynamic';
+export const revalidate = 60; // Re-check DB every 60 seconds
+
 export default async function robots() {
   let customContent = null;
 
