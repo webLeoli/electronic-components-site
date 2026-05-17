@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
-import { computeQualityScore, isIndexable } from '@/lib/quality-score';
+import { computeQualityScore } from '@/lib/quality-score';
+import { shouldProductBeIndexable } from '@/lib/indexing-policy';
 import { manufacturerSlug, standardizeName } from '@/lib/manufacturer-map';
 
 // GET: List products with search/pagination
@@ -85,9 +86,10 @@ export async function POST(request) {
 
     // Auto-compute quality score for new product
     const qResult = computeQualityScore(product);
+    const indexable = await shouldProductBeIndexable(qResult.score);
     const scored = await prisma.product.update({
       where: { id: product.id },
-      data: { qualityScore: qResult.score, indexable: isIndexable(qResult.score) },
+      data: { qualityScore: qResult.score, indexable },
     });
 
     return NextResponse.json(scored, { status: 201 });
@@ -127,9 +129,10 @@ export async function PUT(request) {
 
     // Auto-recompute quality score after update
     const qResult = computeQualityScore(product);
+    const indexable = await shouldProductBeIndexable(qResult.score);
     const scored = await prisma.product.update({
       where: { id: product.id },
-      data: { qualityScore: qResult.score, indexable: isIndexable(qResult.score) },
+      data: { qualityScore: qResult.score, indexable },
     });
 
     // Auto-sync: ensure manufacturer exists in Manufacturer table

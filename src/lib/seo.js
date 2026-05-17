@@ -1,6 +1,19 @@
 const SITE_NAME = 'FPGACenter';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'https://fpgacenter.com';
-const SITE_DESC = 'Professional sourcing for hard-to-find and obsolete electronic components. Extensive inventory with no minimum order quantity. Global shipping.';
+// Brand positioning (2026-05-17): obsolete & hard-to-find sourcing is the
+// primary business; FPGA/CPLD depth (24K+ FPGAs, 4.6K+ CPLDs) is the named
+// specialty and matches the domain. This string is reused by every page that
+// lacks a more specific description, so it must stand alone as a one-line
+// pitch.
+// Aim for ≤160 chars so Google doesn't truncate. The current copy is 155.
+const SITE_DESC = 'Sourcing for hard-to-find and obsolete electronic components — 720K+ part numbers including 24K+ FPGAs and CPLDs. No MOQ, IDEA-1010 inspected, global shipping.';
+// Short tagline used in <title> tags (must keep `${SITE_NAME} — ${SITE_TAGLINE}`
+// under ~60 chars so Google doesn't truncate the brand keyword).
+const SITE_TAGLINE = 'Obsolete & FPGA Component Sourcing';
+// Longer brand-positioning line for hero subtitles and OG descriptions where
+// truncation isn't a concern.
+const SITE_PITCH = 'Hard-to-find and obsolete electronic components, with deep FPGA, CPLD & IC inventory';
+const NON_CONFIRMED_STOCK_STATUSES = new Set(['obsolete', 'eol', 'nrnd']);
 
 // Warn if SITE_URL is still localhost in production — all canonical/sitemap URLs will be wrong
 if (process.env.NODE_ENV === 'production' && SITE_URL.includes('localhost')) {
@@ -19,13 +32,37 @@ export function productPath(partNumber, manufacturer) {
     .replace(/&/g, 'and')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
-  return `/product/${mfrSlug}/${encodeURIComponent(partNumber)}`;
+  return `/product/${mfrSlug || 'unknown'}/${encodeURIComponent(partNumber)}`;
+}
+
+export function hasConfirmedStock(product) {
+  if (!product || NON_CONFIRMED_STOCK_STATUSES.has(product.status)) return false;
+  return product.stock != null && product.stock > 0;
+}
+
+export function getAvailabilityText(product, { includeUnit = false } = {}) {
+  if (hasConfirmedStock(product)) {
+    return `${product.stock.toLocaleString()}${includeUnit ? ' pcs' : ''} In Stock`;
+  }
+  if (product?.status === 'obsolete' || product?.status === 'eol') return 'RFQ for sourcing';
+  return 'Available on request';
+}
+
+export function getAvailabilityTone(product) {
+  if (hasConfirmedStock(product)) return 'success';
+  if (product?.status === 'obsolete' || product?.status === 'eol') return 'muted';
+  return 'warning';
+}
+
+export function getSchemaAvailability(product) {
+  if (hasConfirmedStock(product)) return 'https://schema.org/InStock';
+  return 'https://schema.org/LimitedAvailability';
 }
 
 export function generateProductMeta(product) {
   const mfr = product.manufacturer || 'Electronic Component';
   const encodedPN = encodeURIComponent(product.partNumber);
-  const stockLabel = product.stock > 0 ? 'In Stock' : 'Available';
+  const stockLabel = hasConfirmedStock(product) ? 'In Stock' : 'Available';
   const categoryName = product.category?.name || '';
 
   // Title: Part# - Manufacturer | Status | FPGACenter
@@ -38,8 +75,10 @@ export function generateProductMeta(product) {
   if (categoryName) descParts.push(`(${categoryName})`);
   if (product.packageType) descParts.push(`in ${product.packageType} package`);
   descParts.push('.');
-  if (product.stock > 0) {
+  if (hasConfirmedStock(product)) {
     descParts.push(`${product.stock.toLocaleString()} units in stock.`);
+  } else if (product.status === 'obsolete' || product.status === 'eol') {
+    descParts.push('RFQ for verified sourcing.');
   }
   if (product.minPrice > 0) {
     descParts.push(`From $${product.minPrice.toFixed(product.minPrice < 1 ? 4 : 2)}.`);
@@ -74,7 +113,7 @@ export function generateProductMeta(product) {
   if (product.imageUrl) {
     const imageUrl = product.imageUrl.startsWith('http')
       ? product.imageUrl
-      : `${SITE_URL}${product.imageUrl}`;
+      : `${SITE_URL}${product.imageUrl.startsWith('/') ? '' : '/'}${product.imageUrl}`;
     meta.openGraph.images = [{
       url: imageUrl,
       alt: `${product.partNumber} ${product.manufacturer} Electronic Component`,
@@ -132,9 +171,7 @@ export function generateProductJsonLd(product) {
   // Build offer — use AggregateOffer for price range display in Google
   const baseOffer = {
     url: productUrl,
-    availability: product.stock > 0
-      ? 'https://schema.org/InStock'
-      : 'https://schema.org/OutOfStock',
+    availability: getSchemaAvailability(product),
     // FPGACenter sells original/genuine parts — even obsolete/EOL products
     // are new-old-stock (NOS), not second-hand. Always NewCondition.
     itemCondition: 'https://schema.org/NewCondition',
@@ -210,7 +247,7 @@ export function generateProductJsonLd(product) {
   if (product.imageUrl) {
     jsonLd.image = product.imageUrl.startsWith('http')
       ? product.imageUrl
-      : `${SITE_URL}${product.imageUrl}`;
+      : `${SITE_URL}${product.imageUrl.startsWith('/') ? '' : '/'}${product.imageUrl}`;
   } else {
     jsonLd.image = `${SITE_URL}/og-image.png`;
   }
@@ -288,9 +325,20 @@ export function generateOrganizationJsonLd() {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: SITE_NAME,
+    alternateName: 'FPGA Center',
     url: SITE_URL,
     logo: `${SITE_URL}/icon-512.png`,
     description: SITE_DESC,
+    slogan: SITE_TAGLINE,
+    knowsAbout: [
+      'FPGA sourcing',
+      'CPLD sourcing',
+      'Obsolete electronic components',
+      'End-of-life IC sourcing',
+      'NRND component supply',
+      'Last-time-buy procurement',
+      'BOM scrubbing',
+    ],
     foundingDate: '2016',
     contactPoint: [
       {
@@ -335,4 +383,4 @@ export function generateWebSiteJsonLd() {
   };
 }
 
-export { SITE_NAME, SITE_URL, SITE_DESC };
+export { SITE_NAME, SITE_URL, SITE_DESC, SITE_TAGLINE, SITE_PITCH };

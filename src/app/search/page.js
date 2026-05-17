@@ -2,7 +2,7 @@ import prisma from '@/lib/db';
 import Link from 'next/link';
 import AddToRfqButton from '@/components/AddToRfqButton';
 import { ProductIcon } from '@/components/ProductImage';
-import { productPath, SITE_NAME, SITE_URL } from '@/lib/seo';
+import { productPath, SITE_NAME, SITE_URL, hasConfirmedStock, getAvailabilityText } from '@/lib/seo';
 
 export const metadata = {
   title: 'Search Electronic Components',
@@ -187,8 +187,8 @@ export default async function SearchPage({ searchParams }) {
                       {product.description}
                     </td>
                     <td>
-                      <span className={product.stock > 0 ? 'text-success' : 'text-danger'}>
-                        {product.stock > 0 ? product.stock.toLocaleString() : 'Contact'}
+                      <span className={hasConfirmedStock(product) ? 'text-success' : 'text-muted'}>
+                        {getAvailabilityText(product)}
                       </span>
                     </td>
                     <td style={{ fontWeight: 600 }}>

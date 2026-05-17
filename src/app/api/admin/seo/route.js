@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
+import { getSitemapSummary } from '@/lib/sitemap-data';
 
 export async function GET(request) {
   const authError = requireAuth(request);
@@ -19,7 +20,9 @@ export async function GET(request) {
       result[s.key] = s.value;
     });
 
-    return NextResponse.json(result);
+    const sitemap = await getSitemapSummary();
+
+    return NextResponse.json({ ...result, sitemap });
   } catch (e) {
     return NextResponse.json({ error: 'Failed to fetch SEO settings' }, { status: 500 });
   }

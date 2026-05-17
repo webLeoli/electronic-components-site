@@ -1,0 +1,4236 @@
+[
+  {
+    "id": 140,
+    "slug": "mcu-processors",
+    "name": "Microcontrollers & Processors",
+    "parentId": 139,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 123657,
+    "indexableCount": 72288,
+    "topMfrs": [
+      "Microchip",
+      "Renesas",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "STM32F767ZIT6",
+      "STM32H743ZIT6",
+      "STM32H743VIT6",
+      "STM32F446RET6",
+      "MK60FX512VLQ15"
+    ],
+    "childNames": [
+      "Microcontrollers (MCU)",
+      "Microprocessors (MPU)",
+      "System On Chip (SoC)",
+      "DSP - Digital Signal Processors",
+      "Application Specific Processors"
+    ],
+    "packageSamples": [
+      "100-LQFP",
+      "64-LQFP",
+      "24-VFQFN Exposed Pad",
+      "48-LQFP",
+      "144-LQFP"
+    ]
+  },
+  {
+    "id": 146,
+    "slug": "fpgas-programmable-logic",
+    "name": "FPGAs & Programmable Logic",
+    "parentId": 139,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 31003,
+    "indexableCount": 250,
+    "topMfrs": [
+      "Altera",
+      "Lattice Semiconductor",
+      "Xilinx"
+    ],
+    "topParts": [
+      "XC9572XL-10VQG64C",
+      "XC2C384-7FTG256C",
+      "XC2C256-7TQG144C",
+      "XC9536XL-10VQG44C",
+      "EP4CE6E22C8N"
+    ],
+    "childNames": [
+      "FPGAs",
+      "CPLDs",
+      "PLDs - Programmable Logic Devices",
+      "FPGAs with Microcontrollers",
+      "Configuration PROMs for FPGAs"
+    ],
+    "packageSamples": [
+      "1152-BBGA, FCBGA",
+      "1517-BBGA, FCBGA",
+      "208-BFQFP",
+      "256-LBGA",
+      "144-LQFP"
+    ]
+  },
+  {
+    "id": 152,
+    "slug": "embedded-modules",
+    "name": "Embedded Modules",
+    "parentId": 139,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 551,
+    "indexableCount": 30,
+    "topMfrs": [
+      "Trenz Electronic",
+      "Digi International",
+      "Advantech"
+    ],
+    "topParts": [
+      "MYC-J3358-V2-256N256D-100-I",
+      "MYC-Y3358-V2-256N256D-100-I",
+      "MYC-C4378-V2-4E512D-100-C",
+      "MYC-J3352-V2-256N256D-80-I",
+      "MYC-Y3352-V2-256N256D-80-I"
+    ],
+    "childNames": [
+      "MCU, MPU & FPGA Modules"
+    ],
+    "packageSamples": [
+      "2011-LGA Module",
+      "1151-LGA Module",
+      "1155-LGA Module",
+      "1150-LGA Module",
+      "3647-LGA Module"
+    ]
+  },
+  {
+    "id": 141,
+    "slug": "microcontrollers",
+    "name": "Microcontrollers (MCU)",
+    "parentId": 140,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 101421,
+    "indexableCount": 66660,
+    "topMfrs": [
+      "Microchip",
+      "Renesas",
+      "Spansion"
+    ],
+    "topParts": [
+      "STM32F767ZIT6",
+      "STM32H743ZIT6",
+      "STM32H743VIT6",
+      "STM32F446RET6",
+      "MK60FX512VLQ15"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "100-LQFP",
+      "64-LQFP",
+      "48-LQFP",
+      "144-LQFP",
+      "80-LQFP"
+    ]
+  },
+  {
+    "id": 142,
+    "slug": "microprocessors",
+    "name": "Microprocessors (MPU)",
+    "parentId": 140,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 5167,
+    "indexableCount": 394,
+    "topMfrs": [
+      "NXP Semiconductors",
+      "Freescale Semiconductor",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "NS9750B-A1-I162",
+      "NS9750B-A1-C200",
+      "NS9360B-0-C103",
+      "NS9215B-0-I150",
+      "NS9360B-0-C177"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "783-BBGA, FCBGA",
+      "357-BBGA",
+      "689-BBGA Exposed Pad",
+      "256-BBGA",
+      "361-LFBGA"
+    ]
+  },
+  {
+    "id": 143,
+    "slug": "soc",
+    "name": "System On Chip (SoC)",
+    "parentId": 140,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 4779,
+    "indexableCount": 3880,
+    "topMfrs": [
+      "Altera",
+      "Xilinx",
+      "Microsemi"
+    ],
+    "topParts": [
+      "AGFB006R16A2I1V",
+      "AGFB006R16A2I2V",
+      "AGFB006R16A2E3V",
+      "AGFB006R16A2E3E",
+      "AGFB006R16A2E4F"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "1152-BBGA, FCBGA",
+      "1517-BBGA, FCBGA",
+      "1760-BBGA, FCBGA",
+      "484-BGA",
+      "3184-BFBGA Exposed Pad"
+    ]
+  },
+  {
+    "id": 144,
+    "slug": "dsp",
+    "name": "DSP - Digital Signal Processors",
+    "parentId": 140,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 4026,
+    "indexableCount": 799,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "NXP Semiconductors"
+    ],
+    "topParts": [
+      "STM32H7A3ZGT6",
+      "STM32H7A3VGH6",
+      "STM32F401RDT7TR",
+      "STM32F373VCT6TR",
+      "STM32F469VIT6TR"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "176-LQFP Exposed Pad",
+      "361-LFBGA",
+      "144-LFBGA",
+      "100-LQFP",
+      "532-BFBGA, FCBGA"
+    ]
+  },
+  {
+    "id": 145,
+    "slug": "application-specific-processors",
+    "name": "Application Specific Processors",
+    "parentId": 140,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 8264,
+    "indexableCount": 555,
+    "topMfrs": [
+      "Skyworks Solutions",
+      "Renesas",
+      "Microchip"
+    ],
+    "topParts": [
+      "SI5338A-B12150-GM",
+      "SI5338A-B12193-GMR",
+      "SI5338A-B13293-GM",
+      "SI5338A-B13733-GM",
+      "SI5338A-B13730-GM"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "24-VFQFN Exposed Pad",
+      "56-BSSOP (0.295\", 7.50mm Width)",
+      "56-TFSOP (0.240\", 6.10mm Width)",
+      "48-BSSOP (0.295\", 7.50mm Width)",
+      "32-VFQFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 147,
+    "slug": "fpgas",
+    "name": "FPGAs",
+    "parentId": 146,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 24893,
+    "indexableCount": 225,
+    "topMfrs": [
+      "Altera",
+      "Xilinx",
+      "Lattice Semiconductor"
+    ],
+    "topParts": [
+      "EP4CE6E22C8N",
+      "XC6SLX4-2TQG144C",
+      "EP3C25F324C6N",
+      "AX2000-FGG896",
+      "EP3C5E144C8N"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "1152-BBGA, FCBGA",
+      "1517-BBGA, FCBGA",
+      "208-BFQFP",
+      "484-BGA",
+      "256-LBGA"
+    ]
+  },
+  {
+    "id": 148,
+    "slug": "cplds",
+    "name": "CPLDs",
+    "parentId": 146,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 4638,
+    "indexableCount": 12,
+    "topMfrs": [
+      "Lattice Semiconductor",
+      "Altera",
+      "Xilinx"
+    ],
+    "topParts": [
+      "XC9572XL-10VQG64C",
+      "XC9536XL-10VQG44C",
+      "XC2C256-7TQG144C",
+      "XC2C384-7FTG256C",
+      "EPM570T144C5N"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "100-LQFP",
+      "44-TQFP",
+      "256-BGA",
+      "44-LCC (J-Lead)",
+      "208-BFQFP"
+    ]
+  },
+  {
+    "id": 149,
+    "slug": "plds",
+    "name": "PLDs - Programmable Logic Devices",
+    "parentId": 146,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 886,
+    "indexableCount": 2,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Microchip",
+      "Texas Instruments"
+    ],
+    "topParts": [
+      "PAL16L8A-2MJ",
+      "PAL16L8A-2MJB"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "28-LCC (J-Lead)",
+      "24-DIP (0.300\", 7.62mm)",
+      "20-LCC (J-Lead)",
+      "20-CDIP (0.300\", 7.62mm)",
+      "24-SOIC (0.295\", 7.50mm Width)"
+    ]
+  },
+  {
+    "id": 150,
+    "slug": "fpgas-with-mcu",
+    "name": "FPGAs with Microcontrollers",
+    "parentId": 146,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 50,
+    "indexableCount": 6,
+    "topMfrs": [
+      "Microchip",
+      "Altera"
+    ],
+    "topParts": [
+      "AT94S10AL-25BQU",
+      "AT94S05AL-25BQU",
+      "AT94K05AL-25AQU",
+      "AT94K05AL-25BQU",
+      "AT94K10AL-25BQU"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "144-LQFP",
+      "672-BBGA",
+      "256-LBGA, CABGA",
+      "100-TQFP",
+      "1020-BBGA"
+    ]
+  },
+  {
+    "id": 151,
+    "slug": "fpga-config-proms",
+    "name": "Configuration PROMs for FPGAs",
+    "parentId": 146,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 536,
+    "indexableCount": 5,
+    "topMfrs": [
+      "Atmel",
+      "Xilinx",
+      "Altera"
+    ],
+    "topParts": [
+      "AT17LV512A-10PU",
+      "AT17LV65-10SI",
+      "AT17LV256-10SU",
+      "AT17LV010A-10PU",
+      "AT17LV512-10SI"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "20-LCC (J-Lead)",
+      "8-DIP (0.300\", 7.62mm)",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "20-SOIC (0.295\", 7.50mm Width)",
+      "8-TDFN"
+    ]
+  },
+  {
+    "id": 153,
+    "slug": "embedded-modules-general",
+    "name": "MCU, MPU & FPGA Modules",
+    "parentId": 152,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 551,
+    "indexableCount": 30,
+    "topMfrs": [
+      "Trenz Electronic",
+      "Digi International",
+      "Advantech"
+    ],
+    "topParts": [
+      "MYC-J3358-V2-256N256D-100-I",
+      "MYC-Y3358-V2-256N256D-100-I",
+      "MYC-C4378-V2-4E512D-100-C",
+      "MYC-J3352-V2-256N256D-80-I",
+      "MYC-Y3352-V2-256N256D-80-I"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "2011-LGA Module",
+      "1151-LGA Module",
+      "1155-LGA Module",
+      "1150-LGA Module",
+      "3647-LGA Module"
+    ]
+  },
+  {
+    "id": 155,
+    "slug": "voltage-regulators",
+    "name": "Voltage Regulators",
+    "parentId": 154,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 76962,
+    "indexableCount": 251,
+    "topMfrs": [
+      "Torex Semiconductor",
+      "Texas Instruments",
+      "ABLIC Inc."
+    ],
+    "topParts": [
+      "LM1117IMP-3.3/NOPB",
+      "LM7805CT",
+      "L7805CV",
+      "L7812CV",
+      "LM317T"
+    ],
+    "childNames": [
+      "Linear Regulators (LDO)",
+      "Linear Regulator Controllers",
+      "Voltage References"
+    ],
+    "packageSamples": [
+      "SC-74A, SOT-753",
+      "SOT-89-5/6",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "TO-236-3, SC-59, SOT-23-3",
+      "6-UFDFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 159,
+    "slug": "switching-regulators",
+    "name": "Switching Regulators & Converters",
+    "parentId": 154,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 54058,
+    "indexableCount": 29,
+    "topMfrs": [
+      "Torex Semiconductor",
+      "Texas Instruments",
+      "Linear Technology"
+    ],
+    "topParts": [
+      "TOP258PN",
+      "TPS63020DSJR",
+      "TPS65320BQPWPRQ1",
+      "TPS65320DQPWPRQ1",
+      "MAX1765EUE+"
+    ],
+    "childNames": [
+      "DC-DC Switching Regulators",
+      "DC-DC Switching Controllers",
+      "AC-DC Converters & Offline Switchers",
+      "PFC Controllers",
+      "Linear & Switching Controllers"
+    ],
+    "packageSamples": [
+      "SC-74A, SOT-753",
+      "6-UFDFN Exposed Pad",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "6-XDFN Exposed Pad",
+      "8-DIP (0.300\", 7.62mm)"
+    ]
+  },
+  {
+    "id": 165,
+    "slug": "battery-charging",
+    "name": "Battery & Charging",
+    "parentId": 154,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 8650,
+    "indexableCount": 22,
+    "topMfrs": [
+      "Maxim Integrated",
+      "Texas Instruments",
+      "ABLIC Inc."
+    ],
+    "topParts": [
+      "MAX77757JEFG420+T",
+      "MAX77757HEFG370+",
+      "MAX77757JEFG420+",
+      "BQ25895RTWR",
+      "ADBMS1818ASWAZ-R7"
+    ],
+    "childNames": [
+      "Battery Management ICs",
+      "Battery Chargers"
+    ],
+    "packageSamples": [
+      "SOT-23-8",
+      "6-SMD, Flat Leads",
+      "SOT-23-6",
+      "SC-74A, SOT-753",
+      "16-TSSOP (0.173\", 4.40mm Width)"
+    ]
+  },
+  {
+    "id": 168,
+    "slug": "led-motor-drivers",
+    "name": "LED & Motor Drivers",
+    "parentId": 154,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 18994,
+    "indexableCount": 1689,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "Microchip"
+    ],
+    "topParts": [
+      "DRV10982SQPWPRQ1",
+      "DRV8245SQPWPRQ1",
+      "DRV8910QPWPRQ1",
+      "DRV8904QPWPRQ1",
+      "DRV8908QPWPRQ1"
+    ],
+    "childNames": [
+      "LED Drivers",
+      "Motor Drivers & Controllers",
+      "Gate Drivers",
+      "Full & Half-Bridge Drivers",
+      "Lighting & Ballast Controllers",
+      "Laser Drivers"
+    ],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-DIP (0.300\", 7.62mm)",
+      "8-SOIC (0.154\", 3.90mm Width) Exposed Pad",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "14-SOIC (0.154\", 3.90mm Width)"
+    ]
+  },
+  {
+    "id": 175,
+    "slug": "power-switches",
+    "name": "Power Switches & Distribution",
+    "parentId": 154,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 10863,
+    "indexableCount": 919,
+    "topMfrs": [
+      "Texas Instruments",
+      "STMicroelectronics",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "TPS2321IPWR",
+      "TPS2115AIPWRQ1",
+      "TPS2115APWRG4",
+      "TPS2115APWR",
+      "TPS2114PWG4"
+    ],
+    "childNames": [
+      "Power Distribution Switches",
+      "Hot Swap Controllers",
+      "OR Controllers & Ideal Diodes",
+      "Current Regulation & Management"
+    ],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "SC-74A, SOT-753",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "10-VFDFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 180,
+    "slug": "power-supervisors",
+    "name": "Power Supervisors & Control",
+    "parentId": 154,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 49225,
+    "indexableCount": 1402,
+    "topMfrs": [
+      "Torex Semiconductor",
+      "Maxim Integrated",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "XC6121A745ER-G",
+      "XC6121A240ER-G",
+      "XC6120N302NR-G",
+      "XC6123C218ER-G",
+      "XC6122A339ER-G"
+    ],
+    "childNames": [
+      "Supervisors & Reset ICs",
+      "Power Supply Controllers & Monitors",
+      "PoE Controllers",
+      "Thermal Management ICs",
+      "Energy Metering ICs"
+    ],
+    "packageSamples": [
+      "SC-74A, SOT-753",
+      "6-UFDFN Exposed Pad",
+      "SC-82",
+      "TO-236-3, SC-59, SOT-23-3",
+      "8-SOIC (0.154\", 3.90mm Width)"
+    ]
+  },
+  {
+    "id": 186,
+    "slug": "power-specialized",
+    "name": "Power Management - Specialized",
+    "parentId": 154,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 7428,
+    "indexableCount": 1324,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "Maxim Integrated"
+    ],
+    "topParts": [
+      "TPS26636PWPR",
+      "TPS2511DGNR",
+      "LM2642MTC",
+      "SI8941AB-IS",
+      "SI8941AB-ISR"
+    ],
+    "childNames": [
+      "Specialized Power Management"
+    ],
+    "packageSamples": [
+      "48-VFQFN Exposed Pad",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "56-VFQFN Exposed Pad",
+      "48-LQFP Exposed Pad",
+      "8-DIP (0.300\", 7.62mm)"
+    ]
+  },
+  {
+    "id": 156,
+    "slug": "linear-regulators-ldo",
+    "name": "Linear Regulators (LDO)",
+    "parentId": 155,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 67880,
+    "indexableCount": 7,
+    "topMfrs": [
+      "Torex Semiconductor",
+      "ABLIC Inc.",
+      "Texas Instruments"
+    ],
+    "topParts": [
+      "LM1117IMP-3.3/NOPB",
+      "LM7805CT",
+      "L7805CV",
+      "L7812CV",
+      "LM317T"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "SC-74A, SOT-753",
+      "SOT-89-5/6",
+      "6-UFDFN Exposed Pad",
+      "4-UDFN Exposed Pad",
+      "8-SOIC (0.154\", 3.90mm Width)"
+    ]
+  },
+  {
+    "id": 157,
+    "slug": "linear-regulator-controllers",
+    "name": "Linear Regulator Controllers",
+    "parentId": 155,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 939,
+    "indexableCount": 12,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Microchip",
+      "Texas Instruments"
+    ],
+    "topParts": [
+      "LT1573IS8#PBF",
+      "ADP3310AR-2.8",
+      "ADP3310AR-5",
+      "ADP3310AR-5-REEL",
+      "UC2836DG4"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-DIP (0.300\", 7.62mm)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "10-TFSOP, 10-MSOP (0.118\", 3.00mm Width)",
+      "8-UFDFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 158,
+    "slug": "voltage-references",
+    "name": "Voltage References",
+    "parentId": 155,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 8143,
+    "indexableCount": 232,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "Linear Technology"
+    ],
+    "topParts": [
+      "AD586MNZ",
+      "MAX6160ESA+T",
+      "MAX6160ESA+",
+      "MAX6168BESA+T",
+      "MAX6126AASA25+T"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "TO-236-3, SC-59, SOT-23-3",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "SC-74A, SOT-753",
+      "TO-226-3, TO-92-3 (TO-226AA) Formed Leads",
+      "TO-226-3, TO-92-3 (TO-226AA)"
+    ]
+  },
+  {
+    "id": 160,
+    "slug": "dc-dc-switching-regulators",
+    "name": "DC-DC Switching Regulators",
+    "parentId": 159,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 36232,
+    "indexableCount": 10,
+    "topMfrs": [
+      "Torex Semiconductor",
+      "Texas Instruments",
+      "Linear Technology"
+    ],
+    "topParts": [
+      "TPS63020DSJR",
+      "LM2596S-ADJ/NOPB",
+      "MC34063ADR",
+      "MP2359DJ-LF-Z",
+      "TPS54331DR"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "6-UFDFN Exposed Pad",
+      "SC-74A, SOT-753",
+      "6-XDFN Exposed Pad",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "5-XFBGA, WLBGA"
+    ]
+  },
+  {
+    "id": 161,
+    "slug": "dc-dc-switching-controllers",
+    "name": "DC-DC Switching Controllers",
+    "parentId": 159,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 11167,
+    "indexableCount": 1,
+    "topMfrs": [
+      "Linear Technology",
+      "Rochester Electronics",
+      "Texas Instruments"
+    ],
+    "topParts": [
+      "ADP5054ACPZ-R7"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "SC-74A, SOT-753",
+      "8-TSSOP (0.173\", 4.40mm Width)",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "14-SOIC (0.154\", 3.90mm Width)"
+    ]
+  },
+  {
+    "id": 162,
+    "slug": "ac-dc-converters",
+    "name": "AC-DC Converters & Offline Switchers",
+    "parentId": 159,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 4291,
+    "indexableCount": 2,
+    "topMfrs": [
+      "Power Integrations",
+      "Onsemi",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "TOP258PN",
+      "TOP264VG"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-DIP (0.300\", 7.62mm), 7 Leads",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-SOIC (0.154\", 3.90mm Width), 7 Leads",
+      "8-DIP (0.300\", 7.62mm)",
+      "24-PowerSMD Module (0.425\", 10.80mm Width), 17 Leads"
+    ]
+  },
+  {
+    "id": 163,
+    "slug": "pfc-controllers",
+    "name": "PFC Controllers",
+    "parentId": 159,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 891,
+    "indexableCount": 3,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Onsemi"
+    ],
+    "topParts": [
+      "TEA6017AT/1Y",
+      "UCC28065DR",
+      "UCC28065DT"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "8-DIP (0.300\", 7.62mm)",
+      "20-SOIC (0.295\", 7.50mm Width)",
+      "16-DIP (0.300\", 7.62mm)"
+    ]
+  },
+  {
+    "id": 164,
+    "slug": "linear-switching-controllers",
+    "name": "Linear & Switching Controllers",
+    "parentId": 159,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1477,
+    "indexableCount": 13,
+    "topMfrs": [
+      "Microchip",
+      "Linear Technology",
+      "Texas Instruments"
+    ],
+    "topParts": [
+      "TPS65320BQPWPRQ1",
+      "MAX1765EUE+T",
+      "MAX1765EUE+",
+      "TPS65320DQPWPRQ1",
+      "MAX25249BATPE/VY+"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "10-VFDFN Exposed Pad",
+      "10-TFSOP, 10-MSOP (0.118\", 3.00mm Width)",
+      "24-WFQFN Exposed Pad",
+      "16-WFQFN Exposed Pad",
+      "28-VFQFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 166,
+    "slug": "battery-management",
+    "name": "Battery Management ICs",
+    "parentId": 165,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 5474,
+    "indexableCount": 3,
+    "topMfrs": [
+      "ABLIC Inc.",
+      "Maxim Integrated",
+      "Texas Instruments"
+    ],
+    "topParts": [
+      "ADBMS1818ASWAZ-R7",
+      "DS2745U+T&R",
+      "LTC2941IMS8E#TRPBF"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "SOT-23-8",
+      "6-SMD, Flat Leads",
+      "SOT-23-6",
+      "SC-74A, SOT-753",
+      "16-TSSOP (0.173\", 4.40mm Width)"
+    ]
+  },
+  {
+    "id": 167,
+    "slug": "battery-chargers",
+    "name": "Battery Chargers",
+    "parentId": 165,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 3176,
+    "indexableCount": 19,
+    "topMfrs": [
+      "Texas Instruments",
+      "Linear Technology",
+      "Maxim Integrated"
+    ],
+    "topParts": [
+      "MAX8677CETG+",
+      "LTC4156EUFD#PBF",
+      "MAX77757HEFG360+",
+      "MAX77757JEFG440+",
+      "MAX77650BEWV+T"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "10-VFDFN Exposed Pad",
+      "6-XDFN Exposed Pad",
+      "28-WFQFN Exposed Pad",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "24-VFQFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 169,
+    "slug": "led-drivers",
+    "name": "LED Drivers",
+    "parentId": 168,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 6422,
+    "indexableCount": 193,
+    "topMfrs": [
+      "Texas Instruments",
+      "Maxim Integrated",
+      "Linear Technology"
+    ],
+    "topParts": [
+      "MP2481DH-LF-P",
+      "MPQ24833-BGN-AEC1-P",
+      "MPQ2484GF-AEC1-Z",
+      "LT3475EFE#TRPBF",
+      "LT3475IFE-1#PBF"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "16-TSSOP (0.173\", 4.40mm Width) Exposed Pad",
+      "24-WFQFN Exposed Pad",
+      "16-WFQFN Exposed Pad",
+      "28-TSSOP (0.173\", 4.40mm Width) Exposed Pad"
+    ]
+  },
+  {
+    "id": 170,
+    "slug": "motor-drivers",
+    "name": "Motor Drivers & Controllers",
+    "parentId": 168,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 4294,
+    "indexableCount": 900,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "Onsemi"
+    ],
+    "topParts": [
+      "DRV10982SQPWPRQ1",
+      "DRV8245SQPWPRQ1",
+      "TMC2225-SA-T",
+      "IMI111T046HXUMA1",
+      "LS8297-TS"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "24-SOIC (0.295\", 7.50mm Width)",
+      "24-VFQFN Exposed Pad",
+      "28-TSSOP (0.173\", 4.40mm Width) Exposed Pad",
+      "48-VFQFN Exposed Pad",
+      "20-SOIC (0.295\", 7.50mm Width)"
+    ]
+  },
+  {
+    "id": 171,
+    "slug": "gate-drivers",
+    "name": "Gate Drivers",
+    "parentId": 168,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 6263,
+    "indexableCount": 197,
+    "topMfrs": [
+      "Microchip",
+      "Rochester Electronics",
+      "Texas Instruments"
+    ],
+    "topParts": [
+      "MPQ18024HN-AEC1-LF-P",
+      "IR2104PBF",
+      "UCC27222PWPR",
+      "UCC27524ADGNR",
+      "UCC27323DGNR"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-DIP (0.300\", 7.62mm)",
+      "Module",
+      "8-SOIC (0.154\", 3.90mm Width) Exposed Pad",
+      "16-SOIC (0.295\", 7.50mm Width)"
+    ]
+  },
+  {
+    "id": 172,
+    "slug": "bridge-drivers",
+    "name": "Full & Half-Bridge Drivers",
+    "parentId": 168,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1105,
+    "indexableCount": 330,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Onsemi",
+      "Texas Instruments"
+    ],
+    "topParts": [
+      "DRV8910QPWPRQ1",
+      "DRV8904QPWPRQ1",
+      "DRV8906QPWPRQ1",
+      "LTC7060IMSE#WTRPBF",
+      "DRV8908QPWPRQ1"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "28-SOIC (0.295\", 7.50mm Width)",
+      "14-LSOP (0.173\", 4.40mm Width)",
+      "32-PowerDIP Module, 23 Leads",
+      "32-PowerSMD Module, 23 Leads",
+      "12-TSSOP (0.118\", 3.00mm Width) Exposed Pad"
+    ]
+  },
+  {
+    "id": 173,
+    "slug": "lighting-ballast-controllers",
+    "name": "Lighting & Ballast Controllers",
+    "parentId": 168,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 435,
+    "indexableCount": 26,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Microchip",
+      "International Rectifier"
+    ],
+    "topParts": [
+      "LT1186FIS#TRPBF",
+      "DS3882E+C",
+      "IRS2168DSTRPBF",
+      "BTS712204ESAXUMA1",
+      "MAX14521EETG+T"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "8-DIP (0.300\", 7.62mm)",
+      "16-DIP (0.300\", 7.62mm)",
+      "14-SOIC (0.154\", 3.90mm Width)"
+    ]
+  },
+  {
+    "id": 174,
+    "slug": "laser-drivers",
+    "name": "Laser Drivers",
+    "parentId": 168,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 475,
+    "indexableCount": 43,
+    "topMfrs": [
+      "Maxim Integrated",
+      "Microchip",
+      "Analog Devices"
+    ],
+    "topParts": [
+      "MAX3799ETJ+T",
+      "MAX3669ETG+T",
+      "MAX3740AETG+",
+      "MAX3799ETJ+",
+      "MAX3646ETG+"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "24-WFQFN Exposed Pad",
+      "10-TFSOP, 10-MSOP (0.118\", 3.00mm Width)",
+      "16-UFQFN Exposed Pad, 16-MLF®",
+      "20-TSSOP (0.173\", 4.40mm Width)",
+      "32-WFQFN Exposed Pad, CSP"
+    ]
+  },
+  {
+    "id": 176,
+    "slug": "power-distribution-switches",
+    "name": "Power Distribution Switches",
+    "parentId": 175,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 6768,
+    "indexableCount": 4,
+    "topMfrs": [
+      "STMicroelectronics",
+      "Texas Instruments",
+      "Microchip"
+    ],
+    "topParts": [
+      "BTS710404ESPXUMA1",
+      "BTS710336ESPXUMA1",
+      "HIP0050IB96",
+      "MC33XS2410EL"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "SC-74A, SOT-753",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width) Exposed Pad"
+    ]
+  },
+  {
+    "id": 177,
+    "slug": "hot-swap-controllers",
+    "name": "Hot Swap Controllers",
+    "parentId": 175,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 2193,
+    "indexableCount": 640,
+    "topMfrs": [
+      "Linear Technology",
+      "Maxim Integrated",
+      "Intersil"
+    ],
+    "topParts": [
+      "LTC1647-2CS8#TRPBF",
+      "LTC1645IS#TRPBF",
+      "LTC1647-1CS8#PBF",
+      "LTC1647-1IS8#PBF",
+      "LTC1647-2IS8#TRPBF"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "16-SSOP (0.154\", 3.90mm Width)",
+      "10-TFSOP, 10-MSOP (0.118\", 3.00mm Width)",
+      "10-VFDFN Exposed Pad",
+      "14-SOIC (0.154\", 3.90mm Width)"
+    ]
+  },
+  {
+    "id": 178,
+    "slug": "or-controllers-ideal-diodes",
+    "name": "OR Controllers & Ideal Diodes",
+    "parentId": 175,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 503,
+    "indexableCount": 246,
+    "topMfrs": [
+      "Linear Technology",
+      "Texas Instruments",
+      "Intersil"
+    ],
+    "topParts": [
+      "LTC4358IFE#TRPBF",
+      "LTC4359HMS8#TR",
+      "LTC4352IMS#TRPBF",
+      "LTC4352HMS#TRPBF",
+      "LTC4359HMS8#PBF"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "8-TSSOP (0.173\", 4.40mm Width)",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-VDFN Exposed Pad",
+      "8-WFDFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 179,
+    "slug": "current-regulation",
+    "name": "Current Regulation & Management",
+    "parentId": 175,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1399,
+    "indexableCount": 29,
+    "topMfrs": [
+      "Texas Instruments",
+      "Maxim Integrated",
+      "Diodes Incorporated"
+    ],
+    "topParts": [
+      "INA219BIDR",
+      "INA282AQDRDN",
+      "MAX20089ATPB/VY+",
+      "MAX4210FEUA+",
+      "MAX4210DEUA+"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "SC-74A, SOT-753",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "10-VFDFN Exposed Pad",
+      "6-TSSOP, SC-88, SOT-363"
+    ]
+  },
+  {
+    "id": 181,
+    "slug": "supervisors-reset",
+    "name": "Supervisors & Reset ICs",
+    "parentId": 180,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 45819,
+    "indexableCount": 911,
+    "topMfrs": [
+      "Torex Semiconductor",
+      "Maxim Integrated",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "XC6121A745ER-G",
+      "XC6121A240ER-G",
+      "XC6120N302NR-G",
+      "XC6123C218ER-G",
+      "XC6122A339ER-G"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "SC-74A, SOT-753",
+      "6-UFDFN Exposed Pad",
+      "SC-82",
+      "TO-236-3, SC-59, SOT-23-3",
+      "SOT-23-6"
+    ]
+  },
+  {
+    "id": 182,
+    "slug": "power-supply-controllers",
+    "name": "Power Supply Controllers & Monitors",
+    "parentId": 180,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1603,
+    "indexableCount": 355,
+    "topMfrs": [
+      "Linear Technology",
+      "Rochester Electronics",
+      "Texas Instruments"
+    ],
+    "topParts": [
+      "TEA19161T/2Y",
+      "TEA19161CT/1Y",
+      "ISPPAC-POWR607-01SN24I",
+      "LTC2920-2CMS8#TRPBF",
+      "LTC2920-2IMS8#PBF"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "SOT-23-6",
+      "20-TSSOP (0.173\", 4.40mm Width)",
+      "24-VFQFN Exposed Pad",
+      "64-WFQFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 183,
+    "slug": "poe-controllers",
+    "name": "PoE Controllers",
+    "parentId": 180,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 813,
+    "indexableCount": 135,
+    "topMfrs": [
+      "Linear Technology",
+      "Microchip",
+      "Maxim Integrated"
+    ],
+    "topParts": [
+      "LTC9111RMSE#PBF",
+      "LTC4257IS8-1#TRPBF",
+      "LTC4257IS8#PBF",
+      "LTC4279IS#TRPBF",
+      "LTC4257IS8#TRPBF"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "32-VFQFN Exposed Pad",
+      "56-VFQFN Exposed Pad",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "36-BSOP (0.295\", 7.50mm Width)",
+      "40-VFQFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 184,
+    "slug": "thermal-management",
+    "name": "Thermal Management ICs",
+    "parentId": 180,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 451,
+    "indexableCount": 1,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Onsemi",
+      "Maxim Integrated"
+    ],
+    "topParts": [
+      "NCT7718W TR"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "16-SSOP (0.154\", 3.90mm Width)",
+      "24-SSOP (0.154\", 3.90mm Width)",
+      "8-WFDFN Exposed Pad",
+      "48-LQFP",
+      "24-TSSOP (0.173\", 4.40mm Width)"
+    ]
+  },
+  {
+    "id": 185,
+    "slug": "energy-metering",
+    "name": "Energy Metering ICs",
+    "parentId": 180,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 539,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Analog Devices",
+      "Maxim Integrated",
+      "Rochester Electronics"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "64-LQFP",
+      "100-LQFP",
+      "24-SSOP (0.209\", 5.30mm Width)",
+      "20-SSOP (0.209\", 5.30mm Width)",
+      "28-SSOP (0.209\", 5.30mm Width)"
+    ]
+  },
+  {
+    "id": 187,
+    "slug": "specialized-power-management",
+    "name": "Specialized Power Management",
+    "parentId": 186,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 7428,
+    "indexableCount": 1324,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "Maxim Integrated"
+    ],
+    "topParts": [
+      "TPS26636PWPR",
+      "TPS2511DGNR",
+      "LM2642MTC",
+      "SI8941AB-IS",
+      "SI8941AB-ISR"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "48-VFQFN Exposed Pad",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "56-VFQFN Exposed Pad",
+      "48-LQFP Exposed Pad",
+      "8-DIP (0.300\", 7.62mm)"
+    ]
+  },
+  {
+    "id": 189,
+    "slug": "volatile-memory",
+    "name": "Volatile Memory",
+    "parentId": 188,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 31807,
+    "indexableCount": 5441,
+    "topMfrs": [
+      "Renesas",
+      "Rochester Electronics",
+      "Micron Technology Inc."
+    ],
+    "topParts": [
+      "AS4C4M16D1A-5TANTR",
+      "IS61WV51216BLL-10TLI",
+      "IS62WV12816BLL-55TLI",
+      "MT41K512M16HA-125:A",
+      "IS42S16160J-7TLI"
+    ],
+    "childNames": [
+      "SRAM",
+      "DRAM & SDRAM",
+      "FIFO Memory"
+    ],
+    "packageSamples": [
+      "100-LQFP",
+      "64-LQFP",
+      "165-LBGA",
+      "44-TSOP (0.400\", 10.16mm Width)",
+      "96-TFBGA"
+    ]
+  },
+  {
+    "id": 193,
+    "slug": "non-volatile-memory",
+    "name": "Non-Volatile Memory",
+    "parentId": 188,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 27178,
+    "indexableCount": 8738,
+    "topMfrs": [
+      "Atmel",
+      "Microchip",
+      "Micron Technology Inc."
+    ],
+    "topParts": [
+      "AT24C256C-SSHL-T",
+      "MX29LV640EBTI-70G",
+      "AT28C256-15PU",
+      "SST25VF016B-50-4C-S2AF",
+      "S26KS128SDPBHA020"
+    ],
+    "childNames": [
+      "Flash Memory",
+      "EEPROM",
+      "EPROM",
+      "FRAM & MRAM",
+      "ROM & NVRAM"
+    ],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP (0.173\", 4.40mm Width)",
+      "48-TFSOP (0.724\", 18.40mm Width)",
+      "8-SOIC (0.209\", 5.30mm Width)",
+      "64-LBGA"
+    ]
+  },
+  {
+    "id": 199,
+    "slug": "other-memory",
+    "name": "Other Memory",
+    "parentId": 188,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 8132,
+    "indexableCount": 1371,
+    "topMfrs": [
+      "Prolabs Ltd.",
+      "Rochester Electronics",
+      "Micron Technology Inc."
+    ],
+    "topParts": [
+      "S71KL512SC0BHV003",
+      "BR25H640F-5ACE2",
+      "AT25QL128A-SHE-T",
+      "IS64WV51216EEBLL-10CTLA3",
+      "IS46LQ16256A-062TBLA1-TR"
+    ],
+    "childNames": [
+      "General Memory ICs"
+    ],
+    "packageSamples": [
+      "Retail Package",
+      "24-TBGA",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "100-LQFP",
+      "100-LBGA"
+    ]
+  },
+  {
+    "id": 190,
+    "slug": "sram",
+    "name": "SRAM",
+    "parentId": 189,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 17611,
+    "indexableCount": 3283,
+    "topMfrs": [
+      "Renesas",
+      "Rochester Electronics",
+      "Cypress Semiconductor"
+    ],
+    "topParts": [
+      "IS61WV51216BLL-10TLI",
+      "IS62WV12816BLL-55TLI",
+      "IS61LF102418A-7.5B3I-TR",
+      "CY7C1328A-133AI",
+      "R1LP0408DSP-5SI#B1"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "100-LQFP",
+      "165-LBGA",
+      "44-TSOP (0.400\", 10.16mm Width)",
+      "165-TBGA",
+      "119-BGA"
+    ]
+  },
+  {
+    "id": 191,
+    "slug": "dram-sdram",
+    "name": "DRAM & SDRAM",
+    "parentId": 189,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 10060,
+    "indexableCount": 2115,
+    "topMfrs": [
+      "Micron Technology Inc.",
+      "ISSI, Integrated Silicon Solution Inc",
+      "Winbond Electronics"
+    ],
+    "topParts": [
+      "AS4C4M16D1A-5TANTR",
+      "MT41K512M16HA-125:A",
+      "IS42S16160J-7TLI",
+      "MT53E512M32D1ZW-046BAAT:B TR",
+      "MT53E2G64D8TN-046 AIT:C TR"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "96-TFBGA",
+      "60-TFBGA",
+      "54-TSOP (0.400\", 10.16mm Width)",
+      "78-TFBGA",
+      "200-WFBGA"
+    ]
+  },
+  {
+    "id": 192,
+    "slug": "fifo-memory",
+    "name": "FIFO Memory",
+    "parentId": 189,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 4136,
+    "indexableCount": 43,
+    "topMfrs": [
+      "Renesas",
+      "Rochester Electronics",
+      "IDT"
+    ],
+    "topParts": [
+      "5962-8753101XA",
+      "5962-8753103XA",
+      "5962-8753102XA",
+      "5962-8966606XA",
+      "5962-8986303YA"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "64-LQFP",
+      "32-LCC (J-Lead)",
+      "128-LQFP",
+      "32-LQFP",
+      "120-LQFP"
+    ]
+  },
+  {
+    "id": 194,
+    "slug": "flash-memory",
+    "name": "Flash Memory",
+    "parentId": 193,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 15689,
+    "indexableCount": 3360,
+    "topMfrs": [
+      "Micron Technology Inc.",
+      "Spansion",
+      "Atmel"
+    ],
+    "topParts": [
+      "MX29LV640EBTI-70G",
+      "SST25VF016B-50-4C-S2AF",
+      "S26KS128SDPBHA020",
+      "S26KL512SDABHM030",
+      "SST39VF1601-70-4C-EKE"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "48-TFSOP (0.724\", 18.40mm Width)",
+      "64-LBGA",
+      "8-WDFN Exposed Pad",
+      "24-TBGA",
+      "16-SOIC (0.295\", 7.50mm Width)"
+    ]
+  },
+  {
+    "id": 195,
+    "slug": "eeprom",
+    "name": "EEPROM",
+    "parentId": 193,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 9653,
+    "indexableCount": 4932,
+    "topMfrs": [
+      "Microchip",
+      "Atmel",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "AT24C256C-SSHL-T",
+      "AT28C256-15PU",
+      "AT28C64B-15PU",
+      "AT25320A-10TQ-2.7",
+      "25LC080A-E/SN"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP (0.173\", 4.40mm Width)",
+      "8-DIP (0.300\", 7.62mm)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "8-UFDFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 196,
+    "slug": "eprom",
+    "name": "EPROM",
+    "parentId": 193,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1106,
+    "indexableCount": 65,
+    "topMfrs": [
+      "Atmel",
+      "STMicroelectronics",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "FM27C040Q150",
+      "AT27C020-55PU",
+      "AT27LV040A-90JU",
+      "AT27BV010-90JU-T",
+      "AT27C040-70PU"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "32-LCC (J-Lead)",
+      "32-TFSOP (0.724\", 18.40mm Width)",
+      "44-LCC (J-Lead)",
+      "32-DIP (0.600\", 15.24mm)",
+      "28-SOIC (0.342\", 8.69mm Width)"
+    ]
+  },
+  {
+    "id": 197,
+    "slug": "fram-mram",
+    "name": "FRAM & MRAM",
+    "parentId": 193,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 557,
+    "indexableCount": 351,
+    "topMfrs": [
+      "Cypress Semiconductor",
+      "Kaga FEI America, Inc.",
+      "Renesas"
+    ],
+    "topParts": [
+      "CY15B102QM-50SWXI",
+      "CY15B102Q-SXA",
+      "CY15B004J-SXE",
+      "CY15B102QN-50SXI",
+      "CY15B064J-SXA"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-SOIC (0.209\", 5.30mm Width)",
+      "8-UQFN",
+      "24-TBGA",
+      "8-WDFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 198,
+    "slug": "rom-nvram",
+    "name": "ROM & NVRAM",
+    "parentId": 193,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 173,
+    "indexableCount": 30,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Fairchild Semiconductor",
+      "Xilinx"
+    ],
+    "topParts": [
+      "CY27C256A-70PI",
+      "27S13A/BEA",
+      "AM27S281A/BLA",
+      "AM27S29/BRA",
+      "CY27C256A-70PC"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "32-LCC (J-Lead)",
+      "32-TFSOP (0.724\", 18.40mm Width)",
+      "32-CLCC",
+      "28-CLCC",
+      "24-CDIP (0.300\", 7.62mm)"
+    ]
+  },
+  {
+    "id": 200,
+    "slug": "general-memory",
+    "name": "General Memory ICs",
+    "parentId": 199,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 8132,
+    "indexableCount": 1371,
+    "topMfrs": [
+      "Prolabs Ltd.",
+      "Rochester Electronics",
+      "Micron Technology Inc."
+    ],
+    "topParts": [
+      "S71KL512SC0BHV003",
+      "BR25H640F-5ACE2",
+      "AT25QL128A-SHE-T",
+      "IS64WV51216EEBLL-10CTLA3",
+      "IS46LQ16256A-062TBLA1-TR"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "Retail Package",
+      "24-TBGA",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "100-LQFP",
+      "100-LBGA"
+    ]
+  },
+  {
+    "id": 202,
+    "slug": "amplifiers",
+    "name": "Amplifiers",
+    "parentId": 201,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 35388,
+    "indexableCount": 421,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "Linear Technology"
+    ],
+    "topParts": [
+      "OPA1612AIDR",
+      "OPA2134PA",
+      "AD8099ARDZ",
+      "AD620ANZ",
+      "NE5532AP"
+    ],
+    "childNames": [
+      "Op Amps & Instrumentation Amplifiers",
+      "Audio Amplifiers",
+      "Video Amplifiers",
+      "Special Purpose Amplifiers"
+    ],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "14-SOIC (0.154\", 3.90mm Width)",
+      "8-DIP (0.300\", 7.62mm)",
+      "SC-74A, SOT-753"
+    ]
+  },
+  {
+    "id": 207,
+    "slug": "data-converters",
+    "name": "Data Converters",
+    "parentId": 201,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 29911,
+    "indexableCount": 573,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Linear Technology"
+    ],
+    "topParts": [
+      "AD5755-1ACPZ",
+      "AD7616BSTZ",
+      "AD7656BSTZ",
+      "ADS8568SPM",
+      "MAX11131ATI+"
+    ],
+    "childNames": [
+      "ADC - Analog to Digital Converters",
+      "DAC - Digital to Analog Converters",
+      "ADC/DAC - Special Purpose",
+      "Analog Front End (AFE)"
+    ],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "10-TFSOP, 10-MSOP (0.118\", 3.00mm Width)",
+      "16-TSSOP (0.173\", 4.40mm Width)",
+      "28-SOIC (0.295\", 7.50mm Width)"
+    ]
+  },
+  {
+    "id": 212,
+    "slug": "analog-switches",
+    "name": "Analog Switches & Signal Processing",
+    "parentId": 201,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 23074,
+    "indexableCount": 1092,
+    "topMfrs": [
+      "Maxim Integrated",
+      "Rochester Electronics",
+      "Intersil"
+    ],
+    "topParts": [
+      "ISL23345WFRZ-T7A",
+      "AD5121BCPZ100-RL7",
+      "AD5141BCPZ100-RL7",
+      "AD5144BCPZ100-RL7",
+      "AD5263BRUZ20-REEL7"
+    ],
+    "childNames": [
+      "Analog Switches & Multiplexers",
+      "Analog Switches - Special Purpose",
+      "Analog Comparators",
+      "Digital Potentiometers",
+      "Active Filters"
+    ],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "16-TSSOP (0.173\", 4.40mm Width)",
+      "14-TSSOP (0.173\", 4.40mm Width)"
+    ]
+  },
+  {
+    "id": 218,
+    "slug": "other-analog",
+    "name": "Other Analog",
+    "parentId": 201,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 530,
+    "indexableCount": 1,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Analog Devices",
+      "Linear Technology"
+    ],
+    "topParts": [
+      "AD9914BCPZ-RL7-CSL"
+    ],
+    "childNames": [
+      "Analog Multipliers & Dividers",
+      "RMS to DC Converters",
+      "V/F and F/V Converters",
+      "Direct Digital Synthesis (DDS)"
+    ],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "14-CDIP (0.300\", 7.62mm)",
+      "TO-100-10 Metal Can",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "8-DIP (0.300\", 7.62mm)"
+    ]
+  },
+  {
+    "id": 203,
+    "slug": "op-amps",
+    "name": "Op Amps & Instrumentation Amplifiers",
+    "parentId": 202,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 28297,
+    "indexableCount": 8,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "Linear Technology"
+    ],
+    "topParts": [
+      "OPA1612AIDR",
+      "OPA2134PA",
+      "AD8099ARDZ",
+      "AD620ANZ",
+      "NE5532AP"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "14-SOIC (0.154\", 3.90mm Width)",
+      "8-DIP (0.300\", 7.62mm)",
+      "SC-74A, SOT-753"
+    ]
+  },
+  {
+    "id": 204,
+    "slug": "audio-amplifiers",
+    "name": "Audio Amplifiers",
+    "parentId": 202,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 4065,
+    "indexableCount": 413,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "Maxim Integrated"
+    ],
+    "topParts": [
+      "MAX98300EWL+T",
+      "MAX98358ETE+",
+      "MAX9722BEUE+T",
+      "MAX4364ESA+",
+      "MAX98358ETE+T"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "24-TSSOP (0.173\", 4.40mm Width) Exposed Pad",
+      "28-WFQFN Exposed Pad",
+      "36-BSSOP (0.433\", 11.00mm Width) Exposed Pad"
+    ]
+  },
+  {
+    "id": 205,
+    "slug": "video-amplifiers",
+    "name": "Video Amplifiers",
+    "parentId": 202,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1509,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Maxim Integrated",
+      "Texas Instruments"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "14-SOIC (0.154\", 3.90mm Width)",
+      "16-SSOP (0.154\", 3.90mm Width)",
+      "SOT-115J",
+      "14-TSSOP (0.173\", 4.40mm Width)"
+    ]
+  },
+  {
+    "id": 206,
+    "slug": "special-purpose-amplifiers",
+    "name": "Special Purpose Amplifiers",
+    "parentId": 202,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1517,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Maxim Integrated",
+      "Linear Technology",
+      "Rochester Electronics"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "10-TFSOP, 10-MSOP (0.118\", 3.00mm Width)",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "16-WFQFN Exposed Pad",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "Die"
+    ]
+  },
+  {
+    "id": 208,
+    "slug": "adc",
+    "name": "ADC - Analog to Digital Converters",
+    "parentId": 207,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 14838,
+    "indexableCount": 5,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Linear Technology"
+    ],
+    "topParts": [
+      "AD7616BSTZ",
+      "AD7656BSTZ",
+      "ADS8568SPM",
+      "MAX11131ATI+",
+      "ADS1256IDBR"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "28-SOIC (0.295\", 7.50mm Width)",
+      "28-SSOP (0.209\", 5.30mm Width)",
+      "10-TFSOP, 10-MSOP (0.118\", 3.00mm Width)"
+    ]
+  },
+  {
+    "id": 209,
+    "slug": "dac",
+    "name": "DAC - Digital to Analog Converters",
+    "parentId": 207,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 11852,
+    "indexableCount": 4,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Analog Devices",
+      "Linear Technology"
+    ],
+    "topParts": [
+      "AD5755-1ACPZ",
+      "AD5764RBSUZ",
+      "MCP4725A0T-E/CH",
+      "DAC7724U"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "10-TFSOP, 10-MSOP (0.118\", 3.00mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "SOT-23-8 Thin, TSOT-23-8",
+      "16-TSSOP (0.173\", 4.40mm Width)",
+      "8-SOIC (0.154\", 3.90mm Width)"
+    ]
+  },
+  {
+    "id": 210,
+    "slug": "adc-dac-special",
+    "name": "ADC/DAC - Special Purpose",
+    "parentId": 207,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 2524,
+    "indexableCount": 564,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "Maxim Integrated"
+    ],
+    "topParts": [
+      "MAX1046BETX+T",
+      "MAX11300GTL+",
+      "MAX1020BETX+",
+      "MAX1058BETM+",
+      "MAX11301GTL+T"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "28-SSOP (0.209\", 5.30mm Width)",
+      "48-LQFP",
+      "16-SOIC (0.295\", 7.50mm Width)",
+      "20-SOIC (0.295\", 7.50mm Width)",
+      "44-LCC (J-Lead)"
+    ]
+  },
+  {
+    "id": 211,
+    "slug": "analog-front-end",
+    "name": "Analog Front End (AFE)",
+    "parentId": 207,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 697,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "Analog Devices"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "20-SSOP (0.209\", 5.30mm Width)",
+      "28-TSSOP (0.173\", 4.40mm Width)",
+      "64-TQFP",
+      "48-LQFP",
+      "28-SSOP (0.209\", 5.30mm Width)"
+    ]
+  },
+  {
+    "id": 213,
+    "slug": "analog-switches-mux",
+    "name": "Analog Switches & Multiplexers",
+    "parentId": 212,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 9893,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Maxim Integrated",
+      "Rochester Electronics",
+      "Analog Devices"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "16-TSSOP (0.173\", 4.40mm Width)",
+      "16-DIP (0.300\", 7.62mm)",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)"
+    ]
+  },
+  {
+    "id": 214,
+    "slug": "analog-switches-special",
+    "name": "Analog Switches - Special Purpose",
+    "parentId": 212,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 2081,
+    "indexableCount": 13,
+    "topMfrs": [
+      "Maxim Integrated",
+      "Rochester Electronics",
+      "Diodes Incorporated"
+    ],
+    "topParts": [
+      "ADG751ARMZ-REEL",
+      "MAX7367EUP+T",
+      "MAX7356EUG+T",
+      "MAX7357EUG+",
+      "MAX7358EUG+"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "10-UFQFN",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "16-SSOP (0.154\", 3.90mm Width)",
+      "42-VFQFN Exposed Pad",
+      "16-TSSOP (0.173\", 4.40mm Width)"
+    ]
+  },
+  {
+    "id": 215,
+    "slug": "analog-comparators",
+    "name": "Analog Comparators",
+    "parentId": 212,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 4403,
+    "indexableCount": 1,
+    "topMfrs": [
+      "Texas Instruments",
+      "Maxim Integrated",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "LM2903EYFJ-CE2"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "14-SOIC (0.154\", 3.90mm Width)",
+      "SC-74A, SOT-753",
+      "14-TSSOP (0.173\", 4.40mm Width)"
+    ]
+  },
+  {
+    "id": 216,
+    "slug": "digital-potentiometers",
+    "name": "Digital Potentiometers",
+    "parentId": 212,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 5783,
+    "indexableCount": 1078,
+    "topMfrs": [
+      "Intersil",
+      "Rochester Electronics",
+      "Microchip"
+    ],
+    "topParts": [
+      "ISL23345WFRZ-T7A",
+      "AD5121BCPZ100-RL7",
+      "AD5141BCPZ100-RL7",
+      "AD5144BCPZ100-RL7",
+      "AD5263BRUZ20-REEL7"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "14-TSSOP (0.173\", 4.40mm Width)",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "24-SOIC (0.295\", 7.50mm Width)",
+      "24-TSSOP (0.173\", 4.40mm Width)"
+    ]
+  },
+  {
+    "id": 217,
+    "slug": "active-filters",
+    "name": "Active Filters",
+    "parentId": 212,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 914,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Maxim Integrated",
+      "Rochester Electronics",
+      "Linear Technology"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "16-SOIC (0.295\", 7.50mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "8-DIP (0.300\", 7.62mm)",
+      "24-SOIC (0.295\", 7.50mm Width)"
+    ]
+  },
+  {
+    "id": 219,
+    "slug": "analog-multipliers-dividers",
+    "name": "Analog Multipliers & Dividers",
+    "parentId": 218,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 226,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Analog Devices",
+      "Texas Instruments"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "TO-100-10 Metal Can",
+      "14-CDIP (0.300\", 7.62mm)",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "16-CDIP (0.300\", 7.62mm)",
+      "144-CPGA"
+    ]
+  },
+  {
+    "id": 220,
+    "slug": "rms-dc-converters",
+    "name": "RMS to DC Converters",
+    "parentId": 218,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 133,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Analog Devices",
+      "Linear Technology"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "14-CDIP (0.300\", 7.62mm)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "16-SOIC (0.295\", 7.50mm Width)",
+      "TO-100-10 Metal Can"
+    ]
+  },
+  {
+    "id": 221,
+    "slug": "vf-fv-converters",
+    "name": "V/F and F/V Converters",
+    "parentId": 218,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 89,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Analog Devices",
+      "Texas Instruments"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "14-DIP (0.300\", 7.62mm)",
+      "8-DIP (0.300\", 7.62mm)",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "14-CDIP (0.300\", 7.62mm)",
+      "20-LCC (J-Lead)"
+    ]
+  },
+  {
+    "id": 222,
+    "slug": "dds",
+    "name": "Direct Digital Synthesis (DDS)",
+    "parentId": 218,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 82,
+    "indexableCount": 1,
+    "topMfrs": [
+      "Analog Devices",
+      "Rochester Electronics",
+      "Intersil"
+    ],
+    "topParts": [
+      "AD9914BCPZ-RL7-CSL"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "16-TSSOP (0.173\", 4.40mm Width)",
+      "48-TQFP Exposed Pad",
+      "20-TSSOP (0.173\", 4.40mm Width)",
+      "48-LQFP",
+      "88-VFQFN Exposed Pad, CSP"
+    ]
+  },
+  {
+    "id": 224,
+    "slug": "combinational-logic",
+    "name": "Combinational Logic",
+    "parentId": 223,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 24203,
+    "indexableCount": 1291,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Onsemi"
+    ],
+    "topParts": [
+      "SN74LVC139AQPWRQ1",
+      "CLVC138AQPWRG4Q1",
+      "74LV08PW-Q100,118",
+      "74HCT139PW-Q100118",
+      "74HCT138PW-Q100118"
+    ],
+    "childNames": [
+      "Gates & Inverters",
+      "Signal Switches, MUX & Decoders",
+      "Parity Generators & Checkers",
+      "Logic Comparators"
+    ],
+    "packageSamples": [
+      "14-SOIC (0.154\", 3.90mm Width)",
+      "14-TSSOP (0.173\", 4.40mm Width)",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "5-TSSOP, SC-70-5, SOT-353",
+      "14-DIP (0.300\", 7.62mm)"
+    ]
+  },
+  {
+    "id": 229,
+    "slug": "sequential-logic",
+    "name": "Sequential Logic",
+    "parentId": 223,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 14737,
+    "indexableCount": 591,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Onsemi"
+    ],
+    "topParts": [
+      "74LVC1G74DP/C4H",
+      "74LVC573AD-Q100J",
+      "74AHC573D-Q100J",
+      "74AHC573PW-Q100J",
+      "74AHCT374PW,118"
+    ],
+    "childNames": [
+      "Flip-Flops",
+      "Latches",
+      "Counters & Dividers",
+      "Shift Registers",
+      "Multivibrators"
+    ],
+    "packageSamples": [
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "20-SOIC (0.295\", 7.50mm Width)",
+      "16-TSSOP (0.173\", 4.40mm Width)",
+      "16-DIP (0.300\", 7.62mm)",
+      "20-TSSOP (0.173\", 4.40mm Width)"
+    ]
+  },
+  {
+    "id": 235,
+    "slug": "buffers-drivers",
+    "name": "Buffers & Drivers",
+    "parentId": 223,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 16865,
+    "indexableCount": 290,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Onsemi"
+    ],
+    "topParts": [
+      "74ALVC541D-Q100J",
+      "74AHC245D-Q100J",
+      "74LVC8T245PW-Q100J",
+      "74AHCT244D-Q100,11",
+      "74AHCT245D-Q100J"
+    ],
+    "childNames": [
+      "Buffers, Drivers, Receivers & Transceivers",
+      "Specialty Logic"
+    ],
+    "packageSamples": [
+      "20-SOIC (0.295\", 7.50mm Width)",
+      "20-TSSOP (0.173\", 4.40mm Width)",
+      "48-TFSOP (0.240\", 6.10mm Width)",
+      "20-SOIC (0.209\", 5.30mm Width)",
+      "48-BSSOP (0.295\", 7.50mm Width)"
+    ]
+  },
+  {
+    "id": 225,
+    "slug": "gates-inverters",
+    "name": "Gates & Inverters",
+    "parentId": 224,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 15167,
+    "indexableCount": 233,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Onsemi"
+    ],
+    "topParts": [
+      "74LV08PW-Q100,118",
+      "74HCT11PW-Q100J",
+      "74HCT132D-Q100,118",
+      "74HCT2G02DP-Q100H",
+      "74HC00PW-Q100,118"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "14-SOIC (0.154\", 3.90mm Width)",
+      "14-TSSOP (0.173\", 4.40mm Width)",
+      "5-TSSOP, SC-70-5, SOT-353",
+      "14-DIP (0.300\", 7.62mm)",
+      "14-SOIC (0.209\", 5.30mm Width)"
+    ]
+  },
+  {
+    "id": 226,
+    "slug": "signal-switches-mux-decoders",
+    "name": "Signal Switches, MUX & Decoders",
+    "parentId": 224,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 8283,
+    "indexableCount": 1009,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Onsemi"
+    ],
+    "topParts": [
+      "SN74LVC139AQPWRQ1",
+      "CLVC138AQPWRG4Q1",
+      "74HCT139PW-Q100118",
+      "74HCT138PW-Q100118",
+      "74CBTLV3253PW-Q1AJ"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "16-TSSOP (0.173\", 4.40mm Width)",
+      "16-DIP (0.300\", 7.62mm)",
+      "16-SOIC (0.209\", 5.30mm Width)",
+      "16-SSOP (0.154\", 3.90mm Width)"
+    ]
+  },
+  {
+    "id": 227,
+    "slug": "parity-generators",
+    "name": "Parity Generators & Checkers",
+    "parentId": 224,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 252,
+    "indexableCount": 1,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Microchip"
+    ],
+    "topParts": [
+      "74HCT280PWJ"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "14-SOIC (0.154\", 3.90mm Width)",
+      "14-DIP (0.300\", 7.62mm)",
+      "28-LCC (J-Lead)",
+      "14-SOIC (0.209\", 5.30mm Width)",
+      "24-SSOP (0.154\", 3.90mm Width)"
+    ]
+  },
+  {
+    "id": 228,
+    "slug": "logic-comparators",
+    "name": "Logic Comparators",
+    "parentId": 224,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 501,
+    "indexableCount": 48,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Onsemi"
+    ],
+    "topParts": [
+      "74FCT521CTSOG",
+      "5962-8867201EA",
+      "CD74FCT521CTM",
+      "CD74FCT521ATM",
+      "CD74FCT521DTM"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "20-SOIC (0.295\", 7.50mm Width)",
+      "20-DIP (0.300\", 7.62mm)",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "20-SOIC (0.209\", 5.30mm Width)",
+      "16-DIP (0.300\", 7.62mm)"
+    ]
+  },
+  {
+    "id": 230,
+    "slug": "flip-flops",
+    "name": "Flip-Flops",
+    "parentId": 229,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 6245,
+    "indexableCount": 395,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Onsemi"
+    ],
+    "topParts": [
+      "74LVC1G74DP/C4H",
+      "74AHCT374PW,118",
+      "74ALVC74PW/S400,11",
+      "TC7WZ74FU,LJ(CT",
+      "TC74VCX574FTEL"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "20-SOIC (0.295\", 7.50mm Width)",
+      "20-TSSOP (0.173\", 4.40mm Width)",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "14-SOIC (0.154\", 3.90mm Width)",
+      "20-DIP (0.300\", 7.62mm)"
+    ]
+  },
+  {
+    "id": 231,
+    "slug": "latches",
+    "name": "Latches",
+    "parentId": 229,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 2642,
+    "indexableCount": 81,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "Onsemi"
+    ],
+    "topParts": [
+      "74AHC573PW-Q100J",
+      "74AHCT573D-Q100J",
+      "74AHCT573PW-Q100J",
+      "74HCT259D-Q100,118",
+      "74AHC573D-Q100J"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "20-SOIC (0.295\", 7.50mm Width)",
+      "20-TSSOP (0.173\", 4.40mm Width)",
+      "20-SOIC (0.209\", 5.30mm Width)",
+      "20-DIP (0.300\", 7.62mm)",
+      "48-TFSOP (0.240\", 6.10mm Width)"
+    ]
+  },
+  {
+    "id": 232,
+    "slug": "counters-dividers",
+    "name": "Counters & Dividers",
+    "parentId": 229,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 2977,
+    "indexableCount": 78,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Onsemi"
+    ],
+    "topParts": [
+      "CD54AC161F3A",
+      "74HCT6323AD/C4J",
+      "74HCT390PWHL",
+      "7802601EA",
+      "CD54HCT4040F3A"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "16-DIP (0.300\", 7.62mm)",
+      "16-TSSOP (0.173\", 4.40mm Width)",
+      "16-SOIC (0.209\", 5.30mm Width)",
+      "16-CDIP (0.300\", 7.62mm)"
+    ]
+  },
+  {
+    "id": 233,
+    "slug": "shift-registers",
+    "name": "Shift Registers",
+    "parentId": 229,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 2258,
+    "indexableCount": 29,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Nexperia USA Inc."
+    ],
+    "topParts": [
+      "8302102RA",
+      "74HCT595D",
+      "74LV165APW/S911J",
+      "74HCT166PWJ",
+      "CD54HCT165F3A"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "16-TSSOP (0.173\", 4.40mm Width)",
+      "16-DIP (0.300\", 7.62mm)",
+      "16-SOIC (0.209\", 5.30mm Width)",
+      "14-SOIC (0.154\", 3.90mm Width)"
+    ]
+  },
+  {
+    "id": 234,
+    "slug": "multivibrators",
+    "name": "Multivibrators",
+    "parentId": 229,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 615,
+    "indexableCount": 8,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "Linear Technology"
+    ],
+    "topParts": [
+      "SN74AHC123ADG4",
+      "CD54HCT123F3A",
+      "JM38510/31402BEA",
+      "M38510/31402BEA",
+      "CD74HCT123ME4"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "16-TSSOP (0.173\", 4.40mm Width)",
+      "16-DIP (0.300\", 7.62mm)",
+      "16-SOIC (0.209\", 5.30mm Width)",
+      "SOT-23-6 Thin, TSOT-23-6"
+    ]
+  },
+  {
+    "id": 236,
+    "slug": "logic-buffers-drivers",
+    "name": "Buffers, Drivers, Receivers & Transceivers",
+    "parentId": 235,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 15272,
+    "indexableCount": 290,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Onsemi"
+    ],
+    "topParts": [
+      "74ALVC541D-Q100J",
+      "74AHC245D-Q100J",
+      "74LVC8T245PW-Q100J",
+      "74AHCT244D-Q100,11",
+      "74AHCT245D-Q100J"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "20-SOIC (0.295\", 7.50mm Width)",
+      "20-TSSOP (0.173\", 4.40mm Width)",
+      "48-TFSOP (0.240\", 6.10mm Width)",
+      "20-SOIC (0.209\", 5.30mm Width)",
+      "48-BSSOP (0.295\", 7.50mm Width)"
+    ]
+  },
+  {
+    "id": 237,
+    "slug": "specialty-logic",
+    "name": "Specialty Logic",
+    "parentId": 235,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1593,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Microchip"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "96-LFBGA",
+      "28-LCC (J-Lead)",
+      "16-SOIC (0.154\", 3.90mm Width)"
+    ]
+  },
+  {
+    "id": 239,
+    "slug": "serial-transceivers",
+    "name": "Serial Transceivers",
+    "parentId": 238,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 21551,
+    "indexableCount": 1640,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Maxim Integrated"
+    ],
+    "topParts": [
+      "MAX3485EESA+T",
+      "MAX485ESA+T",
+      "MAX3232ECPE+",
+      "TCAN1043ATDRQ1",
+      "TCAN1463DRQ1"
+    ],
+    "childNames": [
+      "Drivers, Receivers & Transceivers",
+      "UARTs",
+      "Serializers & Deserializers"
+    ],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "14-SOIC (0.154\", 3.90mm Width)",
+      "28-SSOP (0.209\", 5.30mm Width)",
+      "16-TSSOP (0.173\", 4.40mm Width)"
+    ]
+  },
+  {
+    "id": 243,
+    "slug": "bus-interface",
+    "name": "Bus Interface",
+    "parentId": 238,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 5443,
+    "indexableCount": 794,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "NXP Semiconductors"
+    ],
+    "topParts": [
+      "LTC4300A-2CMS8#PBF",
+      "LTC4300A-2IMS8#PBF",
+      "LTC4300A-2CMS8#TRPBF",
+      "LTC4300A-1CMS8#TRPBF",
+      "LTC4300A-3CMS8#PBF"
+    ],
+    "childNames": [
+      "Translators & Level Shifters",
+      "I/O Expanders",
+      "Signal Buffers, Repeaters & Splitters",
+      "Signal Terminators",
+      "Universal Bus Functions"
+    ],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "56-TFSOP (0.240\", 6.10mm Width)",
+      "56-BSSOP (0.295\", 7.50mm Width)",
+      "24-TSSOP (0.173\", 4.40mm Width)"
+    ]
+  },
+  {
+    "id": 249,
+    "slug": "interface-controllers",
+    "name": "Interface Controllers & Modules",
+    "parentId": 238,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 4668,
+    "indexableCount": 368,
+    "topMfrs": [
+      "Microchip",
+      "Rochester Electronics",
+      "Broadcom Limited"
+    ],
+    "topParts": [
+      "MEC1723N-B0-I/LJ-TR",
+      "FT232HPQ-REEL",
+      "FT232HPQ-TRAY",
+      "FT4232HPQ-REEL",
+      "FT4232HPQ-TRAY"
+    ],
+    "childNames": [
+      "Interface Controllers",
+      "Interface Modules",
+      "Modems"
+    ],
+    "packageSamples": [
+      "64-VFQFN Exposed Pad",
+      "56-VFQFN Exposed Pad",
+      "100-VFQFN Exposed Pad",
+      "32-VFQFN Exposed Pad",
+      "128-BFQFP"
+    ]
+  },
+  {
+    "id": 253,
+    "slug": "sensor-touch-interfaces",
+    "name": "Sensor & Touch Interfaces",
+    "parentId": 238,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 2978,
+    "indexableCount": 174,
+    "topMfrs": [
+      "Cypress Semiconductor",
+      "Microchip",
+      "Renesas"
+    ],
+    "topParts": [
+      "CYAT71658-56LWS41T",
+      "CYAT61659-56LWA41",
+      "CYAT61652-64AS48T",
+      "CYAT61659-64AS48T",
+      "CYAT81650-100AA48T"
+    ],
+    "childNames": [
+      "Sensor & Detector Interfaces",
+      "Touch Screen Controllers",
+      "Capacitive Touch Sensors"
+    ],
+    "packageSamples": [
+      "100-LQFP",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "16-TSSOP (0.173\", 4.40mm Width)",
+      "Die"
+    ]
+  },
+  {
+    "id": 240,
+    "slug": "drivers-receivers-transceivers",
+    "name": "Drivers, Receivers & Transceivers",
+    "parentId": 239,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 19067,
+    "indexableCount": 1607,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Maxim Integrated"
+    ],
+    "topParts": [
+      "MAX3485EESA+T",
+      "MAX485ESA+T",
+      "MAX3232ECPE+",
+      "TCAN1043ATDRQ1",
+      "TCAN1463DRQ1"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "14-SOIC (0.154\", 3.90mm Width)",
+      "28-SSOP (0.209\", 5.30mm Width)",
+      "16-TSSOP (0.173\", 4.40mm Width)"
+    ]
+  },
+  {
+    "id": 241,
+    "slug": "uarts",
+    "name": "UARTs",
+    "parentId": 239,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1165,
+    "indexableCount": 0,
+    "topMfrs": [
+      "MaxLinear",
+      "NXP Semiconductors",
+      "Rochester Electronics"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "44-LCC (J-Lead)",
+      "48-TQFP",
+      "32-VFQFN Exposed Pad",
+      "64-LQFP",
+      "68-LCC (J-Lead)"
+    ]
+  },
+  {
+    "id": 242,
+    "slug": "serializers-deserializers",
+    "name": "Serializers & Deserializers",
+    "parentId": 239,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1319,
+    "indexableCount": 33,
+    "topMfrs": [
+      "Maxim Integrated",
+      "Texas Instruments",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "MAX96724FGTN/VY+",
+      "MAX96724RGTN/V+",
+      "MAX96717FGTJ/VY+",
+      "MAX96724GTN/VY+",
+      "MAX96717FGTJ/V+"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "48-WFQFN Exposed Pad",
+      "48-TFSOP (0.240\", 6.10mm Width)",
+      "28-SSOP (0.209\", 5.30mm Width)",
+      "48-LQFP",
+      "56-WFQFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 244,
+    "slug": "translators-level-shifters",
+    "name": "Translators & Level Shifters",
+    "parentId": 243,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 2476,
+    "indexableCount": 1,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "Onsemi"
+    ],
+    "topParts": [
+      "74LV1T04GW-Q100H"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "28-LCC (J-Lead)",
+      "6-TSSOP, SC-88, SOT-363",
+      "8-VFSOP (0.091\", 2.30mm Width)"
+    ]
+  },
+  {
+    "id": 245,
+    "slug": "io-expanders",
+    "name": "I/O Expanders",
+    "parentId": 243,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 965,
+    "indexableCount": 458,
+    "topMfrs": [
+      "NXP Semiconductors",
+      "Texas Instruments",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "PI4IOE5V6416RQ2LEX",
+      "NCA9555PW-Q100J",
+      "NCA9539PW-Q100J",
+      "NCA9555BY-Q100HP",
+      "MAX7310ATE+T"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "24-TSSOP (0.173\", 4.40mm Width)",
+      "16-TSSOP (0.173\", 4.40mm Width)",
+      "24-WFQFN Exposed Pad",
+      "16-SOIC (0.295\", 7.50mm Width)",
+      "24-VFQFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 246,
+    "slug": "signal-buffers-repeaters",
+    "name": "Signal Buffers, Repeaters & Splitters",
+    "parentId": 243,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1199,
+    "indexableCount": 335,
+    "topMfrs": [
+      "Texas Instruments",
+      "Diodes Incorporated",
+      "Linear Technology"
+    ],
+    "topParts": [
+      "LTC4300A-2CMS8#TRPBF",
+      "LTC4300A-1CMS8#TRPBF",
+      "LTC4300A-2CMS8#PBF",
+      "LTC4300A-2IMS8#PBF",
+      "LTC4300A-3CMS8#PBF"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "8-WFDFN Exposed Pad",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "40-WFQFN Exposed Pad",
+      "20-WFQFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 247,
+    "slug": "signal-terminators",
+    "name": "Signal Terminators",
+    "parentId": 243,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 250,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Maxim Integrated"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "36-BSOP (0.295\", 7.50mm Width)",
+      "48-LQFP",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "28-TSSOP (0.173\", 4.40mm Width)",
+      "24-SSOP (0.209\", 5.30mm Width)"
+    ]
+  },
+  {
+    "id": 248,
+    "slug": "universal-bus-functions",
+    "name": "Universal Bus Functions",
+    "parentId": 243,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 553,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "NXP Semiconductors"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "56-BSSOP (0.295\", 7.50mm Width)",
+      "56-TFSOP (0.240\", 6.10mm Width)",
+      "56-TFSOP (0.173\", 4.40mm Width)",
+      "48-TFSOP (0.240\", 6.10mm Width)",
+      "64-TFSOP (0.240\", 6.10mm Width)"
+    ]
+  },
+  {
+    "id": 250,
+    "slug": "interface-controllers-ic",
+    "name": "Interface Controllers",
+    "parentId": 249,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 3537,
+    "indexableCount": 365,
+    "topMfrs": [
+      "Microchip",
+      "Rochester Electronics",
+      "Broadcom Limited"
+    ],
+    "topParts": [
+      "MEC1723N-B0-I/LJ-TR",
+      "CY7C65214D-32LTXI",
+      "CY7C65223D-32LTXIT",
+      "CY7C65210A-24LTXI",
+      "CY7C65210A-24LTXIT"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "64-VFQFN Exposed Pad",
+      "56-VFQFN Exposed Pad",
+      "100-VFQFN Exposed Pad",
+      "32-VFQFN Exposed Pad",
+      "128-BFQFP"
+    ]
+  },
+  {
+    "id": 251,
+    "slug": "interface-modules",
+    "name": "Interface Modules",
+    "parentId": 249,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 782,
+    "indexableCount": 3,
+    "topMfrs": [
+      "Advantech",
+      "Phoenix Contact",
+      "HMS Networks"
+    ],
+    "topParts": [
+      "284",
+      "RPI-HUB-MODULE",
+      "MOTG-RS485"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "Module",
+      "32-PowerWFQFN",
+      "Retail Package",
+      "14-SIP Module",
+      "24-DIP Module"
+    ]
+  },
+  {
+    "id": 252,
+    "slug": "modems",
+    "name": "Modems",
+    "parentId": 249,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 349,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Skyworks Solutions",
+      "Zilog"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "24-TSSOP (0.173\", 4.40mm Width)",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "44-LCC (J-Lead)",
+      "28-SOIC (0.295\", 7.50mm Width)",
+      "44-LQFP"
+    ]
+  },
+  {
+    "id": 254,
+    "slug": "sensor-detector-interfaces",
+    "name": "Sensor & Detector Interfaces",
+    "parentId": 253,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1335,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Renesas",
+      "Maxim Integrated",
+      "Rochester Electronics"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "Die",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "16-DIP (0.300\", 7.62mm)",
+      "48-LQFP"
+    ]
+  },
+  {
+    "id": 255,
+    "slug": "touch-screen-controllers",
+    "name": "Touch Screen Controllers",
+    "parentId": 253,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1157,
+    "indexableCount": 123,
+    "topMfrs": [
+      "Cypress Semiconductor",
+      "Infineon Technologies",
+      "Microchip"
+    ],
+    "topParts": [
+      "CYAT61652-64AS48T",
+      "CYAT61659-56LWA41",
+      "CYAT61659-64AS48T",
+      "CYAT71658-56LWS41T",
+      "CYAT81650-100AA48T"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "100-LQFP",
+      "44-UFQFN Exposed Pad",
+      "56-UFQFN Exposed Pad",
+      "128-LQFP",
+      "48-UFQFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 256,
+    "slug": "capacitive-touch-sensors",
+    "name": "Capacitive Touch Sensors",
+    "parentId": 253,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 486,
+    "indexableCount": 51,
+    "topMfrs": [
+      "Microchip",
+      "Rochester Electronics",
+      "Renesas"
+    ],
+    "topParts": [
+      "CY8C20121-SX1I",
+      "IQS7223C001QNR",
+      "IQS7211E001QNR",
+      "IQS7211A001CSR",
+      "IS31SE5111A-ZNLS3"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "32-VFQFN Exposed Pad",
+      "28-SSOP (0.209\", 5.30mm Width)",
+      "32-TQFP",
+      "16-SOIC (0.154\", 3.90mm Width)"
+    ]
+  },
+  {
+    "id": 258,
+    "slug": "clock-generation",
+    "name": "Clock Generation",
+    "parentId": 257,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 32305,
+    "indexableCount": 7152,
+    "topMfrs": [
+      "Skyworks Solutions",
+      "Renesas",
+      "Silicon Labs"
+    ],
+    "topParts": [
+      "SI5345B-D14385-GM",
+      "SI5342D-D15045-GMR",
+      "SI5344D-D14459-GMR",
+      "SI5344D-D14395-GMR",
+      "SI5345A-D14577-GMR"
+    ],
+    "childNames": [
+      "Clock Generators, PLLs & Synthesizers",
+      "Direct Digital Synthesis (DDS)"
+    ],
+    "packageSamples": [
+      "24-VFQFN Exposed Pad",
+      "64-VFQFN Exposed Pad",
+      "32-VFQFN Exposed Pad",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "40-VFQFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 261,
+    "slug": "oscillators-timers",
+    "name": "Oscillators & Timers",
+    "parentId": 257,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 24854,
+    "indexableCount": 780,
+    "topMfrs": [
+      "Renesas",
+      "Maxim Integrated",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "MCP79411T-I/ST",
+      "MCP79412-I/ST",
+      "MCP79410-I/SN",
+      "MCP79412-I/SN",
+      "MCP79411T-I/MS"
+    ],
+    "childNames": [
+      "Programmable Timers & Oscillators",
+      "Real-Time Clocks (RTC)"
+    ],
+    "packageSamples": [
+      "6-CLCC",
+      "10-CLCC",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "16-SOIC (0.295\", 7.50mm Width)"
+    ]
+  },
+  {
+    "id": 264,
+    "slug": "clock-distribution",
+    "name": "Clock Distribution",
+    "parentId": 257,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 5258,
+    "indexableCount": 1060,
+    "topMfrs": [
+      "Renesas",
+      "Rochester Electronics",
+      "Microchip"
+    ],
+    "topParts": [
+      "LMK1C1104PWR",
+      "SI53301-B0002-GMR",
+      "SI5330J-B02455-GMR",
+      "SI5330J-B02455-GM",
+      "SYA75608TWL-TRVAO"
+    ],
+    "childNames": [
+      "Clock Buffers & Drivers",
+      "Delay Lines"
+    ],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "32-VFQFN Exposed Pad",
+      "20-TSSOP (0.173\", 4.40mm Width)",
+      "16-VFQFN Exposed Pad",
+      "32-LQFP"
+    ]
+  },
+  {
+    "id": 259,
+    "slug": "clock-generators-plls",
+    "name": "Clock Generators, PLLs & Synthesizers",
+    "parentId": 258,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 32305,
+    "indexableCount": 7152,
+    "topMfrs": [
+      "Skyworks Solutions",
+      "Renesas",
+      "Silicon Labs"
+    ],
+    "topParts": [
+      "SI5345B-D14385-GM",
+      "SI5342D-D15045-GMR",
+      "SI5344D-D14459-GMR",
+      "SI5344D-D14395-GMR",
+      "SI5345A-D14577-GMR"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "24-VFQFN Exposed Pad",
+      "64-VFQFN Exposed Pad",
+      "32-VFQFN Exposed Pad",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "40-VFQFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 260,
+    "slug": "clock-dds",
+    "name": "Direct Digital Synthesis (DDS)",
+    "parentId": 258,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 0,
+    "topMfrs": [],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [],
+    "tempRanges": []
+  },
+  {
+    "id": 262,
+    "slug": "programmable-timers-oscillators",
+    "name": "Programmable Timers & Oscillators",
+    "parentId": 261,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 22782,
+    "indexableCount": 123,
+    "topMfrs": [
+      "Renesas",
+      "Linear Technology",
+      "Texas Instruments"
+    ],
+    "topParts": [
+      "DS1077U-120+T&R",
+      "ICM7217IPI+",
+      "ICM7217BIPI+",
+      "ICM7217CIPI+",
+      "ICM7250IPE+"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "6-CLCC",
+      "10-CLCC",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "SOT-23-6 Thin, TSOT-23-6",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)"
+    ]
+  },
+  {
+    "id": 263,
+    "slug": "real-time-clocks",
+    "name": "Real-Time Clocks (RTC)",
+    "parentId": 261,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 2072,
+    "indexableCount": 657,
+    "topMfrs": [
+      "Maxim Integrated",
+      "EPSON",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "MCP79412-I/MS",
+      "MCP79410T-I/MS",
+      "MCP79411-I/SN",
+      "MCP79410-I/MS",
+      "MCP79412T-I/ST"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "34-PowerCap™ Module",
+      "14-TSSOP (0.173\", 4.40mm Width)",
+      "16-SOIC (0.295\", 7.50mm Width)"
+    ]
+  },
+  {
+    "id": 265,
+    "slug": "clock-buffers-drivers",
+    "name": "Clock Buffers & Drivers",
+    "parentId": 264,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 4335,
+    "indexableCount": 1026,
+    "topMfrs": [
+      "Renesas",
+      "Microchip",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "PI6C49CB04AQ3WEX",
+      "PI6C49CB04BQ3WEX",
+      "MAX9315EUP+T",
+      "MAX9315EUP+",
+      "SYA75608TWL-TRVAO"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "32-VFQFN Exposed Pad",
+      "20-TSSOP (0.173\", 4.40mm Width)",
+      "16-VFQFN Exposed Pad",
+      "32-LQFP"
+    ]
+  },
+  {
+    "id": 266,
+    "slug": "delay-lines",
+    "name": "Delay Lines",
+    "parentId": 264,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 923,
+    "indexableCount": 34,
+    "topMfrs": [
+      "Maxim Integrated",
+      "Rochester Electronics",
+      "Microchip"
+    ],
+    "topParts": [
+      "DS1100LU-25+",
+      "DS1100LU-30+",
+      "DS1100LU-75+",
+      "DS1100LU-50+",
+      "DS1100LU-20+"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "16-SOIC (0.295\", 7.50mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "8-DIP (0.300\", 7.62mm)",
+      "28-LCC (J-Lead)"
+    ]
+  },
+  {
+    "id": 268,
+    "slug": "audio-ics",
+    "name": "Audio ICs",
+    "parentId": 267,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 3316,
+    "indexableCount": 328,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Nuvoton Technology Corporation America"
+    ],
+    "topParts": [
+      "CS8422-CNZ",
+      "PGA2310UA",
+      "CS8416-CZZ",
+      "CS8416-DZZ",
+      "PGA2311UA"
+    ],
+    "childNames": [
+      "Audio CODECs",
+      "Audio Special Purpose ICs",
+      "Voice Record & Playback"
+    ],
+    "packageSamples": [
+      "28-SOIC (0.295\", 7.50mm Width)",
+      "48-LQFP",
+      "28-TSSOP (0.465\", 11.80mm Width)",
+      "64-LQFP",
+      "28-SSOP (0.209\", 5.30mm Width)"
+    ]
+  },
+  {
+    "id": 272,
+    "slug": "video-display",
+    "name": "Video & Display",
+    "parentId": 267,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 4320,
+    "indexableCount": 75,
+    "topMfrs": [
+      "Rochester Electronics",
+      "NXP Semiconductors",
+      "Texas Instruments"
+    ],
+    "topParts": [
+      "DLPC3421ZVB",
+      "DLPC3420ZVB",
+      "MAX6952EPL+",
+      "MAX7219EWG+",
+      "MAX6959BAEE+T"
+    ],
+    "childNames": [
+      "Video Processing ICs",
+      "Display Drivers",
+      "Encoders, Decoders & Converters"
+    ],
+    "packageSamples": [
+      "48-VFQFN Exposed Pad",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "64-LQFP",
+      "44-LCC (J-Lead)",
+      "48-LQFP"
+    ]
+  },
+  {
+    "id": 276,
+    "slug": "telecom-specialized",
+    "name": "Telecom & Specialized",
+    "parentId": 267,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 21245,
+    "indexableCount": 875,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Microchip",
+      "Maxim Integrated"
+    ],
+    "topParts": [
+      "MAX77752AETL+",
+      "MAX77752BETL+T",
+      "MAX77752BETL+",
+      "MAX843ISA+",
+      "TPS65381QDAPRQ1"
+    ],
+    "childNames": [
+      "Telecom ICs",
+      "Specialized ICs",
+      "Special Purpose ICs"
+    ],
+    "packageSamples": [
+      "48-VFQFN Exposed Pad",
+      "40-VFQFN Exposed Pad",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "32-VFQFN Exposed Pad",
+      "SOT-89-5/6"
+    ]
+  },
+  {
+    "id": 269,
+    "slug": "audio-codecs",
+    "name": "Audio CODECs",
+    "parentId": 268,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1443,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Texas Instruments",
+      "Rochester Electronics",
+      "Cirrus Logic Inc."
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "48-LQFP",
+      "32-VFQFN Exposed Pad",
+      "28-SSOP (0.209\", 5.30mm Width)",
+      "64-LQFP",
+      "48-TQFP"
+    ]
+  },
+  {
+    "id": 270,
+    "slug": "audio-special-purpose",
+    "name": "Audio Special Purpose ICs",
+    "parentId": 268,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1359,
+    "indexableCount": 230,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "STMicroelectronics"
+    ],
+    "topParts": [
+      "CS8422-CNZ",
+      "PGA2310UA",
+      "CS8416-CZZ",
+      "CS8416-DZZ",
+      "PGA2311UA"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "28-SOIC (0.295\", 7.50mm Width)",
+      "64-TQFP",
+      "20-SOIC (0.295\", 7.50mm Width)",
+      "48-TQFP",
+      "28-TSSOP (0.173\", 4.40mm Width)"
+    ]
+  },
+  {
+    "id": 271,
+    "slug": "voice-record-playback",
+    "name": "Voice Record & Playback",
+    "parentId": 268,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 514,
+    "indexableCount": 98,
+    "topMfrs": [
+      "Nuvoton Technology Corporation America",
+      "MaxLinear",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "ISD1620BSYIR",
+      "ISD1616BSYI",
+      "ISD17120PYI",
+      "ISD1620BSYI",
+      "ISD17120SYI"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "28-TSSOP (0.465\", 11.80mm Width)",
+      "28-SOIC (0.295\", 7.50mm Width)",
+      "28-DIP (0.600\", 15.24mm)",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "16-DIP (0.300\", 7.62mm)"
+    ]
+  },
+  {
+    "id": 273,
+    "slug": "video-processing",
+    "name": "Video Processing ICs",
+    "parentId": 272,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 2467,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Rochester Electronics",
+      "NXP Semiconductors",
+      "Semtech Corporation"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "48-VFQFN Exposed Pad",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "16-VQFN Exposed Pad",
+      "32-VFQFN Exposed Pad",
+      "40-VFQFN Exposed Pad"
+    ]
+  },
+  {
+    "id": 274,
+    "slug": "display-drivers",
+    "name": "Display Drivers",
+    "parentId": 272,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 1251,
+    "indexableCount": 75,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Maxim Integrated",
+      "NXP Semiconductors"
+    ],
+    "topParts": [
+      "DLPC3421ZVB",
+      "DLPC3420ZVB",
+      "MAX6952EPL+",
+      "MAX7219EWG+",
+      "MAX6959BAEE+T"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "44-LCC (J-Lead)",
+      "40-DIP (0.600\", 15.24mm)",
+      "44-QFP",
+      "64-LQFP",
+      "Die"
+    ]
+  },
+  {
+    "id": 275,
+    "slug": "encoders-decoders-converters",
+    "name": "Encoders, Decoders & Converters",
+    "parentId": 272,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 602,
+    "indexableCount": 0,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Renesas",
+      "Analog Devices"
+    ],
+    "topParts": [],
+    "childNames": [],
+    "packageSamples": [
+      "64-LQFP",
+      "80-LQFP",
+      "128-TQFP Exposed Pad",
+      "32-TQFP",
+      "16-SOIC (0.295\", 7.50mm Width)"
+    ]
+  },
+  {
+    "id": 277,
+    "slug": "telecom-ics",
+    "name": "Telecom ICs",
+    "parentId": 276,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 4123,
+    "indexableCount": 100,
+    "topMfrs": [
+      "Microchip",
+      "Rochester Electronics",
+      "Broadcom Limited"
+    ],
+    "topParts": [
+      "ST8500",
+      "ST8500TR",
+      "SI3018-F-GSR",
+      "SI3018-F-GS",
+      "DS21348GN+"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "28-LCC (J-Lead)",
+      "256-BGA",
+      "16-SOIC (0.295\", 7.50mm Width)",
+      "28-SOIC (0.295\", 7.50mm Width)",
+      "100-LQFP"
+    ]
+  },
+  {
+    "id": 278,
+    "slug": "specialized-ics",
+    "name": "Specialized ICs",
+    "parentId": 276,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 12415,
+    "indexableCount": 17,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Renesas",
+      "Texas Instruments"
+    ],
+    "topParts": [
+      "TUSB217RGYRQ1",
+      "L9663-TR-1",
+      "L9663-1",
+      "ZSSC3170FE2R",
+      "ZSSC3170EA2T"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "484-BBGA, FCBGA",
+      "324-BBGA, FCBGA",
+      "28-SOIC (0.295\", 7.50mm Width)",
+      "44-LCC (J-Lead)"
+    ]
+  },
+  {
+    "id": 279,
+    "slug": "special-purpose-ics",
+    "name": "Special Purpose ICs",
+    "parentId": 276,
+    "existingSeoTitle": null,
+    "existingSeoDesc": null,
+    "productCount": 4707,
+    "indexableCount": 758,
+    "topMfrs": [
+      "Intersil",
+      "Maxim Integrated",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "LTC3634HFE#TRPBF",
+      "LTC3634MPFE#TRPBF",
+      "LTC1530IS8-2.8#PBF",
+      "LTC1530IS8-1.9#PBF",
+      "MAX15059BETE+"
+    ],
+    "childNames": [],
+    "packageSamples": [
+      "40-VFQFN Exposed Pad",
+      "48-VFQFN Exposed Pad",
+      "SOT-89-5/6",
+      "32-VFQFN Exposed Pad",
+      "SC-74A, SOT-753"
+    ]
+  },
+  {
+    "id": 139,
+    "slug": "embedded",
+    "name": "Embedded & Programmable",
+    "parentId": null,
+    "existingSeoTitle": "Embedded Processors, FPGAs & Programmable ICs",
+    "existingSeoDesc": "Microcontrollers, FPGAs, CPLDs, DSPs, SoCs and programmable logic devices from leading manufacturers. Hard-to-find and obsolete parts available.",
+    "productCount": 155211,
+    "indexableCount": 72568,
+    "topMfrs": [
+      "Microchip",
+      "Renesas",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "STM32F767ZIT6",
+      "STM32H743ZIT6",
+      "STM32H743VIT6",
+      "STM32F446RET6",
+      "MK60FX512VLQ15"
+    ],
+    "childNames": [
+      "Microcontrollers & Processors",
+      "FPGAs & Programmable Logic",
+      "Embedded Modules"
+    ],
+    "packageSamples": [
+      "100-LQFP",
+      "64-LQFP",
+      "144-LQFP",
+      "24-VFQFN Exposed Pad",
+      "48-LQFP"
+    ]
+  },
+  {
+    "id": 154,
+    "slug": "power-management",
+    "name": "Power Management",
+    "parentId": null,
+    "existingSeoTitle": "Power Management ICs - Regulators, Controllers, Drivers",
+    "existingSeoDesc": "Voltage regulators, DC-DC converters, LED drivers, motor drivers, battery management and power supervisors. No MOQ, global shipping.",
+    "productCount": 226180,
+    "indexableCount": 5636,
+    "topMfrs": [
+      "Torex Semiconductor",
+      "Texas Instruments",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "LM1117IMP-3.3/NOPB",
+      "TOP258PN",
+      "LM7805CT",
+      "TPS63020DSJR",
+      "L7805CV"
+    ],
+    "childNames": [
+      "Voltage Regulators",
+      "Switching Regulators & Converters",
+      "Battery & Charging",
+      "LED & Motor Drivers",
+      "Power Switches & Distribution",
+      "Power Supervisors & Control",
+      "Power Management - Specialized"
+    ],
+    "packageSamples": [
+      "SC-74A, SOT-753",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "6-UFDFN Exposed Pad",
+      "TO-236-3, SC-59, SOT-23-3",
+      "SOT-89-5/6"
+    ]
+  },
+  {
+    "id": 188,
+    "slug": "memory",
+    "name": "Memory",
+    "parentId": null,
+    "existingSeoTitle": "Memory ICs - SRAM, DRAM, Flash, EEPROM",
+    "existingSeoDesc": "SRAM, SDRAM, DDR, Flash, EEPROM, FRAM, FIFO and other memory integrated circuits. Obsolete and hard-to-find memory chips available.",
+    "productCount": 67117,
+    "indexableCount": 15550,
+    "topMfrs": [
+      "Micron Technology Inc.",
+      "Renesas",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "AT24C256C-SSHL-T",
+      "MX29LV640EBTI-70G",
+      "AT28C256-15PU",
+      "AS4C4M16D1A-5TANTR",
+      "SST25VF016B-50-4C-S2AF"
+    ],
+    "childNames": [
+      "Volatile Memory",
+      "Non-Volatile Memory",
+      "Other Memory"
+    ],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "100-LQFP",
+      "8-TSSOP (0.173\", 4.40mm Width)",
+      "Retail Package",
+      "32-LCC (J-Lead)"
+    ]
+  },
+  {
+    "id": 201,
+    "slug": "analog",
+    "name": "Analog & Mixed Signal",
+    "parentId": null,
+    "existingSeoTitle": "Analog ICs - Op Amps, ADC, DAC, Comparators",
+    "existingSeoDesc": "Operational amplifiers, ADCs, DACs, analog switches, comparators, digital potentiometers and analog front-end ICs.",
+    "productCount": 88903,
+    "indexableCount": 2087,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Maxim Integrated"
+    ],
+    "topParts": [
+      "AD5755-1ACPZ",
+      "AD7616BSTZ",
+      "AD7656BSTZ",
+      "ADS8568SPM",
+      "OPA1612AIDR"
+    ],
+    "childNames": [
+      "Amplifiers",
+      "Data Converters",
+      "Analog Switches & Signal Processing",
+      "Other Analog"
+    ],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "8-TSSOP, 8-MSOP (0.118\", 3.00mm Width)",
+      "14-SOIC (0.154\", 3.90mm Width)",
+      "8-DIP (0.300\", 7.62mm)",
+      "14-TSSOP (0.173\", 4.40mm Width)"
+    ]
+  },
+  {
+    "id": 223,
+    "slug": "logic",
+    "name": "Logic",
+    "parentId": null,
+    "existingSeoTitle": "Logic ICs - Gates, Flip-Flops, Buffers, Counters",
+    "existingSeoDesc": "Standard logic ICs including gates, inverters, flip-flops, latches, shift registers, counters, buffers and decoders.",
+    "productCount": 55805,
+    "indexableCount": 2172,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Onsemi"
+    ],
+    "topParts": [
+      "74LVC1G74DP/C4H",
+      "74ALVC541D-Q100J",
+      "SN74LVC139AQPWRQ1",
+      "CLVC138AQPWRG4Q1",
+      "74AHC245D-Q100J"
+    ],
+    "childNames": [
+      "Combinational Logic",
+      "Sequential Logic",
+      "Buffers & Drivers"
+    ],
+    "packageSamples": [
+      "14-SOIC (0.154\", 3.90mm Width)",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "20-SOIC (0.295\", 7.50mm Width)",
+      "14-TSSOP (0.173\", 4.40mm Width)",
+      "20-TSSOP (0.173\", 4.40mm Width)"
+    ]
+  },
+  {
+    "id": 238,
+    "slug": "interface",
+    "name": "Interface & Communication",
+    "parentId": null,
+    "existingSeoTitle": "Interface ICs - Transceivers, Drivers, Controllers",
+    "existingSeoDesc": "Serial interface transceivers, UARTs, level shifters, I/O expanders, serializers, USB controllers and communication ICs.",
+    "productCount": 34640,
+    "indexableCount": 2976,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Maxim Integrated"
+    ],
+    "topParts": [
+      "MEC1723N-B0-I/LJ-TR",
+      "CYAT61652-56LWA41",
+      "CYAT61659-56LWS41",
+      "CYAT81659-64AA48T",
+      "CYAT817AZS72-22002"
+    ],
+    "childNames": [
+      "Serial Transceivers",
+      "Bus Interface",
+      "Interface Controllers & Modules",
+      "Sensor & Touch Interfaces"
+    ],
+    "packageSamples": [
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "16-SOIC (0.154\", 3.90mm Width)",
+      "14-SOIC (0.154\", 3.90mm Width)",
+      "16-TSSOP (0.173\", 4.40mm Width)",
+      "28-SSOP (0.209\", 5.30mm Width)"
+    ]
+  },
+  {
+    "id": 257,
+    "slug": "clock-timing",
+    "name": "Clock & Timing",
+    "parentId": null,
+    "existingSeoTitle": "Clock & Timing ICs - PLLs, Oscillators, RTC",
+    "existingSeoDesc": "Clock generators, PLLs, frequency synthesizers, programmable oscillators, real-time clocks, clock buffers and delay lines.",
+    "productCount": 62417,
+    "indexableCount": 8992,
+    "topMfrs": [
+      "Renesas",
+      "Skyworks Solutions",
+      "Rochester Electronics"
+    ],
+    "topParts": [
+      "SI5345B-D14385-GM",
+      "SI5342D-D15045-GMR",
+      "SI5344D-D14459-GMR",
+      "SI5344D-D14395-GMR",
+      "SI5345A-D14577-GMR"
+    ],
+    "childNames": [
+      "Clock Generation",
+      "Oscillators & Timers",
+      "Clock Distribution"
+    ],
+    "packageSamples": [
+      "6-CLCC",
+      "10-CLCC",
+      "24-VFQFN Exposed Pad",
+      "64-VFQFN Exposed Pad",
+      "8-SOIC (0.154\", 3.90mm Width)"
+    ]
+  },
+  {
+    "id": 267,
+    "slug": "audio-video-telecom",
+    "name": "Audio, Video & Telecom",
+    "parentId": null,
+    "existingSeoTitle": "Audio, Video & Telecom ICs",
+    "existingSeoDesc": "Audio CODECs, video processors, display drivers, telecom ICs, voice recording and specialized communication integrated circuits.",
+    "productCount": 28881,
+    "indexableCount": 1278,
+    "topMfrs": [
+      "Rochester Electronics",
+      "Texas Instruments",
+      "Maxim Integrated"
+    ],
+    "topParts": [
+      "PGA2311UA/1K",
+      "PGA4311UA",
+      "PGA2310UA/1K",
+      "PGA2311UA",
+      "PGA2310UA"
+    ],
+    "childNames": [
+      "Audio ICs",
+      "Video & Display",
+      "Telecom & Specialized"
+    ],
+    "packageSamples": [
+      "48-VFQFN Exposed Pad",
+      "28-SOIC (0.295\", 7.50mm Width)",
+      "32-VFQFN Exposed Pad",
+      "8-SOIC (0.154\", 3.90mm Width)",
+      "40-VFQFN Exposed Pad"
+    ]
+  }
+]

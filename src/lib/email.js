@@ -42,7 +42,7 @@ function getTransporter() {
 }
 
 /**
- * Send an email. Silently skips if SMTP is not configured.
+ * Send an email with retry. Silently skips if SMTP is not configured.
  */
 export async function sendEmail({ to, subject, text, html }) {
   const transporter = getTransporter();
@@ -51,20 +51,32 @@ export async function sendEmail({ to, subject, text, html }) {
     return false;
   }
 
-  try {
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || `"FPGACenter" <noreply@fpgacenter.com>`,
-      to,
-      subject,
-      text,
-      html,
-    });
-    console.log('[Email] Sent successfully:', subject);
-    return true;
-  } catch (err) {
-    console.error('[Email] Send failed:', err.message);
-    return false;
+  const mailOptions = {
+    from: process.env.SMTP_FROM || `"FPGACenter" <noreply@fpgacenter.com>`,
+    to,
+    subject,
+    text,
+    html,
+  };
+
+  // Retry up to 2 times with exponential backoff
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log('[Email] Sent successfully:', subject);
+      return true;
+    } catch (err) {
+      if (attempt < 2) {
+        const delay = 1000 * Math.pow(2, attempt);
+        console.warn(`[Email] Attempt ${attempt + 1} failed, retrying in ${delay}ms:`, err.message);
+        await new Promise(r => setTimeout(r, delay));
+      } else {
+        console.error('[Email] All retries exhausted:', err.message);
+        return false;
+      }
+    }
   }
+  return false;
 }
 
 /**

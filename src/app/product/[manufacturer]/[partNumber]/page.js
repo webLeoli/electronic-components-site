@@ -1,6 +1,16 @@
 import { cache } from 'react';
 import prisma from '@/lib/db';
-import { generateProductMeta, generateProductJsonLd, generateBreadcrumbJsonLd, productPath, SITE_NAME, SITE_URL } from '@/lib/seo';
+import {
+  generateProductMeta,
+  generateProductJsonLd,
+  generateBreadcrumbJsonLd,
+  productPath,
+  SITE_NAME,
+  SITE_URL,
+  hasConfirmedStock,
+  getAvailabilityText,
+  getAvailabilityTone,
+} from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AddToRfqButton from '@/components/AddToRfqButton';
@@ -22,7 +32,7 @@ function generateRichDescription(product, specs) {
   if (product.status === 'active') {
     intro += ' This component is currently in active production.';
   } else if (product.status === 'obsolete') {
-    intro += ` Although this part has been marked as obsolete by ${mfr}, ${SITE_NAME} maintains verified stock of genuine ${product.partNumber} units sourced through our certified supply chain.`;
+    intro += ` This part has been marked as obsolete by ${mfr}; ${SITE_NAME} can quote verified sourcing options through qualified specialty channels.`;
   } else if (product.status === 'eol') {
     intro += ` This component has reached End of Life status. ${SITE_NAME} specializes in sourcing EOL parts with full traceability and quality assurance.`;
   }
@@ -47,8 +57,10 @@ function generateRichDescription(product, specs) {
   }
 
   // Para 4: Availability
-  if (product.stock > 0) {
+  if (hasConfirmedStock(product)) {
     parts.push(`${SITE_NAME} currently has ${product.stock.toLocaleString()} units of ${product.partNumber} in stock, available for immediate shipment with no minimum order quantity.`);
+  } else if (product.status === 'obsolete' || product.status === 'eol' || product.status === 'nrnd') {
+    parts.push(`Submit an RFQ for ${product.partNumber}; ${SITE_NAME} will verify availability, provenance, lead time, and pricing before confirming supply.`);
   } else {
     parts.push(`Contact ${SITE_NAME} for availability and lead time on ${product.partNumber}. We can source this part through our global network of authorized distributors.`);
   }
@@ -87,10 +99,15 @@ function generateProductFAQ(product, specs) {
   const mfr = product.manufacturer || 'the manufacturer';
 
   // Q1: Availability (always unique per product due to stock count)
-  if (product.stock > 0) {
+  if (hasConfirmedStock(product)) {
     faqs.push({
       q: `Is the ${product.partNumber} in stock and ready to ship?`,
       a: `Yes, ${SITE_NAME} currently has ${product.stock.toLocaleString()} units of ${product.partNumber} in stock. Orders placed before 3 PM (CST) are eligible for same-day dispatch. No minimum order quantity required.`,
+    });
+  } else if (product.status === 'obsolete' || product.status === 'eol' || product.status === 'nrnd') {
+    faqs.push({
+      q: `Can ${SITE_NAME} source the ${product.partNumber}?`,
+      a: `Yes. ${SITE_NAME} can quote ${product.partNumber} through qualified specialty sourcing channels. Availability, lead time, provenance, and pricing are verified before an order is confirmed.`,
     });
   } else {
     faqs.push({
@@ -112,7 +129,7 @@ function generateProductFAQ(product, specs) {
     const statusLabel = product.status === 'obsolete' ? 'obsolete' : 'end-of-life';
     faqs.push({
       q: `The ${product.partNumber} is marked as ${statusLabel}. Are the parts genuine?`,
-      a: `Absolutely. All ${product.partNumber} units sourced by ${SITE_NAME} are 100% original ${mfr} components. We follow IDEA-STD-1010 inspection standards and provide full traceability documentation. ${statusLabel === 'obsolete' ? 'We specialize in obsolete part sourcing and maintain verified stock of discontinued components.' : ''}`,
+      a: `Absolutely. All ${product.partNumber} units sourced by ${SITE_NAME} are 100% original ${mfr} components. We follow IDEA-STD-1010 inspection standards and provide full traceability documentation. ${statusLabel === 'obsolete' ? 'We specialize in obsolete part sourcing and verify availability before confirming supply.' : ''}`,
     });
   }
 
@@ -222,6 +239,13 @@ export default async function ProductPage({ params }) {
 
   const specs = parseSpecs(product.specs);
   const priceTiers = getPriceTiers(product.minPrice);
+  const availabilityTone = getAvailabilityTone(product);
+  const availabilityColor = availabilityTone === 'success'
+    ? 'var(--color-success)'
+    : availabilityTone === 'warning'
+      ? 'var(--color-warning)'
+      : 'var(--color-text-muted)';
+  const availabilityDot = availabilityTone === 'success' ? 'in-stock' : 'obsolete';
 
   // Run all secondary queries in parallel to avoid serial timeout
   const [manufacturerRecord, relatedProducts, sameManufacturerProducts] = await Promise.all([
@@ -251,7 +275,7 @@ export default async function ProductPage({ params }) {
             manufacturer: product.manufacturer,
             partNumber: { not: product.partNumber },
           },
-          select: { partNumber: true, description: true, minPrice: true, stock: true, manufacturer: true },
+          select: { partNumber: true, description: true, minPrice: true, stock: true, manufacturer: true, status: true },
           take: 6,
           orderBy: { stock: 'desc' },
         })
@@ -375,9 +399,9 @@ export default async function ProductPage({ params }) {
               {/* Stock & Availability */}
               <div className="product-availability">
                 <div className="product-status">
-                  <span className={`status-dot ${product.stock > 0 ? 'in-stock' : 'out-of-stock'}`} />
-                  <span style={{ fontWeight: 600, color: product.stock > 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
-                    {product.stock > 0 ? `${product.stock.toLocaleString()} In Stock` : 'Out of Stock'}
+                  <span className={`status-dot ${availabilityDot}`} />
+                  <span style={{ fontWeight: 600, color: availabilityColor }}>
+                    {getAvailabilityText(product)}
                   </span>
                 </div>
                 {product.leadTime && (
@@ -555,7 +579,7 @@ export default async function ProductPage({ params }) {
                   <span>▣</span><span>No Minimum Order Quantity</span>
                 </div>
                 <div className="sidebar-info-row">
-                  <span>➤</span><span>Same-Day Dispatch Available</span>
+                  <span>➤</span><span>{hasConfirmedStock(product) ? 'Same-Day Dispatch Available' : 'Sourcing & Lead-Time Confirmation'}</span>
                 </div>
                 <div className="sidebar-info-row">
                   <span>◈</span><span>Quality Inspection & Testing</span>
@@ -603,8 +627,8 @@ export default async function ProductPage({ params }) {
                         {rp.description}
                       </td>
                       <td>
-                        <span className={rp.stock > 0 ? 'text-success' : 'text-danger'}>
-                          {rp.stock > 0 ? rp.stock.toLocaleString() : 'Contact'}
+                        <span className={hasConfirmedStock(rp) ? 'text-success' : 'text-muted'}>
+                          {getAvailabilityText(rp)}
                         </span>
                       </td>
                       <td style={{ fontWeight: 600 }}>
@@ -656,8 +680,8 @@ export default async function ProductPage({ params }) {
                     {sp.description || 'Electronic Component'}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--space-sm)', fontSize: '12px' }}>
-                    <span className={sp.stock > 0 ? 'text-success' : 'text-danger'}>
-                      {sp.stock > 0 ? `${sp.stock.toLocaleString()} pcs` : 'RFQ'}
+                    <span className={hasConfirmedStock(sp) ? 'text-success' : 'text-muted'}>
+                      {getAvailabilityText(sp, { includeUnit: true })}
                     </span>
                     <span style={{ fontWeight: 600 }}>
                       {sp.minPrice ? `$${sp.minPrice.toFixed(sp.minPrice < 1 ? 4 : 2)}` : 'Quote'}

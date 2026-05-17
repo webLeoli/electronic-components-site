@@ -2,6 +2,23 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
 
+// Strip dangerous HTML while preserving basic formatting tags
+function sanitizeHtml(html) {
+  if (!html) return '';
+  return html
+    .replace(/<script[\s>][\s\S]*?<\/script>/gi, '')
+    .replace(/<script[\s>][\s\S]*$/gi, '')
+    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+    .replace(/on\w+\s*=\s*[^\s>]+/gi, '')
+    .replace(/<iframe[\s>][\s\S]*?<\/iframe>/gi, '')
+    .replace(/<object[\s>][\s\S]*?<\/object>/gi, '')
+    .replace(/<embed[\s>][\s\S]*?>/gi, '')
+    .replace(/<link[\s>][\s\S]*?>/gi, '')
+    .replace(/javascript:/gi, '')
+    .replace(/data:text\/html/gi, '')
+    .replace(/vbscript:/gi, '');
+}
+
 // Helper: calculate reading time
 function calcReadingTime(content) {
   const words = (content || '').split(/\s+/).filter(Boolean).length;
@@ -65,7 +82,7 @@ export async function POST(request) {
         title: data.title.trim(),
         slug,
         excerpt: data.excerpt || null,
-        content: data.content || '',
+        content: sanitizeHtml(data.content || ''),
         coverImage: data.coverImage || null,
         status: data.status || 'draft',
         publishedAt: data.status === 'published' ? new Date() : null,
@@ -99,7 +116,7 @@ export async function PUT(request) {
     if (data.slug !== undefined) updateData.slug = data.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
     if (data.excerpt !== undefined) updateData.excerpt = data.excerpt || null;
     if (data.content !== undefined) {
-      updateData.content = data.content;
+      updateData.content = sanitizeHtml(data.content);
       updateData.readingTime = calcReadingTime(data.content);
     }
     if (data.coverImage !== undefined) updateData.coverImage = data.coverImage || null;

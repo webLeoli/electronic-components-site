@@ -11,7 +11,7 @@ export default function BomTool() {
   const [parseError, setParseError] = useState('');
   const [parsed, setParsed] = useState(false);
   const fileInputRef = useRef(null);
-  const { addItem, importBulk } = useRfqCart();
+  const { addItem } = useRfqCart();
 
   // Parse CSV/TSV text into structured lines
   const parseBOM = (text) => {
@@ -86,15 +86,17 @@ export default function BomTool() {
     setLines(prev => prev.map(l => ({ ...l, selected: !allSelected })));
   };
 
-  // Add selected to RFQ cart
+  // Add selected to RFQ cart — merge with existing items
   const addToRfq = () => {
     const selected = lines.filter(l => l.selected);
     if (selected.length === 0) return;
-    importBulk(selected.map(l => ({
-      partNumber: l.partNumber,
-      manufacturer: l.manufacturer,
-      qty: parseInt(l.qty) || 1,
-    })));
+    for (const l of selected) {
+      addItem({
+        partNumber: l.partNumber,
+        manufacturer: l.manufacturer,
+        qty: parseInt(l.qty) || 1,
+      });
+    }
   };
 
   const selectedCount = lines.filter(l => l.selected).length;

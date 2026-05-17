@@ -7,7 +7,7 @@ import TrackingProvider from '@/components/TrackingProvider';
 import FloatingRfqButton from '@/components/FloatingRfqButton';
 import CodeInjection from '@/components/CodeInjection';
 import { RfqCartProvider } from '@/lib/rfq-cart';
-import { SITE_NAME, SITE_DESC, SITE_URL } from '@/lib/seo';
+import { SITE_NAME, SITE_DESC, SITE_URL, SITE_TAGLINE } from '@/lib/seo';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -31,14 +31,14 @@ export const viewport = {
 
 export const metadata = {
   title: {
-    default: `${SITE_NAME} - Hard-to-Find & Obsolete Electronic Components`,
+    default: `${SITE_NAME} — ${SITE_TAGLINE}`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESC,
   metadataBase: new URL(SITE_URL),
 
   openGraph: {
-    title: `${SITE_NAME} - Hard-to-Find & Obsolete Electronic Components`,
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
     description: SITE_DESC,
     url: SITE_URL,
     siteName: SITE_NAME,
@@ -48,7 +48,7 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${SITE_NAME} - Hard-to-Find & Obsolete Electronic Components`,
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
     description: SITE_DESC,
     images: [`${SITE_URL}/og-image.png`],
   },

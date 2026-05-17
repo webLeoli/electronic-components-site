@@ -1,11 +1,22 @@
+import { cache } from 'react';
 import prisma from '@/lib/db';
 /* eslint-disable @next/next/no-img-element -- Blog cover images may be uploaded or externally hosted; remote image optimization is intentionally disabled. */
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { headers } from 'next/headers';
 import sanitizeHtml from 'sanitize-html';
-import { productPath, SITE_NAME, SITE_URL } from '@/lib/seo';
+import { productPath, SITE_NAME, SITE_URL, hasConfirmedStock, getAvailabilityText } from '@/lib/seo';
 import '../blog.css';
+
+export const revalidate = 3600;
+
+// Deduplicate post lookup across generateMetadata and page component
+const getPost = cache(async (slug) => {
+  return prisma.blogPost.findUnique({
+    where: { slug },
+    include: { category: { select: { name: true, slug: true } } },
+  });
+});
 
 const BLOG_HTML_SANITIZE_OPTIONS = {
   allowedTags: [
@@ -145,7 +156,7 @@ function extractToc(md) {
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const post = await prisma.blogPost.findUnique({ where: { slug }, select: { title: true, seoTitle: true, seoDesc: true, excerpt: true, slug: true, coverImage: true, seoKeywords: true } });
+  const post = await getPost(slug);
   if (!post) return { title: 'Article Not Found' };
   const title = (post.seoTitle || post.title);
   const description = post.seoDesc || post.excerpt || `Read ${post.title} on ${SITE_NAME}`;
@@ -161,10 +172,7 @@ export async function generateMetadata({ params }) {
 
 export default async function BlogPostPage({ params }) {
   const { slug } = await params;
-  const post = await prisma.blogPost.findUnique({
-    where: { slug },
-    include: { category: { select: { name: true, slug: true } } },
-  });
+  const post = await getPost(slug);
 
   if (!post || post.status !== 'published') notFound();
 
@@ -362,8 +370,8 @@ export default async function BlogPostPage({ params }) {
                         {p.description && <div className="blog-product-desc">{p.description.substring(0, 80)}</div>}
                         <div className="blog-product-bottom">
                           <span className="blog-product-price">{p.minPrice ? `$${p.minPrice.toFixed(2)}` : 'Request Quote'}</span>
-                          <span className={`blog-product-stock ${p.stock > 0 ? 'instock' : 'oos'}`}>
-                            {p.stock > 0 ? `${p.stock.toLocaleString()} in stock` : 'Contact us'}
+                          <span className={`blog-product-stock ${hasConfirmedStock(p) ? 'instock' : 'oos'}`}>
+                            {getAvailabilityText(p)}
                           </span>
                         </div>
                       </Link>

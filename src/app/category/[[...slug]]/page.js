@@ -1,5 +1,7 @@
+import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 import prisma from '@/lib/db';
-import { generateCategoryMeta, productPath, SITE_URL, SITE_NAME } from '@/lib/seo';
+import { generateCategoryMeta, productPath, SITE_URL, SITE_NAME, hasConfirmedStock, getAvailabilityText } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AddToRfqButton from '@/components/AddToRfqButton';
@@ -8,6 +10,103 @@ import { ProductIcon } from '@/components/ProductImage';
 import { FALLBACK_CATEGORIES } from '@/lib/fallbacks';
 
 export const revalidate = 3600;
+
+// ----------------------------------------------------------------------------
+// Category fetch: 2026-05-17 rewrite
+//
+// The previous implementation used a single `prisma.category.findUnique` with
+// nested `include` + `_count` over children + grandchildren. On large L1s
+// (embedded with 15 descendants) this produced ~12 seconds of database work
+// because Prisma issued a separate SQL per `_count` and the nested LATERALs
+// got expensive.
+//
+// New approach: one recursive CTE pulls every descendant + its direct product
+// count in a single round trip (≤500ms even on the worst L1). We then rebuild
+// the same tree shape the renderer already expects (`category.children[].children[]`
+// with `_count.products`), so the rest of page.js is unchanged.
+// ----------------------------------------------------------------------------
+async function fetchCategoryTreeRaw(categorySlug) {
+  const root = await prisma.category.findUnique({
+    where: { slug: categorySlug },
+    include: { parent: { include: { parent: true } } },
+  });
+  if (!root) return null;
+
+  const rows = await prisma.$queryRawUnsafe(
+    `
+    WITH RECURSIVE cat_tree AS (
+      SELECT id, name, slug, "parentId", "sortOrder", icon, "seoTitle", "seoDesc", 1 AS depth
+      FROM "Category"
+      WHERE "parentId" = $1
+      UNION ALL
+      SELECT c.id, c.name, c.slug, c."parentId", c."sortOrder", c.icon, c."seoTitle", c."seoDesc", t.depth + 1
+      FROM "Category" c
+      INNER JOIN cat_tree t ON c."parentId" = t.id
+      WHERE t.depth < 3
+    )
+    SELECT t.id, t.name, t.slug, t."parentId", t."sortOrder", t.icon, t.depth,
+           COALESCE(p.cnt, 0)::int AS direct_product_count
+    FROM cat_tree t
+    LEFT JOIN (
+      SELECT "categoryId", COUNT(*)::int AS cnt
+      FROM "Product"
+      WHERE "categoryId" IN (SELECT id FROM cat_tree)
+      GROUP BY "categoryId"
+    ) p ON p."categoryId" = t.id
+    ORDER BY t.depth, t."sortOrder" NULLS LAST, t.name
+    `,
+    root.id,
+  );
+
+  // Group rows by parentId so we can attach children to their parent.
+  const byParent = new Map();
+  for (const r of rows) {
+    const parentKey = r.parentId;
+    if (!byParent.has(parentKey)) byParent.set(parentKey, []);
+    byParent.get(parentKey).push({
+      id: r.id,
+      name: r.name,
+      slug: r.slug,
+      parentId: r.parentId,
+      sortOrder: r.sortOrder,
+      icon: r.icon,
+      _count: { products: r.direct_product_count },
+      children: [], // filled below
+    });
+  }
+
+  // Attach grandchildren onto each L2 child.
+  const attachChildrenOf = (catId) => {
+    const direct = byParent.get(catId) || [];
+    for (const c of direct) {
+      c.children = byParent.get(c.id) || [];
+    }
+    return direct;
+  };
+
+  root.children = attachChildrenOf(root.id);
+  return root;
+}
+
+// Cross-request cache (5min) so cold-start cost is amortised over many users.
+// Tag with the slug so we can invalidate a single category if its tree changes.
+const fetchCategoryCached = (categorySlug) => unstable_cache(
+  () => fetchCategoryTreeRaw(categorySlug),
+  ['category-tree', categorySlug],
+  { revalidate: 300, tags: ['category-tree', `category-tree:${categorySlug}`] },
+)();
+
+// React cache() so generateMetadata + Page in the same request share one fetch.
+const getCategory = cache(fetchCategoryCached);
+
+// Same cached treatment for the product count, which alone was 5.5s on
+// embedded's 155K-row IN-list. The categoryIds list and filters are part of
+// the cache key.
+const getProductCountCached = (key, where) => unstable_cache(
+  () => prisma.product.count({ where }),
+  ['category-product-count', key],
+  { revalidate: 300, tags: ['category-product-count', `category-product-count:${key}`] },
+)();
 
 export async function generateStaticParams() {
   try {
@@ -80,22 +179,7 @@ export default async function CategoryPage({ params, searchParams }) {
   }
 
   const categorySlug = slug[slug.length - 1];
-  let category = await prisma.category.findUnique({
-    where: { slug: categorySlug },
-    include: {
-      parent: { include: { parent: true } },
-      children: {
-        orderBy: { sortOrder: 'asc' },
-        include: {
-          _count: { select: { products: true } },
-          children: {
-            orderBy: { sortOrder: 'asc' },
-            include: { _count: { select: { products: true } } },
-          },
-        },
-      },
-    },
-  });
+  let category = await getCategory(categorySlug);
 
   if (!category) {
     const fallback = FALLBACK_CATEGORIES.find(c => c.slug === categorySlug);
@@ -131,10 +215,15 @@ export default async function CategoryPage({ params, searchParams }) {
     productWhere.mountType = { contains: mountFilter, mode: 'insensitive' };
   }
 
-  // Count total products
-  const totalProducts = await prisma.product.count({
-    where: productWhere,
+  // Count total products. Cached for 5min — the count is the slowest single
+  // query on large L1s (≥5s on embedded), and being off by a few rows during
+  // the cache window has no visible effect (pagination math rounds anyway).
+  const countCacheKey = JSON.stringify({
+    ids: categoryIds.slice().sort(),
+    status: statusFilter || null,
+    mount:  mountFilter  || null,
   });
+  const totalProducts = await getProductCountCached(countCacheKey, productWhere);
 
   // Cap total pages to prevent deep pagination queries
   const totalPages = Math.min(Math.ceil(totalProducts / ITEMS_PER_PAGE), MAX_PAGES);
@@ -357,8 +446,8 @@ export default async function CategoryPage({ params, searchParams }) {
                           {product.description}
                         </td>
                         <td>
-                          <span className={product.stock > 0 ? 'text-success' : 'text-danger'}>
-                            {product.stock > 0 ? product.stock.toLocaleString() : 'Contact'}
+                          <span className={hasConfirmedStock(product) ? 'text-success' : 'text-muted'}>
+                            {getAvailabilityText(product)}
                           </span>
                         </td>
                         <td style={{ fontWeight: 600 }}>

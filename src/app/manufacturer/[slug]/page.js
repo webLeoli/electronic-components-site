@@ -2,7 +2,7 @@ import { cache } from 'react';
 import prisma from '@/lib/db';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { productPath, SITE_URL, SITE_NAME } from '@/lib/seo';
+import { productPath, SITE_URL, SITE_NAME, hasConfirmedStock, getAvailabilityText } from '@/lib/seo';
 import { FALLBACK_BRANDS } from '@/lib/fallbacks';
 
 function slugifyManufacturer(name) {
@@ -123,7 +123,7 @@ export default async function ManufacturerPage({ params, searchParams }) {
   const activeCount = statusMap['active'] || 0;
   const eolCount = (statusMap['eol'] || 0) + (statusMap['obsolete'] || 0);
   const inStockCount = await prisma.product.count({
-    where: { manufacturer: manufacturer.name, stock: { gt: 0 } },
+    where: { manufacturer: manufacturer.name, status: 'active', stock: { gt: 0 } },
   });
 
   // JSON-LD
@@ -368,8 +368,8 @@ export default async function ManufacturerPage({ params, searchParams }) {
                         {product.packageType || '—'}
                       </td>
                       <td>
-                        <span className={product.stock > 0 ? 'text-success' : 'text-danger'}>
-                          {product.stock > 0 ? product.stock.toLocaleString() : 'Contact'}
+                        <span className={hasConfirmedStock(product) ? 'text-success' : 'text-muted'}>
+                          {getAvailabilityText(product)}
                         </span>
                       </td>
                       <td style={{ fontWeight: 600 }}>

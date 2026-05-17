@@ -75,13 +75,19 @@ function checkRateLimit(ip) {
   const timestamps = prev.filter(t => now - t < RATE_LIMIT_WINDOW);
 
   if (timestamps.length >= RATE_LIMIT_MAX) {
-    // Still store the cleaned list to avoid re-processing
     rateLimitMap.set(key, timestamps);
-    return false; // Rate limited
+    return false;
   }
 
   timestamps.push(now);
   rateLimitMap.set(key, timestamps);
+
+  // Periodically purge stale entries to prevent memory leak
+  if (rateLimitMap.size > 10000) {
+    for (const [k, ts] of rateLimitMap) {
+      if (ts.every(t => now - t > RATE_LIMIT_WINDOW)) rateLimitMap.delete(k);
+    }
+  }
   return true;
 }
 

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import prisma from '@/lib/db';
-import { productPath, SITE_NAME, SITE_URL, SITE_DESC } from '@/lib/seo';
+import { productPath, SITE_NAME, SITE_URL, SITE_DESC, SITE_TAGLINE, hasConfirmedStock, getAvailabilityText } from '@/lib/seo';
 import CategoryIcon from '@/components/CategoryIcon';
 import { ProductIcon } from '@/components/ProductImage';
 import { FALLBACK_CATEGORIES, FALLBACK_PARTS, FALLBACK_BRANDS } from '@/lib/fallbacks';
@@ -10,20 +10,20 @@ import { unstable_cache } from 'next/cache';
 export const revalidate = 300;
 
 export const metadata = {
-  title: `${SITE_NAME} - Hard-to-Find & Obsolete Electronic Components`,
+  title: `${SITE_NAME} — ${SITE_TAGLINE}`,
   description: SITE_DESC,
   alternates: { canonical: SITE_URL },
   openGraph: {
-    title: `${SITE_NAME} - Hard-to-Find & Obsolete Electronic Components`,
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
     description: SITE_DESC,
     url: SITE_URL,
     siteName: SITE_NAME,
     type: 'website',
-    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: `${SITE_NAME} - Electronic Component Sourcing` }],
+    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: `${SITE_NAME} — Obsolete & FPGA Component Sourcing` }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${SITE_NAME} - Electronic Component Sourcing`,
+    title: `${SITE_NAME} — Obsolete IC & FPGA Sourcing`,
     description: SITE_DESC,
     images: [`${SITE_URL}/og-image.png`],
   },
@@ -150,11 +150,13 @@ export default async function HomePage() {
         <div className="container">
           <div className="hero-content">
             <h1 className="animate-fade-in">
-              Find <span className="highlight">Hard-to-Source</span> Electronic Components
+              <span className="highlight">Hard-to-Find</span> & Obsolete Electronic Components
+              <br />
+              <span style={{ fontSize: '0.62em', fontWeight: 600, opacity: 0.85 }}>Including 24,000+ FPGAs & CPLDs in stock</span>
             </h1>
             <p className="animate-fade-in animate-fade-in-delay-1">
-              {formatCount(totalProducts)} obsolete, end-of-life, and hard-to-find parts from {formatCount(totalManufacturers)} manufacturers.
-              Quality assured, no minimum order, worldwide shipping.
+              {formatCount(totalProducts)} obsolete, end-of-life, and hard-to-source part numbers from {formatCount(totalManufacturers)} manufacturers.
+              IDEA-1010 inspected, no minimum order quantity, worldwide express shipping.
             </p>
 
             <form className="hero-search animate-fade-in animate-fade-in-delay-2" action="/search" method="GET" role="search" id="hero-search-form">
@@ -224,8 +226,8 @@ export default async function HomePage() {
                     <td>{part.manufacturer}</td>
                     <td>{part.category?.name || '—'}</td>
                     <td>
-                      <span className={part.stock > 0 ? 'text-success' : 'text-danger'}>
-                        {part.stock > 0 ? part.stock.toLocaleString() : 'Out of Stock'}
+                      <span className={hasConfirmedStock(part) ? 'text-success' : 'text-muted'}>
+                        {getAvailabilityText(part)}
                       </span>
                     </td>
                     <td style={{ fontWeight: 600 }}>

@@ -73,12 +73,14 @@ function scoreDescription(description) {
   let diversity = 5; // baseline
 
   // Penalty: starts with the part number (very common in auto-generated)
-  // We don't have partNumber here, so check for common patterns
   const templatePatterns = [
     /^[A-Z0-9][\w-]+ is a /i,           // "XC7A35T is a ..." — common but acceptable
     /^IC /i,                              // Starts with "IC " — very short/generic
     /^[A-Z]{2,4}\s/,                      // Starts with 2-4 letter abbreviation
   ];
+  // Apply template pattern penalties
+  const templateMatches = templatePatterns.filter(p => p.test(desc)).length;
+  diversity -= templateMatches * 2;
   // Bonus: has multiple sentences
   const sentenceCount = (desc.match(/[.!?]+/g) || []).length;
   if (sentenceCount >= 4) diversity += 3;
@@ -114,6 +116,12 @@ function scoreDescription(description) {
     // Electrical params
     /\d+\s*(mhz|ghz|khz)/i, /\d+\s*(kb|mb|gb)/i, /\d+\s*bit/i,
     /\d+[\.\d]*\s*v/i, /\d+\s*(ma|µa|ua|a)\b/i,
+    /supply\s+voltage/i, /input\s+voltage/i, /output\s+voltage/i,
+    /load\s+current/i, /drive\s+current/i, /switching\s+current/i,
+    /voltage\s+threshold/i, /signal\s+integrity/i, /logic\s+resources/i,
+    /clock\s+constraints/i, /clock\s+frequency/i, /memory\s+interface/i,
+    /interface\s+requirements/i, /package\s+(fit|escape|routing)/i,
+    /thermal\s+operating\s+temperature/i,
     // Interfaces
     /spi/i, /i2c|i²c/i, /uart/i, /usart/i, /can\s*bus/i, /usb/i, /ethernet/i,
     /gpio/i, /adc/i, /dac/i, /pwm/i, /pll/i,
@@ -123,6 +131,9 @@ function scoreDescription(description) {
     /flash/i, /sram/i, /dram/i, /eeprom/i, /sdram/i,
     // Power
     /ldo/i, /buck/i, /boost/i, /mosfet/i, /igbt/i,
+    /regulator/i, /converter/i, /supervisor/i, /voltage\s+reference/i,
+    // Signal-chain / application-specific IC terms
+    /amplifier/i, /audio\s+codec/i, /telecom/i, /jitter/i,
     // Operating conditions
     /\-\d+°?c/i, /operating\s+temperature/i,
   ];

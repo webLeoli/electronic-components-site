@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
-import { computeQualityScore, isIndexable, TIERS } from '@/lib/quality-score';
+import { computeQualityScore, TIERS } from '@/lib/quality-score';
+import { getIndexingPolicy, isScoreIndexable, setIndexingPolicy } from '@/lib/indexing-policy';
 
 /**
  * GET /api/admin/quality
@@ -68,7 +69,7 @@ export async function GET(request) {
     }
 
     // Default: return tier distribution stats
-    const [total, indexableCount, goldCount, silverCount, bronzeCount, noindexCount, avgScore] =
+    const [total, indexableCount, goldCount, silverCount, bronzeCount, noindexCount, avgScore, policy] =
       await Promise.all([
         prisma.product.count(),
         prisma.product.count({ where: { indexable: true } }),
@@ -77,6 +78,7 @@ export async function GET(request) {
         prisma.product.count({ where: { qualityScore: { gte: 20, lt: 45 } } }),
         prisma.product.count({ where: { qualityScore: { lt: 20 } } }),
         prisma.product.aggregate({ _avg: { qualityScore: true } }),
+        getIndexingPolicy(),
       ]);
 
     // Get last indexing action from AdminSettings
@@ -98,6 +100,7 @@ export async function GET(request) {
         bronze: bronzeCount,
         noindex: noindexCount,
       },
+      policy,
       lastAction,
     });
   } catch (e) {
@@ -119,7 +122,12 @@ export async function POST(request) {
 
     // --- Action: batch re-score all products ---
     if (action === 'rescore') {
-      const indexThreshold = threshold || 45;
+      // Respect the persisted policy when the caller didn't pass an explicit
+      // threshold. Falling back to a hardcoded 45 here used to silently undo
+      // a 70-threshold rollout if anyone clicked "Re-score All" without args.
+      const currentPolicy = await getIndexingPolicy();
+      const indexThreshold = threshold ?? currentPolicy.threshold;
+      const policy = { threshold: indexThreshold, disabled: false };
       const BATCH = 2000;
       const total = await prisma.product.count();
       let processed = 0;
@@ -135,7 +143,7 @@ export async function POST(request) {
 
         const updates = products.map(p => {
           const result = computeQualityScore(p);
-          const indexableFlag = isIndexable(result.score, indexThreshold);
+          const indexableFlag = isScoreIndexable(result.score, policy);
           if (indexableFlag) indexed++;
           processed++;
           return prisma.product.update({
@@ -148,6 +156,7 @@ export async function POST(request) {
       }
 
       // Record action
+      await setIndexingPolicy(policy);
       await prisma.adminSetting.upsert({
         where: { key: 'quality_last_action' },
         create: { key: 'quality_last_action', value: JSON.stringify({
@@ -165,7 +174,9 @@ export async function POST(request) {
 
     // --- Action: enable indexing by threshold ---
     if (action === 'enable_tier') {
-      const minScore = threshold || 45;
+      const currentPolicy = await getIndexingPolicy();
+      const minScore = threshold ?? currentPolicy.threshold;
+      await setIndexingPolicy({ threshold: minScore, disabled: false });
       const result = await prisma.product.updateMany({
         where: { qualityScore: { gte: minScore } },
         data: { indexable: true },
@@ -198,6 +209,7 @@ export async function POST(request) {
 
     // --- Action: disable all indexing ---
     if (action === 'disable_all') {
+      await setIndexingPolicy({ disabled: true });
       const result = await prisma.product.updateMany({
         data: { indexable: false },
       });

@@ -1,3 +1,5 @@
+import { hasConfirmedStock } from './seo';
+
 /**
  * Component Image System — FPGACenter
  * 
@@ -455,8 +457,7 @@ export function generateProductAlt(product) {
   }
 
   // Suffix for SEO
-  const stock = product.stock;
-  if (stock && stock > 0) {
+  if (hasConfirmedStock(product)) {
     parts.push('- In Stock');
   } else {
     parts.push('- Buy Online');
@@ -510,4 +511,3 @@ export function generateImageFilename(product, ext = '.webp') {
   const name = parts.join('-').substring(0, 80) || 'electronic-component';
   return `${name}${ext}`;
 }
-

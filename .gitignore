@@ -64,3 +64,12 @@ build-log*.txt
 
 # local server logs
 server.*.log
+
+# local SEO rollout artifacts
+/backups/
+/category-seo-ids.txt
+/orphan-classified-ids.txt
+/orphan-descfix-ids.txt
+/phase31-ids.txt
+/phase32-*.txt
+/phase33-remaining.txt

@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { SITE_NAME, SITE_URL } from '@/lib/seo';
 import './blog.css';
 
+export const revalidate = 3600;
+
 export async function generateMetadata({ searchParams }) {
   const sp = await searchParams;
   const page = Math.max(1, parseInt(sp?.page) || 1);

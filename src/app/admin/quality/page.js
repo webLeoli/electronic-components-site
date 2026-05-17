@@ -213,6 +213,12 @@ export default function AdminQualityPage() {
               </div>
               <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Index Rate</div>
             </div>
+            <div className="admin-card" style={{ padding: '16px', textAlign: 'center' }}>
+              <div style={{ fontSize: '24px', fontWeight: 800, color: stats.policy?.disabled ? '#ef4444' : '#38bdf8' }}>
+                {stats.policy?.disabled ? 'Disabled' : `>= ${stats.policy?.threshold ?? 45}`}
+              </div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Index Policy</div>
+            </div>
           </div>
 
           {/* Tier Distribution */}
@@ -245,16 +251,17 @@ export default function AdminQualityPage() {
             <h3 style={{ margin: '0 0 16px', fontSize: '15px', color: '#e2e8f0' }}>Batch Indexing Controls</h3>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-              {/* Re-score all */}
+              {/* Re-score all — uses the persisted policy threshold so it
+                  cannot silently revert a 70-threshold rollout to 45. */}
               <button
                 className="admin-btn admin-btn-primary"
-                onClick={() => handleOperation('rescore', 45)}
+                onClick={() => handleOperation('rescore', stats.policy?.threshold ?? 70)}
                 disabled={operating}
                 style={{ padding: '12px', fontSize: '13px' }}
               >
                 {operating ? '⏳ Processing...' : '🔄 Re-score All Products'}
                 <br />
-                <span style={{ fontSize: '10px', opacity: 0.7 }}>Recompute 0-100 scores</span>
+                <span style={{ fontSize: '10px', opacity: 0.7 }}>Recompute @ ≥{stats.policy?.threshold ?? 70}</span>
               </button>
 
               {/* Enable Gold only */}
@@ -269,16 +276,20 @@ export default function AdminQualityPage() {
                 <span style={{ fontSize: '10px', opacity: 0.7 }}>~{stats.tiers?.gold?.toLocaleString()} products</span>
               </button>
 
-              {/* Enable Gold + Silver */}
+              {/* Enable Gold + Silver — kept available for emergencies, but
+                  WARNING: clicking this releases Silver-tier products that may
+                  still be on templated v1 descriptions. Confirm v2 rewrite
+                  finished before using. */}
               <button
                 className="admin-btn"
                 style={{ padding: '12px', fontSize: '13px', background: '#1e40af', color: '#fff', border: 'none', borderRadius: '8px' }}
                 onClick={() => handleOperation('enable_tier', 45)}
                 disabled={operating}
+                title="Only use after confirming all Silver-tier products have v2 descriptions; otherwise this releases templated content into the index."
               >
-                🥈 Index Silver+ (≥45)
+                🥈 Index Silver+ (≥45) ⚠️
                 <br />
-                <span style={{ fontSize: '10px', opacity: 0.7 }}>~{((stats.tiers?.gold || 0) + (stats.tiers?.silver || 0)).toLocaleString()} products</span>
+                <span style={{ fontSize: '10px', opacity: 0.7 }}>~{((stats.tiers?.gold || 0) + (stats.tiers?.silver || 0)).toLocaleString()} products — see tooltip</span>
               </button>
 
               {/* Disable all */}
