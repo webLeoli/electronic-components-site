@@ -69,6 +69,10 @@ server.*.log
 /backups/
 /data-packages/
 /imports/
+/public/images/
+/scripts/blog_posts_output.json
+/scripts/get_blog_posts.js
+/scripts/update_blog_images.js
 /category-seo-ids.txt
 /orphan-classified-ids.txt
 /orphan-descfix-ids.txt

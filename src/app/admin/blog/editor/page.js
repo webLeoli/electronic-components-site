@@ -48,6 +48,14 @@ function isMarkdown(content) {
   return /^#{2,4} /m.test(content) || /\*\*.+\*\*/.test(content) || /^- /m.test(content);
 }
 
+function escapeAttr(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function BlogEditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -366,6 +374,8 @@ function BlogEditorContent() {
     setUploading(true);
     const fd = new FormData();
     fd.append('file', file);
+    fd.append('title', post.title || '');
+    fd.append('slug', post.slug || '');
     try {
       const res = await fetch('/api/admin/blog/upload', { method: 'POST', body: fd });
       const data = await res.json();
@@ -381,7 +391,20 @@ function BlogEditorContent() {
 
   const handleCoverUpload = async (file) => {
     setCoverUploading(true);
-    const result = await uploadFile(file);
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('title', post.title || '');
+    fd.append('slug', post.slug || '');
+    fd.append('context', 'cover');
+    let result = null;
+    try {
+      const res = await fetch('/api/admin/blog/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      result = data;
+    } catch (e) {
+      flashMsg('error', `Upload failed: ${e.message}`);
+    }
     if (result) setPost(prev => ({ ...prev, coverImage: result.url }));
     setCoverUploading(false);
   };
@@ -395,7 +418,7 @@ function BlogEditorContent() {
         (async () => {
           const result = await uploadFile(item.getAsFile());
           if (result) {
-            document.execCommand('insertHTML', false, `<img src="${result.url}" alt="uploaded image" style="max-width:100%;border-radius:8px;margin:8px 0" />`);
+            document.execCommand('insertHTML', false, `<img src="${result.url}" alt="${escapeAttr(result.alt || 'blog image')}" style="max-width:100%;border-radius:8px;margin:8px 0" />`);
             syncContent();
           }
         })();
@@ -410,7 +433,7 @@ function BlogEditorContent() {
       (async () => {
         const result = await uploadFile(e.dataTransfer.files[0]);
         if (result) {
-          document.execCommand('insertHTML', false, `<img src="${result.url}" alt="uploaded image" style="max-width:100%;border-radius:8px;margin:8px 0" />`);
+          document.execCommand('insertHTML', false, `<img src="${result.url}" alt="${escapeAttr(result.alt || 'blog image')}" style="max-width:100%;border-radius:8px;margin:8px 0" />`);
           syncContent();
         }
       })();
@@ -422,7 +445,7 @@ function BlogEditorContent() {
     if (!file) return;
     const result = await uploadFile(file);
     if (result) {
-      setImageModal(m => ({ ...m, url: result.url, alt: file.name.replace(/\.[^.]+$/, '') }));
+      setImageModal(m => ({ ...m, url: result.url, alt: result.alt || file.name.replace(/\.[^.]+$/, '') }));
     }
   };
 
