@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "data:repair-sitemap": "node scripts/repair-product-sitemap-indexing.mjs",
+    "data:export": "node scripts/export-safe-data-package.mjs",
+    "data:import": "node scripts/import-safe-data-package.mjs"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",

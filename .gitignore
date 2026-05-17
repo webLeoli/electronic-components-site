@@ -67,6 +67,8 @@ server.*.log
 
 # local SEO rollout artifacts
 /backups/
+/data-packages/
+/imports/
 /category-seo-ids.txt
 /orphan-classified-ids.txt
 /orphan-descfix-ids.txt
