@@ -13,6 +13,8 @@ set -Eeuo pipefail
 #   SERVICE_NAME=fpgacenter               systemd service name to restart.
 #   HEALTH_URL=https://fpgacenter.com     URL to check after restart.
 #   SKIP_DB=1                             Skip Prisma database sync.
+#   STOP_APP_BEFORE_BUILD=1               Stop PM2 app before building on low-resource VPS.
+#   CLEAN_NEXT=1                          Remove .next before building. Use with STOP_APP_BEFORE_BUILD=1.
 #   FORCE_DB_PUSH_ACCEPT_DATA_LOSS=1      Allow prisma db push --accept-data-loss.
 
 BRANCH="${BRANCH:-master}"
@@ -62,6 +64,20 @@ restart_service() {
   return 0
 }
 
+stop_service_for_build() {
+  if [ "${STOP_APP_BEFORE_BUILD:-0}" != "1" ]; then
+    return 0
+  fi
+
+  if command -v pm2 >/dev/null 2>&1 && pm2 describe "$APP_NAME" >/dev/null 2>&1; then
+    log "Stopping PM2 app before build: $APP_NAME"
+    pm2 stop "$APP_NAME" || true
+    return 0
+  fi
+
+  log "STOP_APP_BEFORE_BUILD=1 set, but PM2 app '$APP_NAME' was not found"
+}
+
 log "Starting FPGACenter update in $SCRIPT_DIR"
 
 require_cmd git
@@ -102,6 +118,11 @@ fi
 log "Building Next.js production bundle"
 export NEXT_TELEMETRY_DISABLED="${NEXT_TELEMETRY_DISABLED:-1}"
 export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=4096}"
+stop_service_for_build
+if [ "${CLEAN_NEXT:-0}" = "1" ]; then
+  log "Removing .next before build"
+  rm -rf .next
+fi
 if command -v nice >/dev/null 2>&1; then
   nice -n "${BUILD_NICE:-5}" npm run build
 else
