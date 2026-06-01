@@ -342,7 +342,14 @@ export default async function BlogPostPage({ params }) {
               {/* Cover Image */}
               {post.coverImage && (
                 <div className="blog-article-cover">
-                  <img src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" />
+                  {post.coverImage.endsWith('.webp') ? (
+                    <picture>
+                      <source srcSet={post.coverImage} type="image/webp" />
+                      <img src={post.coverImage.replace(/\.webp$/, '.png')} alt={post.title} loading="eager" fetchPriority="high" />
+                    </picture>
+                  ) : (
+                    <img src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" />
+                  )}
                 </div>
               )}
 
