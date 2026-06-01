@@ -4,8 +4,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import RfqCartIndicator from './RfqCartIndicator';
 
-// Main visible categories (6 items) — matches our 3-level taxonomy
+// Main visible categories. Keep FPGA/CPLD first because it is the site's growth wedge.
 const MAIN_CATEGORIES = [
+  { name: 'FPGA/CPLD', href: '/fpga-sourcing', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 20v3"/><path d="M15 20v3"/><path d="M1 9h3"/><path d="M1 15h3"/><path d="M20 9h3"/><path d="M20 15h3"/></svg> },
   { name: 'Embedded', slug: 'embedded', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/></svg> },
   { name: 'Power', slug: 'power-management', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
   { name: 'Memory', slug: 'memory', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="10" rx="2" ry="2"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/></svg> },
@@ -77,7 +78,7 @@ export default function Header() {
               type="search"
               className="input"
               name="q"
-              placeholder="Search by part number, keyword, or manufacturer..."
+              placeholder="Search XC6SLX, EP4CE, LCMXO, A3P..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               id="search-input"
@@ -106,8 +107,8 @@ export default function Header() {
         <div className="category-bar-inner">
           {MAIN_CATEGORIES.map((cat) => (
             <Link
-              key={cat.slug}
-              href={`/category/${cat.slug}`}
+              key={cat.href || cat.slug}
+              href={cat.href || `/category/${cat.slug}`}
               className="cat-link"
             >
               <span style={{ display: 'flex', alignItems: 'center' }}>{cat.icon}</span>

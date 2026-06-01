@@ -9,12 +9,20 @@ import { getTrackingData, resetBehaviorData } from '@/lib/tracker';
 export default function RfqForm() {
   const searchParams = useSearchParams();
   const prefilledPart = searchParams.get('part') || '';
+  const prefilledCategory = searchParams.get('category') || '';
   const { items: cartItems, removeItem, clearCart, addItem, count } = useRfqCart();
   const fileInputRef = useRef(null);
 
   // Local form lines — initialized from cart
   const [lines, setLines] = useState([]);
-  const [contact, setContact] = useState({ name: '', email: '', company: '', phone: '', country: '', message: '' });
+  const [contact, setContact] = useState({
+    name: '',
+    email: '',
+    company: '',
+    phone: '',
+    country: '',
+    message: prefilledCategory ? `Sourcing request: ${prefilledCategory}` : '',
+  });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');

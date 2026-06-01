@@ -112,7 +112,7 @@ function generateProductFAQ(product, specs) {
   } else {
     faqs.push({
       q: `Can I still purchase the ${product.partNumber}?`,
-      a: `While ${product.partNumber} is currently showing limited availability, ${SITE_NAME} can source this part through our global network of certified suppliers. Submit an RFQ for lead time and pricing.`,
+      a: `While ${product.partNumber} is currently showing limited availability, ${SITE_NAME} can source this part through our global network of qualified suppliers. Submit an RFQ for lead time and pricing.`,
     });
   }
 
@@ -129,7 +129,7 @@ function generateProductFAQ(product, specs) {
     const statusLabel = product.status === 'obsolete' ? 'obsolete' : 'end-of-life';
     faqs.push({
       q: `The ${product.partNumber} is marked as ${statusLabel}. Are the parts genuine?`,
-      a: `Absolutely. All ${product.partNumber} units sourced by ${SITE_NAME} are 100% original ${mfr} components. We follow IDEA-STD-1010 inspection standards and provide full traceability documentation. ${statusLabel === 'obsolete' ? 'We specialize in obsolete part sourcing and verify availability before confirming supply.' : ''}`,
+      a: `All ${product.partNumber} units sourced by ${SITE_NAME} are reviewed for originality, lot condition, and documentation before shipment. We use IDEA-STD-1010-aligned inspection practices for specialty-channel supply. ${statusLabel === 'obsolete' ? 'We specialize in obsolete part sourcing and verify availability before confirming supply.' : ''}`,
     });
   }
 
@@ -470,7 +470,7 @@ export default async function ProductPage({ params }) {
                   </a>
                 )}
                 <Link href={`/rfq?part=${encodeURIComponent(product.partNumber)}`} className="btn btn-primary btn-sm">
-                  Request Quote
+                  Verify Stock & Date Code
                 </Link>
               </div>
             </div>
@@ -601,7 +601,7 @@ export default async function ProductPage({ params }) {
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
                   </svg>
-                  Request Quote
+                  Verify Stock & Date Code
                 </Link>
                 <AddToRfqButton
                   partNumber={product.partNumber}
@@ -611,7 +611,7 @@ export default async function ProductPage({ params }) {
 
               <div style={{ marginTop: 'var(--space-lg)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--color-border)' }}>
                 <div className="sidebar-info-row">
-                  <span>✓</span><span>100% Original & Genuine</span>
+                  <span>✓</span><span>Originality & lot review</span>
                 </div>
                 <div className="sidebar-info-row">
                   <span>▣</span><span>No Minimum Order Quantity</span>

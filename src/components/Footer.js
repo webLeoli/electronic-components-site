@@ -22,19 +22,21 @@ export default function Footer() {
               FPGA<span>Center</span>
             </Link>
             <p>
-              B2B sourcing support for hard-to-find, obsolete, and production-critical
-              electronic components. Send part numbers or a BOM and our procurement
-              team will verify availability, lead time, and quote options.
+              B2B sourcing support for legacy FPGA, CPLD, hard-to-find, obsolete,
+              and production-critical electronic components. Send part numbers or
+              a BOM and our procurement team will verify availability, lead time,
+              and quote options.
             </p>
             <div className="footer-trust-row">
               <span>ISO 9001</span>
-              <span>IDEA-STD-1010</span>
+              <span>IDEA-1010 aligned</span>
               <span>Traceability</span>
             </div>
           </div>
 
           <div className="footer-col">
             <h4>Products</h4>
+            <Link href="/fpga-sourcing">FPGA &amp; CPLD Sourcing</Link>
             <Link href="/category/embedded">Embedded &amp; Programmable</Link>
             <Link href="/category/power-management">Power Management</Link>
             <Link href="/category/memory">Memory ICs</Link>
@@ -47,6 +49,8 @@ export default function Footer() {
             <h4>Procurement</h4>
             <Link href="/rfq">Request a Quote</Link>
             <Link href="/bom">Upload BOM</Link>
+            <Link href="/fpga-sourcing/xilinx-spartan-6">Spartan-6 Sourcing</Link>
+            <Link href="/fpga-sourcing/altera-cyclone">Cyclone FPGA Sourcing</Link>
             <Link href="/search">Part Search</Link>
             <Link href="/manufacturers">Manufacturers</Link>
             <Link href="/quality">Quality Assurance</Link>

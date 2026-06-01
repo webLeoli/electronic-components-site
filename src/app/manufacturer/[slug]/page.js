@@ -313,7 +313,7 @@ export default async function ManufacturerPage({ params, searchParams }) {
               {manufacturer.stockNote}
             </p>
             <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-md)', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>✓ 100% Original & Genuine</span>
+              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>✓ Originality review</span>
               <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>✓ No Minimum Order</span>
               <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>✓ Quality Inspection</span>
               <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>✓ Global Shipping</span>

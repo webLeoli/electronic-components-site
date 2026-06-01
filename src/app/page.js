@@ -4,17 +4,18 @@ import { productPath, SITE_NAME, SITE_URL, SITE_DESC, SITE_TAGLINE, hasConfirmed
 import CategoryIcon from '@/components/CategoryIcon';
 import { ProductIcon } from '@/components/ProductImage';
 import { FALLBACK_CATEGORIES, FALLBACK_PARTS, FALLBACK_BRANDS } from '@/lib/fallbacks';
+import { buildProgrammableLogicWhere, getFpgaSeries } from '@/lib/fpga-growth';
 import { unstable_cache } from 'next/cache';
 
 // ISR: revalidate every 5 minutes
 export const revalidate = 300;
 
 export const metadata = {
-  title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+  title: `${SITE_NAME} — Legacy FPGA & CPLD Sourcing`,
   description: SITE_DESC,
   alternates: { canonical: SITE_URL },
   openGraph: {
-    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    title: `${SITE_NAME} — Legacy FPGA & CPLD Sourcing`,
     description: SITE_DESC,
     url: SITE_URL,
     siteName: SITE_NAME,
@@ -23,7 +24,7 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${SITE_NAME} — Obsolete IC & FPGA Sourcing`,
+    title: `${SITE_NAME} — Legacy FPGA & CPLD Sourcing`,
     description: SITE_DESC,
     images: [`${SITE_URL}/og-image.png`],
   },
@@ -50,6 +51,8 @@ const PRODUCT_SELECT = {
   category: { select: { name: true } },
 };
 
+const FPGA_SERIES_SHORTCUTS = getFpgaSeries().slice(0, 8);
+
 function getDailyRotationKey(date = new Date()) {
   return date.toISOString().slice(0, 10);
 }
@@ -75,7 +78,7 @@ function seededRandom(seed) {
 
 const getDailyRotatingProducts = unstable_cache(
   async (rotationKey) => {
-    const where = { status: 'active', stock: { gt: 0 } };
+    const where = buildProgrammableLogicWhere({ stockedOnly: true });
     const idRange = await prisma.product.aggregate({
       where,
       _min: { id: true },
@@ -129,6 +132,15 @@ const getDailyRotatingProducts = unstable_cache(
         take: DAILY_ROTATION_SIZE - products.length,
       });
       products.push(...fallback);
+    }
+
+    if (products.length === 0) {
+      return prisma.product.findMany({
+        where: buildProgrammableLogicWhere(),
+        select: PRODUCT_SELECT,
+        orderBy: [{ stock: 'desc' }, { qualityScore: 'desc' }, { partNumber: 'asc' }],
+        take: DAILY_ROTATION_SIZE,
+      });
     }
 
     return products;
@@ -242,12 +254,12 @@ export default async function HomePage() {
         <div className="container">
           <div className="hero-content b2b-hero-grid">
             <div className="b2b-hero-copy">
-              <div className="eyebrow">B2B electronic component sourcing</div>
+              <div className="eyebrow">FPGA/CPLD sourcing specialist</div>
             <h1 className="animate-fade-in">
-              Source <span className="highlight">hard-to-find parts</span> with fast RFQ support
+              Source <span className="highlight">legacy FPGA & CPLD parts</span> with verified RFQ support
             </h1>
             <p className="animate-fade-in animate-fade-in-delay-1">
-              Search {formatCount(totalProducts)} part numbers from {formatCount(totalManufacturers)} manufacturers, compare stock and pricing signals, then send a quote request for verified availability, lead time, MOQ, and alternates.
+              Search {formatCount(totalProducts)} part numbers with deep programmable logic coverage across Xilinx, Altera, Intel, Lattice, Actel, and Microchip. Verify stock, date code, package, lead time, MOQ, and alternates before purchase.
             </p>
 
             <form className="hero-search animate-fade-in animate-fade-in-delay-2" action="/search" method="GET" role="search" id="hero-search-form">
@@ -255,11 +267,11 @@ export default async function HomePage() {
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />
               </svg>
-              <input type="search" name="q" className="input" placeholder="Enter part number, e.g. STM32F103C8T6..." id="hero-search-input" />
-              <button type="submit" className="search-btn" id="hero-search-btn">Search Parts</button>
+              <input type="search" name="q" className="input" placeholder="Enter FPGA part number, e.g. XC6SLX9 or EP4CE22..." id="hero-search-input" />
+              <button type="submit" className="search-btn" id="hero-search-btn">Search FPGA Parts</button>
             </form>
             <div className="hero-actions">
-              <Link href="/rfq" className="btn btn-primary btn-lg">Submit RFQ</Link>
+              <Link href="/rfq?category=FPGA%20and%20CPLD" className="btn btn-primary btn-lg">Request FPGA Quote</Link>
               <Link href="/bom" className="btn btn-secondary btn-lg">Upload BOM</Link>
             </div>
             </div>
@@ -267,7 +279,7 @@ export default async function HomePage() {
             <div className="hero-stats animate-fade-in animate-fade-in-delay-3">
               <div className="hero-stat">
                 <div className="hero-stat-value">{formatCount(totalProducts)}</div>
-                <div className="hero-stat-label">Part numbers</div>
+                <div className="hero-stat-label">Searchable part numbers</div>
               </div>
               <div className="hero-stat">
                 <div className="hero-stat-value">{formatCount(totalManufacturers)}</div>
@@ -278,17 +290,17 @@ export default async function HomePage() {
                 <div className="hero-stat-label">Target RFQ reply</div>
               </div>
               <div className="hero-stat">
-                <div className="hero-stat-value">BOM</div>
-                <div className="hero-stat-label">Multi-line quotes</div>
+                <div className="hero-stat-value">FPGA</div>
+                <div className="hero-stat-label">CPLD and logic focus</div>
               </div>
               <div className="hero-rfq-panel">
-                <h2>Fast quote workflow</h2>
+                <h2>FPGA quote workflow</h2>
                 <ol>
-                  <li><span>1</span>Search part number or add items to RFQ cart</li>
-                  <li><span>2</span>Confirm quantity, package, target price, or BOM</li>
-                  <li><span>3</span>Receive stock, lead time, MOQ, and quote options</li>
+                  <li><span>1</span>Search exact ordering code or upload a BOM</li>
+                  <li><span>2</span>Confirm package, speed grade, quantity, and date-code needs</li>
+                  <li><span>3</span>Receive stock, lead time, MOQ, alternates, and quote options</li>
                 </ol>
-                <Link href="/rfq" className="btn btn-primary">Start Quote Request</Link>
+                <Link href="/rfq?category=FPGA%20and%20CPLD" className="btn btn-primary">Start FPGA RFQ</Link>
               </div>
             </div>
           </div>
@@ -298,13 +310,13 @@ export default async function HomePage() {
       <section className="home-service-nav" aria-label="Sourcing shortcuts">
         <div className="container">
           <div className="home-service-nav-grid">
-            <Link href="/category" className="home-service-nav-item">
-              <span>Products</span>
-              <strong>Browse component categories</strong>
+            <Link href="/fpga-sourcing" className="home-service-nav-item">
+              <span>FPGA</span>
+              <strong>Legacy FPGA/CPLD sourcing</strong>
             </Link>
             <Link href="/manufacturers" className="home-service-nav-item">
               <span>Brands</span>
-              <strong>Search manufacturer lines</strong>
+              <strong>Xilinx, Altera, Lattice lines</strong>
             </Link>
             <Link href="/rfq" className="home-service-nav-item primary">
               <span>RFQ</span>
@@ -323,10 +335,10 @@ export default async function HomePage() {
         <div className="container">
           <div className="section-header">
             <div>
-              <h2 className="section-title">Featured Parts</h2>
-              <p className="section-subtitle">Daily rotating in-stock products with quick RFQ entry</p>
+              <h2 className="section-title">Featured FPGA and CPLD parts</h2>
+              <p className="section-subtitle">Programmable logic quote targets with stock, package, and lifecycle signals</p>
             </div>
-            <Link href="/search" className="view-all">View All Parts →</Link>
+            <Link href="/fpga-sourcing" className="view-all">View FPGA Sourcing →</Link>
           </div>
 
           <div className="table-wrapper">
@@ -386,13 +398,36 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* FPGA/CPLD Series */}
+      <section className="section" style={{ background: 'var(--color-bg-secondary)' }} id="fpga-series-section">
+        <div className="container">
+          <div className="section-header">
+            <div>
+              <h2 className="section-title">High-intent FPGA and CPLD families</h2>
+              <p className="section-subtitle">Built for the searches procurement teams use when an exact programmable logic part is constrained.</p>
+            </div>
+            <Link href="/fpga-sourcing" className="view-all">All FPGA Series →</Link>
+          </div>
+
+          <div className="series-grid compact">
+            {FPGA_SERIES_SHORTCUTS.map(series => (
+              <Link href={`/fpga-sourcing/${series.slug}`} key={series.slug} className="series-card">
+                <span className="series-family">{series.family}</span>
+                <h3>{series.shortTitle}</h3>
+                <p>{series.searchIntent}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Product Categories */}
       <section className="section" style={{ background: 'var(--color-bg-secondary)' }} id="categories-section">
         <div className="container">
           <div className="section-header">
             <div>
-              <h2 className="section-title">Browse by Category</h2>
-              <p className="section-subtitle">Start from product families, then narrow by stock, lifecycle, and package</p>
+              <h2 className="section-title">Browse supporting component categories</h2>
+              <p className="section-subtitle">Use category pages for BOM completion after the FPGA/CPLD sourcing path.</p>
             </div>
             <Link href="/category" className="view-all">All Categories →</Link>
           </div>
@@ -423,7 +458,7 @@ export default async function HomePage() {
           <div className="section-header quality-showcase-header">
             <div>
               <span className="eyebrow">Know our service</span>
-              <h2 className="section-title">Anti-counterfeit sourcing system</h2>
+              <h2 className="section-title">Quality controls for high-value programmable logic</h2>
               <p className="section-subtitle">Quote decisions supported by inspection, traceability review, and lifecycle-aware sourcing.</p>
             </div>
             <Link href="/quality" className="btn btn-secondary">Quality Assurance</Link>
@@ -447,7 +482,7 @@ export default async function HomePage() {
           <div className="section-header">
             <div>
               <h2 className="section-title">Manufacturer coverage</h2>
-              <p className="section-subtitle">Search inventory and sourcing channels across {formatCount(totalManufacturers)} manufacturers</p>
+              <p className="section-subtitle">Xilinx, Altera, Intel, Lattice, Microchip, Actel, and broader BOM support across {formatCount(totalManufacturers)} manufacturers</p>
             </div>
             <Link href="/manufacturers" className="view-all">All Manufacturers →</Link>
           </div>
@@ -476,13 +511,13 @@ export default async function HomePage() {
         <div className="container">
           <div className="card-glass" style={{ textAlign: 'center', padding: 'var(--space-3xl) var(--space-2xl)' }}>
             <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: 'var(--space-md)' }}>
-              Ready to quote your parts list?
+              Ready to verify an FPGA or CPLD part?
             </h2>
             <p style={{ color: 'var(--color-text-secondary)', maxWidth: '500px', margin: '0 auto var(--space-xl)', fontSize: '16px' }}>
-              Send part numbers, target quantities, package preferences, or a full BOM. Our team will confirm stock, lead time, MOQ, pricing, and alternates.
+              Send the exact ordering code, target quantity, package preference, date-code requirement, or a full BOM. Our team will confirm stock, lead time, MOQ, pricing, and alternates.
             </p>
             <div style={{ display: 'flex', gap: 'var(--space-md)', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link href="/rfq" className="btn btn-primary btn-lg">Submit RFQ →</Link>
+              <Link href="/rfq?category=FPGA%20and%20CPLD" className="btn btn-primary btn-lg">Submit FPGA RFQ →</Link>
               <Link href="/contact" className="btn btn-secondary btn-lg">Contact Sales</Link>
             </div>
           </div>

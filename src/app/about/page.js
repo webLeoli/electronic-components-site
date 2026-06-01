@@ -144,7 +144,7 @@ export default async function AboutPage() {
   const CERTS = [
     { name: 'ISO 9001:2015',         desc: 'Quality Management System' },
     { name: 'IDEA-STD-1010-aligned', desc: 'Receiving inspection protocol' },
-    { name: 'ERAI Member',           desc: 'Electronic Resellers Association International' },
+    { name: 'Market risk screening', desc: 'Supplier and lot-risk review' },
   ];
 
   const orgJsonLd = generateOrganizationJsonLd();

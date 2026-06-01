@@ -350,7 +350,7 @@ export function generateOrganizationJsonLd() {
     ],
     hasCredential: [
       { '@type': 'EducationalOccupationalCredential', credentialCategory: 'certification', name: 'ISO 9001:2015' },
-      { '@type': 'EducationalOccupationalCredential', credentialCategory: 'certification', name: 'IDEA-STD-1010' },
+      { '@type': 'EducationalOccupationalCredential', credentialCategory: 'quality process', name: 'IDEA-STD-1010-aligned inspection' },
     ],
     address: {
       '@type': 'PostalAddress',
