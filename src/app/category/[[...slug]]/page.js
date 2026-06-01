@@ -9,6 +9,7 @@ import CategoryIcon from '@/components/CategoryIcon';
 import { ProductIcon } from '@/components/ProductImage';
 import { FALLBACK_CATEGORIES } from '@/lib/fallbacks';
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 3600;
 
 // ----------------------------------------------------------------------------
@@ -107,16 +108,6 @@ const getProductCountCached = (key, where) => unstable_cache(
   ['category-product-count', key],
   { revalidate: 300, tags: ['category-product-count', `category-product-count:${key}`] },
 )();
-
-export async function generateStaticParams() {
-  // Do not pre-render every category during `next build`.
-  // Category pages query the production database for tree, count, and product
-  // rows; prebuilding all categories makes VPS deploys slow and can contend
-  // with live Postgres traffic. The sitemap still exposes category URLs, and
-  // pages are rendered on demand with ISR/cache when users or crawlers request
-  // them.
-  return [];
-}
 
 export async function generateMetadata({ params, searchParams }) {
   const { slug } = await params;
