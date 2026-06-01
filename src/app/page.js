@@ -8,6 +8,7 @@ import { buildProgrammableLogicWhere, getFpgaSeries } from '@/lib/fpga-growth';
 import { unstable_cache } from 'next/cache';
 
 // ISR: revalidate every 5 minutes
+export const dynamic = 'force-dynamic';
 export const revalidate = 300;
 
 export const metadata = {

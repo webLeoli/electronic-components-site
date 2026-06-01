@@ -109,13 +109,13 @@ const getProductCountCached = (key, where) => unstable_cache(
 )();
 
 export async function generateStaticParams() {
-  try {
-    // Flat URL strategy: every category is /category/[slug]
-    const categories = await prisma.category.findMany({ select: { slug: true } });
-    return categories.map((c) => ({ slug: [c.slug] }));
-  } catch {
-    return [];
-  }
+  // Do not pre-render every category during `next build`.
+  // Category pages query the production database for tree, count, and product
+  // rows; prebuilding all categories makes VPS deploys slow and can contend
+  // with live Postgres traffic. The sitemap still exposes category URLs, and
+  // pages are rendered on demand with ISR/cache when users or crawlers request
+  // them.
+  return [];
 }
 
 export async function generateMetadata({ params, searchParams }) {

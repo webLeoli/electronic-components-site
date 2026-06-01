@@ -100,7 +100,13 @@ else
 fi
 
 log "Building Next.js production bundle"
-npm run build
+export NEXT_TELEMETRY_DISABLED="${NEXT_TELEMETRY_DISABLED:-1}"
+export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=4096}"
+if command -v nice >/dev/null 2>&1; then
+  nice -n "${BUILD_NICE:-5}" npm run build
+else
+  npm run build
+fi
 
 restart_service
 
