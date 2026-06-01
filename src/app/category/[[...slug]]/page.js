@@ -400,6 +400,7 @@ export default async function CategoryPage({ params, searchParams }) {
         <div className="category-main">
           <div className="category-header-area">
             <div>
+              <div className="eyebrow">Component category</div>
               <h1 style={{ fontSize: '28px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <CategoryIcon slug={categorySlug} size={40} variant="card" />
                 {category.name}
@@ -408,10 +409,13 @@ export default async function CategoryPage({ params, searchParams }) {
                 {category.seoDesc || `Browse ${category.name} electronic components at ${SITE_NAME}.`}
               </p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+            <div className="category-header-actions">
               <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
                 {totalProducts.toLocaleString()} products found
               </span>
+              <Link href={`/rfq?category=${encodeURIComponent(category.name)}`} className="btn btn-primary btn-sm">
+                Quote {category.name}
+              </Link>
               <SortDropdown current={sort} order={order} slug={categorySlug} statusFilter={statusFilter} mountFilter={mountFilter} />
             </div>
           </div>
@@ -426,8 +430,10 @@ export default async function CategoryPage({ params, searchParams }) {
                       <th><SortLink field="partNumber" current={sort} order={order} slug={categorySlug} statusFilter={statusFilter} mountFilter={mountFilter}>Part Number</SortLink></th>
                       <th><SortLink field="manufacturer" current={sort} order={order} slug={categorySlug} statusFilter={statusFilter} mountFilter={mountFilter}>Manufacturer</SortLink></th>
                       <th>Description</th>
+                      <th>Package</th>
                       <th><SortLink field="stock" current={sort} order={order} slug={categorySlug} statusFilter={statusFilter} mountFilter={mountFilter}>Stock</SortLink></th>
                       <th><SortLink field="minPrice" current={sort} order={order} slug={categorySlug} statusFilter={statusFilter} mountFilter={mountFilter}>Price</SortLink></th>
+                      <th>MOQ</th>
                       <th>Status</th>
                       <th></th>
                     </tr>
@@ -445,6 +451,7 @@ export default async function CategoryPage({ params, searchParams }) {
                         <td style={{ maxWidth: '350px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {product.description}
                         </td>
+                        <td>{product.packageType || 'Check'}</td>
                         <td>
                           <span className={hasConfirmedStock(product) ? 'text-success' : 'text-muted'}>
                             {getAvailabilityText(product)}
@@ -453,6 +460,7 @@ export default async function CategoryPage({ params, searchParams }) {
                         <td style={{ fontWeight: 600 }}>
                           {product.minPrice > 0 ? `$${product.minPrice.toFixed(product.minPrice < 1 ? 4 : 2)}` : 'RFQ'}
                         </td>
+                        <td>{product.moq || 1}</td>
                         <td>
                           <span className={`badge ${
                             product.status === 'active' ? 'badge-success' :

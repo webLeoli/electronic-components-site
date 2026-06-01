@@ -5,6 +5,7 @@ import path from 'path';
 import crypto from 'crypto';
 import prisma from '@/lib/db';
 import { sendRfqNotification, sendRfqConfirmation } from '@/lib/email';
+import { rateLimit } from '@/lib/rate-limit';
 
 // Derive a precise channel label from tracking data — 5-layer priority
 function deriveSourceChannel(tracking) {
@@ -59,37 +60,9 @@ function deriveSourceChannel(tracking) {
   return 'direct';
 }
 
-// In-memory rate limiter (per IP).
-// NOTE: Works for single-process deployments (PM2 fork mode).
-// For cluster mode, replace with a Redis-backed limiter.
-const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
-const RATE_LIMIT_MAX = 3; // max 3 submissions per hour per IP
-
-function checkRateLimit(ip) {
-  const now = Date.now();
-  const key = ip || 'unknown';
-
-  // Filter out expired timestamps
-  const prev = rateLimitMap.get(key) || [];
-  const timestamps = prev.filter(t => now - t < RATE_LIMIT_WINDOW);
-
-  if (timestamps.length >= RATE_LIMIT_MAX) {
-    rateLimitMap.set(key, timestamps);
-    return false;
-  }
-
-  timestamps.push(now);
-  rateLimitMap.set(key, timestamps);
-
-  // Periodically purge stale entries to prevent memory leak
-  if (rateLimitMap.size > 10000) {
-    for (const [k, ts] of rateLimitMap) {
-      if (ts.every(t => now - t > RATE_LIMIT_WINDOW)) rateLimitMap.delete(k);
-    }
-  }
-  return true;
-}
+// IP-based rate limiter — max 3 submissions per hour per IP.
+// Backed by Redis when REDIS_URL is set (cluster-safe), in-memory otherwise.
+const RFQ_RATE_LIMIT = { windowMs: 60 * 60 * 1000, max: 3, prefix: 'rfq' };
 
 // Spam detection heuristics
 function detectSpam(data) {
@@ -249,7 +222,7 @@ export async function POST(request) {
     const userAgent = request.headers.get('user-agent') || '';
 
     // Rate limit check
-    if (!checkRateLimit(ip)) {
+    if (!(await rateLimit(ip, RFQ_RATE_LIMIT))) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
         { status: 429 }

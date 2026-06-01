@@ -54,6 +54,13 @@ export default function Header() {
 
   return (
     <>
+      <div className="top-trust-strip">
+        <div className="top-trust-inner">
+          <span>Hard-to-find, EOL, and shortage parts</span>
+          <span>24h target RFQ response</span>
+          <span>Inspection, traceability, and alternate sourcing</span>
+        </div>
+      </div>
       <header className="header" id="site-header">
         <div className="header-inner">
           <Link href="/" className="logo" id="logo-link">
@@ -79,7 +86,18 @@ export default function Header() {
           </form>
 
           <div className="header-actions">
+            <Link href="/bom" className="header-action header-bom-link">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              <span>BOM</span>
+            </Link>
             <RfqCartIndicator />
+            <Link href="/rfq" className="btn btn-primary header-rfq-btn">
+              Request Quote
+            </Link>
           </div>
         </div>
       </header>

@@ -1,6 +1,6 @@
 import './globals.css';
 import { Suspense } from 'react';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import TrackingProvider from '@/components/TrackingProvider';
@@ -16,15 +16,8 @@ const inter = Inter({
   display: 'swap',
 });
 
-const jetBrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400'],
-  variable: '--font-jetbrains-mono',
-  display: 'swap',
-});
-
 export const viewport = {
-  themeColor: '#3B82F6',
+  themeColor: '#0F766E',
   width: 'device-width',
   initialScale: 1,
 };
@@ -94,7 +87,7 @@ export default function RootLayout({ children }) {
           <CodeInjection />
         </Suspense>
       </head>
-      <body suppressHydrationWarning className={`${inter.variable} ${jetBrainsMono.variable}`}>
+      <body suppressHydrationWarning className={inter.variable}>
         <RfqCartProvider>
           <Suspense fallback={null}>
             <TrackingProvider />

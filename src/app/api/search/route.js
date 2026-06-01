@@ -1,30 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
 
-const searchAttempts = new Map();
-const RATE_LIMIT_WINDOW = 60 * 1000;
-const RATE_LIMIT_MAX = 30;
+const SEARCH_RATE_LIMIT = { windowMs: 60 * 1000, max: 30, prefix: 'search' };
 const MIN_QUERY_LENGTH = 3;
-
-function checkRateLimit(ip) {
-  const now = Date.now();
-  const key = ip || 'unknown';
-  const prev = searchAttempts.get(key) || [];
-  const timestamps = prev.filter(t => now - t < RATE_LIMIT_WINDOW);
-  if (timestamps.length >= RATE_LIMIT_MAX) {
-    searchAttempts.set(key, timestamps);
-    return false;
-  }
-  timestamps.push(now);
-  searchAttempts.set(key, timestamps);
-  // Periodically purge stale entries to prevent memory leak
-  if (searchAttempts.size > 10000) {
-    for (const [k, ts] of searchAttempts) {
-      if (ts.every(t => now - t > RATE_LIMIT_WINDOW)) searchAttempts.delete(k);
-    }
-  }
-  return true;
-}
 
 const PRODUCT_SELECT = {
   partNumber: true, manufacturer: true, description: true,
@@ -43,7 +22,7 @@ export async function GET(request) {
   const q = (searchParams.get('q') || '').trim().substring(0, 100);
   const limit = Math.min(Math.max(parseInt(searchParams.get('limit')) || 20, 1), 25);
 
-  if (!checkRateLimit(ip)) {
+  if (!(await rateLimit(ip, SEARCH_RATE_LIMIT))) {
     return NextResponse.json({ products: [], total: 0, error: 'Too many search requests' }, { status: 429 });
   }
 

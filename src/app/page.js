@@ -31,16 +31,117 @@ export const metadata = {
 
 
 const FEATURES = [
-  { icon: '⊹', title: 'Hard-to-Find Parts', desc: 'Specializing in obsolete, end-of-life, and hard-to-source electronic components worldwide.' },
-  { icon: '✓', title: 'Quality Guaranteed', desc: 'Every component undergoes rigorous testing. 100% original and genuine parts with full traceability.' },
-  { icon: '▣', title: 'No Minimum Order', desc: 'Order any quantity from 1 piece to millions. Perfect for prototyping and production alike.' },
-  { icon: '➤', title: 'Fast Global Shipping', desc: 'Same-day dispatch for in-stock items. Express delivery to 60+ countries via DHL, FedEx, UPS.' },
+  { icon: 'QA', title: 'Verified Supply', desc: 'Inspection, traceability review, and source checks before order confirmation.' },
+  { icon: '24', title: '24h RFQ Response', desc: 'Send a part number or BOM and receive availability, lead time, and quote options.' },
+  { icon: 'MOQ', title: 'Flexible Quantity', desc: 'Support for prototypes, repairs, spot buys, and production replenishment.' },
+  { icon: 'ALT', title: 'Alternate Sourcing', desc: 'Lifecycle-aware suggestions for obsolete, EOL, and constrained components.' },
 ];
+
+const DAILY_ROTATION_SIZE = 8;
+const PRODUCT_SELECT = {
+  id: true,
+  partNumber: true,
+  manufacturer: true,
+  stock: true,
+  minPrice: true,
+  status: true,
+  packageType: true,
+  leadTime: true,
+  category: { select: { name: true } },
+};
+
+function getDailyRotationKey(date = new Date()) {
+  return date.toISOString().slice(0, 10);
+}
+
+function hashSeed(input) {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function seededRandom(seed) {
+  let t = seed + 0x6D2B79F5;
+  return () => {
+    t += 0x6D2B79F5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const getDailyRotatingProducts = unstable_cache(
+  async (rotationKey) => {
+    const where = { status: 'active', stock: { gt: 0 } };
+    const idRange = await prisma.product.aggregate({
+      where,
+      _min: { id: true },
+      _max: { id: true },
+    });
+
+    const minId = idRange._min.id;
+    const maxId = idRange._max.id;
+    if (!minId || !maxId) return [];
+
+    const rand = seededRandom(hashSeed(`homepage-products:${rotationKey}`));
+    const products = [];
+    const seen = new Set();
+    const maxAttempts = DAILY_ROTATION_SIZE * 8;
+
+    for (let attempt = 0; products.length < DAILY_ROTATION_SIZE && attempt < maxAttempts; attempt++) {
+      const candidateId = minId + Math.floor(rand() * (maxId - minId + 1));
+      const notIn = Array.from(seen);
+      const product = await prisma.product.findFirst({
+        where: {
+          ...where,
+          id: { gte: candidateId },
+          ...(notIn.length ? { partNumber: { notIn } } : {}),
+        },
+        select: PRODUCT_SELECT,
+        orderBy: { id: 'asc' },
+      }) || await prisma.product.findFirst({
+        where: {
+          ...where,
+          id: { lte: candidateId },
+          ...(notIn.length ? { partNumber: { notIn } } : {}),
+        },
+        select: PRODUCT_SELECT,
+        orderBy: { id: 'desc' },
+      });
+
+      if (product && !seen.has(product.partNumber)) {
+        seen.add(product.partNumber);
+        products.push(product);
+      }
+    }
+
+    if (products.length < DAILY_ROTATION_SIZE) {
+      const fallback = await prisma.product.findMany({
+        where: {
+          ...where,
+          ...(seen.size ? { partNumber: { notIn: Array.from(seen) } } : {}),
+        },
+        select: PRODUCT_SELECT,
+        orderBy: { stock: 'desc' },
+        take: DAILY_ROTATION_SIZE - products.length,
+      });
+      products.push(...fallback);
+    }
+
+    return products;
+  },
+  ['homepage-daily-rotating-products'],
+  { revalidate: 86400, tags: ['homepage', 'homepage-products'] }
+);
 
 // Fetch dynamic data from database (cached for 5 minutes)
 const getHomeData = unstable_cache(
   async () => {
     try {
+      const rotationKey = getDailyRotationKey();
       const [allCategories, popularProducts, manufacturers, stats] = await Promise.all([
         // All categories with direct product counts (for recursive summing)
         prisma.category.findMany({
@@ -50,16 +151,8 @@ const getHomeData = unstable_cache(
             _count: { select: { products: true } },
           },
         }),
-        // Popular products (highest stock, active)
-        prisma.product.findMany({
-          where: { status: 'active', stock: { gt: 0 } },
-          select: {
-            partNumber: true, manufacturer: true, stock: true, minPrice: true, status: true,
-            category: { select: { name: true } },
-          },
-          orderBy: { stock: 'desc' },
-          take: 8,
-        }),
+        // Daily rotating products: deterministic random sample per UTC day.
+        getDailyRotatingProducts(rotationKey),
         // Top manufacturers with verified slugs from Manufacturer table
         prisma.manufacturer.findMany({
           select: { name: true, slug: true },
@@ -145,18 +238,16 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
 
-      {/* Hero Section */}
-      <section className="hero" id="hero-section">
+      <section className="hero b2b-hero" id="hero-section">
         <div className="container">
-          <div className="hero-content">
+          <div className="hero-content b2b-hero-grid">
+            <div className="b2b-hero-copy">
+              <div className="eyebrow">B2B electronic component sourcing</div>
             <h1 className="animate-fade-in">
-              <span className="highlight">Hard-to-Find</span> & Obsolete Electronic Components
-              <br />
-              <span style={{ fontSize: '0.62em', fontWeight: 600, opacity: 0.85 }}>Including 24,000+ FPGAs & CPLDs in stock</span>
+              Source <span className="highlight">hard-to-find parts</span> with fast RFQ support
             </h1>
             <p className="animate-fade-in animate-fade-in-delay-1">
-              {formatCount(totalProducts)} obsolete, end-of-life, and hard-to-source part numbers from {formatCount(totalManufacturers)} manufacturers.
-              IDEA-1010 inspected, no minimum order quantity, worldwide express shipping.
+              Search {formatCount(totalProducts)} part numbers from {formatCount(totalManufacturers)} manufacturers, compare stock and pricing signals, then send a quote request for verified availability, lead time, MOQ, and alternates.
             </p>
 
             <form className="hero-search animate-fade-in animate-fade-in-delay-2" action="/search" method="GET" role="search" id="hero-search-form">
@@ -167,25 +258,62 @@ export default async function HomePage() {
               <input type="search" name="q" className="input" placeholder="Enter part number, e.g. STM32F103C8T6..." id="hero-search-input" />
               <button type="submit" className="search-btn" id="hero-search-btn">Search Parts</button>
             </form>
+            <div className="hero-actions">
+              <Link href="/rfq" className="btn btn-primary btn-lg">Submit RFQ</Link>
+              <Link href="/bom" className="btn btn-secondary btn-lg">Upload BOM</Link>
+            </div>
+            </div>
 
             <div className="hero-stats animate-fade-in animate-fade-in-delay-3">
               <div className="hero-stat">
                 <div className="hero-stat-value">{formatCount(totalProducts)}</div>
-                <div className="hero-stat-label">Part Numbers</div>
+                <div className="hero-stat-label">Part numbers</div>
               </div>
               <div className="hero-stat">
                 <div className="hero-stat-value">{formatCount(totalManufacturers)}</div>
                 <div className="hero-stat-label">Manufacturers</div>
               </div>
               <div className="hero-stat">
-                <div className="hero-stat-value">60+</div>
-                <div className="hero-stat-label">Countries Served</div>
+                <div className="hero-stat-value">24h</div>
+                <div className="hero-stat-label">Target RFQ reply</div>
               </div>
               <div className="hero-stat">
-                <div className="hero-stat-value">24h</div>
-                <div className="hero-stat-label">Express Shipping</div>
+                <div className="hero-stat-value">BOM</div>
+                <div className="hero-stat-label">Multi-line quotes</div>
+              </div>
+              <div className="hero-rfq-panel">
+                <h2>Fast quote workflow</h2>
+                <ol>
+                  <li><span>1</span>Search part number or add items to RFQ cart</li>
+                  <li><span>2</span>Confirm quantity, package, target price, or BOM</li>
+                  <li><span>3</span>Receive stock, lead time, MOQ, and quote options</li>
+                </ol>
+                <Link href="/rfq" className="btn btn-primary">Start Quote Request</Link>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="home-service-nav" aria-label="Sourcing shortcuts">
+        <div className="container">
+          <div className="home-service-nav-grid">
+            <Link href="/category" className="home-service-nav-item">
+              <span>Products</span>
+              <strong>Browse component categories</strong>
+            </Link>
+            <Link href="/manufacturers" className="home-service-nav-item">
+              <span>Brands</span>
+              <strong>Search manufacturer lines</strong>
+            </Link>
+            <Link href="/rfq" className="home-service-nav-item primary">
+              <span>RFQ</span>
+              <strong>Get targeted quotations</strong>
+            </Link>
+            <Link href="/blog" className="home-service-nav-item">
+              <span>Insights</span>
+              <strong>Lifecycle and sourcing guides</strong>
+            </Link>
           </div>
         </div>
       </section>
@@ -195,8 +323,8 @@ export default async function HomePage() {
         <div className="container">
           <div className="section-header">
             <div>
-              <h2 className="section-title">Popular Parts</h2>
-              <p className="section-subtitle">Frequently searched electronic components</p>
+              <h2 className="section-title">Featured Parts</h2>
+              <p className="section-subtitle">Daily rotating in-stock products with quick RFQ entry</p>
             </div>
             <Link href="/search" className="view-all">View All Parts →</Link>
           </div>
@@ -208,6 +336,7 @@ export default async function HomePage() {
                   <th>Part Number</th>
                   <th>Manufacturer</th>
                   <th>Category</th>
+                  <th>Package</th>
                   <th>Stock</th>
                   <th>Unit Price</th>
                   <th>Status</th>
@@ -225,6 +354,7 @@ export default async function HomePage() {
                     </td>
                     <td>{part.manufacturer}</td>
                     <td>{part.category?.name || '—'}</td>
+                    <td>{part.packageType || 'Check'}</td>
                     <td>
                       <span className={hasConfirmedStock(part) ? 'text-success' : 'text-muted'}>
                         {getAvailabilityText(part)}
@@ -245,7 +375,7 @@ export default async function HomePage() {
                     </td>
                     <td>
                       <Link href={`/rfq?part=${encodeURIComponent(part.partNumber)}`} className="btn btn-outline btn-sm">
-                        RFQ
+                        Quote
                       </Link>
                     </td>
                   </tr>
@@ -262,7 +392,7 @@ export default async function HomePage() {
           <div className="section-header">
             <div>
               <h2 className="section-title">Browse by Category</h2>
-              <p className="section-subtitle">Explore our extensive inventory of electronic components</p>
+              <p className="section-subtitle">Start from product families, then narrow by stock, lifecycle, and package</p>
             </div>
             <Link href="/category" className="view-all">All Categories →</Link>
           </div>
@@ -279,7 +409,7 @@ export default async function HomePage() {
                 <div className="count">
                   {(cat._count?.products || 0) > 0
                     ? `${formatCount(cat._count.products)} parts`
-                    : 'Browse →'}
+                    : 'Browse'}
                 </div>
               </Link>
             ))}
@@ -288,13 +418,15 @@ export default async function HomePage() {
       </section>
 
       {/* Features / Why Choose Us */}
-      <section className="section" id="features-section">
+      <section className="section quality-showcase" id="features-section">
         <div className="container">
-          <div className="section-header">
+          <div className="section-header quality-showcase-header">
             <div>
-              <h2 className="section-title">Why Choose FPGACenter</h2>
-              <p className="section-subtitle">Your reliable partner for electronic component sourcing</p>
+              <span className="eyebrow">Know our service</span>
+              <h2 className="section-title">Anti-counterfeit sourcing system</h2>
+              <p className="section-subtitle">Quote decisions supported by inspection, traceability review, and lifecycle-aware sourcing.</p>
             </div>
+            <Link href="/quality" className="btn btn-secondary">Quality Assurance</Link>
           </div>
 
           <div className="features-grid">
@@ -314,8 +446,8 @@ export default async function HomePage() {
         <div className="container">
           <div className="section-header">
             <div>
-              <h2 className="section-title">Authorized & Sourced Brands</h2>
-              <p className="section-subtitle">Components from {formatCount(totalManufacturers)} trusted manufacturers</p>
+              <h2 className="section-title">Manufacturer coverage</h2>
+              <p className="section-subtitle">Search inventory and sourcing channels across {formatCount(totalManufacturers)} manufacturers</p>
             </div>
             <Link href="/manufacturers" className="view-all">All Manufacturers →</Link>
           </div>
@@ -344,11 +476,10 @@ export default async function HomePage() {
         <div className="container">
           <div className="card-glass" style={{ textAlign: 'center', padding: 'var(--space-3xl) var(--space-2xl)' }}>
             <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: 'var(--space-md)' }}>
-              Can&apos;t Find Your Part?
+              Ready to quote your parts list?
             </h2>
             <p style={{ color: 'var(--color-text-secondary)', maxWidth: '500px', margin: '0 auto var(--space-xl)', fontSize: '16px' }}>
-              Submit an RFQ and our procurement team will source it for you within 24 hours.
-              We specialize in hard-to-find and obsolete components.
+              Send part numbers, target quantities, package preferences, or a full BOM. Our team will confirm stock, lead time, MOQ, pricing, and alternates.
             </p>
             <div style={{ display: 'flex', gap: 'var(--space-md)', justifyContent: 'center', flexWrap: 'wrap' }}>
               <Link href="/rfq" className="btn btn-primary btn-lg">Submit RFQ →</Link>

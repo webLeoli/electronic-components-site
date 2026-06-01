@@ -246,6 +246,7 @@ export default function RfqForm() {
       {/* Page Header */}
       <div className="rfq-header">
         <div>
+          <div className="eyebrow">Procurement request</div>
           <h1 style={{ fontSize: '32px', fontWeight: 800, marginBottom: 'var(--space-sm)' }}>
             Request for Quote
             {count > 0 && (
@@ -260,13 +261,14 @@ export default function RfqForm() {
           </p>
         </div>
         <div className="rfq-benefits">
-          <div className="rfq-benefit"><span>⚡</span> Response within 24h</div>
-          <div className="rfq-benefit"><span>🌍</span> Global sourcing network</div>
-          <div className="rfq-benefit"><span>🛡️</span> 100% quality guaranteed</div>
+          <div className="rfq-benefit"><span>24h</span> Target response</div>
+          <div className="rfq-benefit"><span>BOM</span> Multi-line quoting</div>
+          <div className="rfq-benefit"><span>QA</span> Quality review</div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} id="rfq-form">
+      <div className="rfq-layout">
+      <form onSubmit={handleSubmit} id="rfq-form" className="rfq-form-main">
         {/* Anti-spam honeypot — invisible to humans, bots auto-fill it */}
         <div style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0 }} aria-hidden="true">
           <input type="text" name="website" tabIndex={-1} autoComplete="off" value={honeypot} onChange={e => setHoneypot(e.target.value)} />
@@ -592,6 +594,23 @@ export default function RfqForm() {
           </button>
         </div>
       </form>
+
+      <aside className="rfq-side-panel">
+        <div className="rfq-side-card">
+          <h2>What improves quote accuracy</h2>
+          <ul>
+            <li>Exact part number and manufacturer</li>
+            <li>Required quantity, target price, and date code</li>
+            <li>Package preference, MOQ flexibility, or approved alternates</li>
+            <li>BOM file for multi-line or production orders</li>
+          </ul>
+        </div>
+        <div className="rfq-side-card accent">
+          <h2>Response includes</h2>
+          <p>Stock confirmation, lead time, MOQ, quote options, and sourcing notes for obsolete or constrained components.</p>
+        </div>
+      </aside>
+      </div>
     </div>
   );
 }

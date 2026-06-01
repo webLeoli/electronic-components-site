@@ -1,4 +1,5 @@
 import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 import prisma from '@/lib/db';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -37,9 +38,39 @@ function parseSpecialties(str) {
   try { return JSON.parse(str); } catch { return []; }
 }
 
-export const revalidate = 3600;
-export const dynamic = 'force-dynamic';
+// This route is dynamic because it reads `searchParams.page` for pagination,
+// so it can't be statically cached as a whole. Instead, the page-independent
+// aggregate queries (counts, status/category breakdowns) are cached per
+// manufacturer below via unstable_cache, and only the light, indexed paginated
+// product query runs on every request.
 export async function generateStaticParams() { return []; }
+
+// Cache the expensive, page-independent aggregates per manufacturer for 1 hour.
+const getManufacturerStats = (name) => unstable_cache(
+  async () => {
+    const [totalProducts, categories, statusDist, inStockCount] = await Promise.all([
+      prisma.product.count({ where: { manufacturer: name } }),
+      prisma.$queryRawUnsafe(
+        `SELECT "categoryId", COUNT(*)::int as "_count" FROM "Product" WHERE "manufacturer" = $1 AND "categoryId" IS NOT NULL GROUP BY "categoryId"`,
+        name
+      ),
+      prisma.$queryRawUnsafe(
+        `SELECT "status", COUNT(*)::int as "cnt" FROM "Product" WHERE "manufacturer" = $1 GROUP BY "status" ORDER BY "cnt" DESC`,
+        name
+      ),
+      prisma.product.count({ where: { manufacturer: name, status: 'active', stock: { gt: 0 } } }),
+    ]);
+
+    const categoryIds = categories.map(c => c.categoryId).filter(Boolean);
+    const categoryData = categoryIds.length > 0
+      ? await prisma.category.findMany({ where: { id: { in: categoryIds } }, select: { id: true, slug: true, name: true } })
+      : [];
+
+    return { totalProducts, categories, statusDist, inStockCount, categoryData };
+  },
+  ['manufacturer-stats', name],
+  { revalidate: 3600, tags: [`manufacturer:${name}`] }
+)();
 
 export async function generateMetadata({ params, searchParams }) {
   const { slug } = await params;
@@ -92,8 +123,8 @@ export default async function ManufacturerPage({ params, searchParams }) {
 
   const specialties = parseSpecialties(manufacturer.specialties);
 
-  const [totalProducts, products, categories, statusDist] = await Promise.all([
-    prisma.product.count({ where: { manufacturer: manufacturer.name } }),
+  const [stats, products] = await Promise.all([
+    getManufacturerStats(manufacturer.name),
     prisma.product.findMany({
       where: { manufacturer: manufacturer.name },
       include: { category: { select: { slug: true, name: true } } },
@@ -101,30 +132,16 @@ export default async function ManufacturerPage({ params, searchParams }) {
       skip: (page - 1) * ITEMS_PER_PAGE,
       take: ITEMS_PER_PAGE,
     }),
-    prisma.$queryRawUnsafe(
-      `SELECT "categoryId", COUNT(*)::int as "_count" FROM "Product" WHERE "manufacturer" = $1 AND "categoryId" IS NOT NULL GROUP BY "categoryId"`,
-      manufacturer.name
-    ),
-    prisma.$queryRawUnsafe(
-      `SELECT "status", COUNT(*)::int as "cnt" FROM "Product" WHERE "manufacturer" = $1 GROUP BY "status" ORDER BY "cnt" DESC`,
-      manufacturer.name
-    ),
   ]);
+  const { totalProducts, categories, statusDist, inStockCount, categoryData } = stats;
   const totalPages = Math.ceil(totalProducts / ITEMS_PER_PAGE);
 
-  const categoryIds = categories.map(c => c.categoryId).filter(Boolean);
-  const categoryData = categoryIds.length > 0
-    ? await prisma.category.findMany({ where: { id: { in: categoryIds } }, select: { id: true, slug: true, name: true } })
-    : [];
   const categoryMap = Object.fromEntries(categoryData.map(c => [c.id, c]));
 
   // Status distribution
   const statusMap = Object.fromEntries(statusDist.map(s => [s.status, s.cnt]));
   const activeCount = statusMap['active'] || 0;
   const eolCount = (statusMap['eol'] || 0) + (statusMap['obsolete'] || 0);
-  const inStockCount = await prisma.product.count({
-    where: { manufacturer: manufacturer.name, status: 'active', stock: { gt: 0 } },
-  });
 
   // JSON-LD
   const breadcrumbLd = {

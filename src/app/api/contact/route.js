@@ -1,34 +1,18 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { sendRfqNotification } from '@/lib/email';
+import { rateLimit } from '@/lib/rate-limit';
 
-// In-memory rate limiter (per IP).
-// NOTE: Works for single-process deployments (PM2 fork mode).
-// For cluster mode, replace with a Redis-backed limiter.
-const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
-const RATE_LIMIT_MAX = 5;
-
-function checkRateLimit(ip) {
-  const now = Date.now();
-  const key = ip || 'unknown';
-  const prev = rateLimitMap.get(key) || [];
-  const timestamps = prev.filter(t => now - t < RATE_LIMIT_WINDOW);
-  if (timestamps.length >= RATE_LIMIT_MAX) {
-    rateLimitMap.set(key, timestamps);
-    return false;
-  }
-  timestamps.push(now);
-  rateLimitMap.set(key, timestamps);
-  return true;
-}
+// IP-based rate limiter — max 5 submissions per hour per IP.
+// Backed by Redis when REDIS_URL is set (cluster-safe), in-memory otherwise.
+const CONTACT_RATE_LIMIT = { windowMs: 60 * 60 * 1000, max: 5, prefix: 'contact' };
 
 export async function POST(request) {
   try {
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded ? forwarded.split(',')[0].trim() : 'unknown';
 
-    if (!checkRateLimit(ip)) {
+    if (!(await rateLimit(ip, CONTACT_RATE_LIMIT))) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
         { status: 429 }

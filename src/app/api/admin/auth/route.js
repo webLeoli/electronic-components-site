@@ -3,6 +3,7 @@ import prisma from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { getAdminSession } from '@/lib/admin-auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 const SESSION_SECRET = process.env.SESSION_SECRET;
 
@@ -26,24 +27,8 @@ function createSignedToken(userId, role) {
 }
 
 // --- Brute-force protection: IP-based rate limiting ---
-// NOTE: Works for single-process deployments (PM2 fork mode).
-const loginAttempts = new Map();
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
-const RATE_LIMIT_MAX = 5;
-
-function checkLoginRateLimit(ip) {
-  const now = Date.now();
-  const key = ip || 'unknown';
-  const prev = loginAttempts.get(key) || [];
-  const timestamps = prev.filter(t => now - t < RATE_LIMIT_WINDOW);
-  if (timestamps.length >= RATE_LIMIT_MAX) {
-    loginAttempts.set(key, timestamps);
-    return false;
-  }
-  timestamps.push(now);
-  loginAttempts.set(key, timestamps);
-  return true;
-}
+// Backed by Redis when REDIS_URL is set (cluster-safe), in-memory otherwise.
+const LOGIN_RATE_LIMIT = { windowMs: 15 * 60 * 1000, max: 5, prefix: 'login' };
 
 // POST: Login
 export async function POST(request) {
@@ -51,7 +36,7 @@ export async function POST(request) {
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded ? forwarded.split(',')[0].trim() : 'unknown';
 
-    if (!checkLoginRateLimit(ip)) {
+    if (!(await rateLimit(ip, LOGIN_RATE_LIMIT))) {
       return NextResponse.json(
         { error: 'Too many login attempts. Please try again in 15 minutes.' },
         { status: 429 }
