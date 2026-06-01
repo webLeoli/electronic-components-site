@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
 import { manufacturerSlug } from '@/lib/manufacturer-map';
+import { revalidateManufacturer, revalidateAllProducts } from '@/lib/revalidate';
 
 // GET: List all manufacturers
 export async function GET(request) {
@@ -54,6 +55,7 @@ export async function POST(request) {
         stockNote: data.stockNote || null,
       },
     });
+    revalidateManufacturer(manufacturer.slug);
     return NextResponse.json(manufacturer, { status: 201 });
   } catch (e) {
     if (e.code === 'P2002') return NextResponse.json({ error: 'Manufacturer already exists' }, { status: 409 });
@@ -96,12 +98,19 @@ export async function PUT(request) {
     });
 
     // Sync Product.manufacturer field when manufacturer name changes
+    let productsRenamed = false;
     if (data.name !== undefined && oldMfr && oldMfr.name !== data.name.trim()) {
       await prisma.product.updateMany({
         where: { manufacturer: oldMfr.name },
         data: { manufacturer: data.name.trim() },
       });
+      productsRenamed = true;
     }
+
+    revalidateManufacturer(manufacturer.slug);
+    // Renaming the manufacturer changes every one of its product pages' canonical
+    // path, so refresh the whole product route in that (rare) case.
+    if (productsRenamed) revalidateAllProducts();
 
     return NextResponse.json(manufacturer);
   } catch (e) {
@@ -118,7 +127,9 @@ export async function DELETE(request) {
     const id = parseInt(searchParams.get('id'));
     if (!id) return NextResponse.json({ error: 'Manufacturer ID required' }, { status: 400 });
 
+    const existing = await prisma.manufacturer.findUnique({ where: { id }, select: { slug: true } });
     await prisma.manufacturer.delete({ where: { id } });
+    if (existing) revalidateManufacturer(existing.slug);
     return NextResponse.json({ success: true });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });

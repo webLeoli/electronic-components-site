@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
+import { revalidateCategory } from '@/lib/revalidate';
 
 // GET: List all categories as tree
 export async function GET(request) {
@@ -42,6 +43,7 @@ export async function POST(request) {
         sortOrder: data.sortOrder || 0,
       },
     });
+    revalidateCategory(category.slug);
     return NextResponse.json(category, { status: 201 });
   } catch (e) {
     if (e.code === 'P2002') return NextResponse.json({ error: 'Slug already exists' }, { status: 409 });
@@ -70,6 +72,7 @@ export async function PUT(request) {
       where: { id: data.id },
       data: updateData,
     });
+    revalidateCategory(category.slug);
     return NextResponse.json(category);
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -97,7 +100,9 @@ export async function DELETE(request) {
       return NextResponse.json({ error: `Cannot delete: ${childCount} subcategories exist` }, { status: 409 });
     }
 
+    const existing = await prisma.category.findUnique({ where: { id }, select: { slug: true } });
     await prisma.category.delete({ where: { id } });
+    if (existing) revalidateCategory(existing.slug);
     return NextResponse.json({ success: true });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });

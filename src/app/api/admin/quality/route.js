@@ -3,6 +3,7 @@ import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
 import { computeQualityScore, TIERS } from '@/lib/quality-score';
 import { getIndexingPolicy, isScoreIndexable, setIndexingPolicy } from '@/lib/indexing-policy';
+import { revalidateAllProducts, revalidateProduct } from '@/lib/revalidate';
 
 /**
  * GET /api/admin/quality
@@ -169,6 +170,7 @@ export async function POST(request) {
         })},
       });
 
+      revalidateAllProducts();
       return NextResponse.json({ success: true, processed, indexed });
     }
 
@@ -200,6 +202,7 @@ export async function POST(request) {
         })},
       });
 
+      revalidateAllProducts();
       return NextResponse.json({
         success: true,
         enabled: result.count,
@@ -226,6 +229,7 @@ export async function POST(request) {
         })},
       });
 
+      revalidateAllProducts();
       return NextResponse.json({ success: true, affected: result.count });
     }
 
@@ -252,6 +256,7 @@ export async function PUT(request) {
       data: { indexable: !!forceIndexable },
     });
 
+    revalidateProduct(product.partNumber, product.manufacturer);
     return NextResponse.json({ success: true, product });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });

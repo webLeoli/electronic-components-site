@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/admin-auth';
 import { computeQualityScore } from '@/lib/quality-score';
 import { shouldProductBeIndexable } from '@/lib/indexing-policy';
 import { manufacturerSlug, standardizeName } from '@/lib/manufacturer-map';
+import { revalidateProduct, revalidateManufacturer } from '@/lib/revalidate';
 
 // GET: List products with search/pagination
 export async function GET(request) {
@@ -92,6 +93,9 @@ export async function POST(request) {
       data: { qualityScore: qResult.score, indexable },
     });
 
+    revalidateProduct(scored.partNumber, scored.manufacturer);
+    revalidateManufacturer(manufacturerSlug(scored.manufacturer));
+
     return NextResponse.json(scored, { status: 201 });
   } catch (e) {
     if (e.code === 'P2002') return NextResponse.json({ error: 'Part number already exists' }, { status: 409 });
@@ -148,6 +152,9 @@ export async function PUT(request) {
       }
     }
 
+    revalidateProduct(scored.partNumber, scored.manufacturer);
+    revalidateManufacturer(manufacturerSlug(scored.manufacturer));
+
     return NextResponse.json(scored);
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -163,7 +170,16 @@ export async function DELETE(request) {
     const id = parseInt(searchParams.get('id'));
     if (!id) return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
 
+    const existing = await prisma.product.findUnique({
+      where: { id },
+      select: { partNumber: true, manufacturer: true },
+    });
     await prisma.product.delete({ where: { id } });
+
+    if (existing) {
+      revalidateProduct(existing.partNumber, existing.manufacturer);
+      revalidateManufacturer(manufacturerSlug(existing.manufacturer));
+    }
     return NextResponse.json({ success: true });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });

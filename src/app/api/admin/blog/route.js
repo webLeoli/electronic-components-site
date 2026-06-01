@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
+import { revalidateBlog } from '@/lib/revalidate';
 
 // Strip dangerous HTML while preserving basic formatting tags
 function sanitizeHtml(html) {
@@ -96,6 +97,7 @@ export async function POST(request) {
         readingTime,
       },
     });
+    revalidateBlog(post.slug);
     return NextResponse.json(post, { status: 201 });
   } catch (e) {
     if (e.code === 'P2002') return NextResponse.json({ error: 'Slug already exists' }, { status: 409 });
@@ -137,6 +139,7 @@ export async function PUT(request) {
     if (data.relatedProducts !== undefined) updateData.relatedProducts = data.relatedProducts || null;
 
     const post = await prisma.blogPost.update({ where: { id: data.id }, data: updateData });
+    revalidateBlog(post.slug);
     return NextResponse.json(post);
   } catch (e) {
     if (e.code === 'P2002') return NextResponse.json({ error: 'Slug already exists' }, { status: 409 });
@@ -152,7 +155,9 @@ export async function DELETE(request) {
     const { searchParams } = new URL(request.url);
     const id = parseInt(searchParams.get('id'));
     if (!id) return NextResponse.json({ error: 'Post ID required' }, { status: 400 });
+    const existing = await prisma.blogPost.findUnique({ where: { id }, select: { slug: true } });
     await prisma.blogPost.delete({ where: { id } });
+    if (existing) revalidateBlog(existing.slug);
     return NextResponse.json({ success: true });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });
