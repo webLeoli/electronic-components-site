@@ -1,38 +1,117 @@
-#!/bin/bash
-# 自动部署与更新脚本 (适用于 1Panel / 宝塔等 Linux 面板)
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
-echo "=========================================="
-echo "🚀 开始更新 FPGACenter 网站..."
-echo "=========================================="
+# FPGACenter one-click VPS update script.
+#
+# Usage on the server:
+#   cd /path/to/electronic-components-site
+#   bash update.sh
+#
+# Optional environment variables:
+#   BRANCH=master                         Git branch to deploy.
+#   APP_NAME=fpgacenter                   PM2 app name to restart.
+#   SERVICE_NAME=fpgacenter               systemd service name to restart.
+#   HEALTH_URL=https://fpgacenter.com     URL to check after restart.
+#   SKIP_DB=1                             Skip Prisma database sync.
+#   FORCE_DB_PUSH_ACCEPT_DATA_LOSS=1      Allow prisma db push --accept-data-loss.
 
-echo "📦 1. 拉取最新代码..."
-git fetch --all
-git reset --hard origin/master
+BRANCH="${BRANCH:-master}"
+APP_NAME="${APP_NAME:-fpgacenter}"
+HEALTH_URL="${HEALTH_URL:-}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "🔧 2. 安装项目依赖..."
-npm install
+cd "$SCRIPT_DIR"
 
-echo "🗄️ 3. 同步数据库结构并生成客户端..."
-npx prisma db push --accept-data-loss
-npx prisma generate
+log() {
+  printf '\n[%s] %s\n' "$(date '+%F %T')" "$*"
+}
 
-echo "🔧 4. 修复厂商数据..."
-node scripts/fix-all-manufacturers.mjs
-echo "验证数据完整性..."
-node scripts/ultimate-verify.mjs 2>&1 | tail -5
+fail() {
+  printf '\nUpdate failed: %s\n' "$*" >&2
+  exit 1
+}
 
-echo "🏗️ 5. 重新编译 Next.js 项目..."
-npm run build
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || fail "Missing command: $1"
+}
 
-echo "🔄 6. 重启运行容器/服务..."
-# 尝试使用 PM2 重启（如果安装了PM2）
-if command -v pm2 &> /dev/null
-then
-    pm2 restart all || echo "⚠️ PM2 重启失败，可能是因为服务名称不同，请在1Panel手动重启。"
+restart_service() {
+  if command -v pm2 >/dev/null 2>&1; then
+    if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
+      log "Restarting PM2 app: $APP_NAME"
+      pm2 restart "$APP_NAME" --update-env
+      pm2 save || true
+      return 0
+    fi
+
+    if [ -f ecosystem.config.js ] || [ -f ecosystem.config.cjs ] || [ -f ecosystem.config.mjs ]; then
+      log "Reloading PM2 ecosystem file"
+      pm2 reload ecosystem.config.* --update-env
+      pm2 save || true
+      return 0
+    fi
+  fi
+
+  if [ -n "${SERVICE_NAME:-}" ] && command -v systemctl >/dev/null 2>&1; then
+    log "Restarting systemd service: $SERVICE_NAME"
+    sudo systemctl restart "$SERVICE_NAME"
+    return 0
+  fi
+
+  log "No restart target found. Set APP_NAME or SERVICE_NAME, then restart the app manually."
+  return 0
+}
+
+log "Starting FPGACenter update in $SCRIPT_DIR"
+
+require_cmd git
+require_cmd node
+require_cmd npm
+
+log "Fetching latest code from origin/$BRANCH"
+git fetch origin "$BRANCH"
+git reset --hard "origin/$BRANCH"
+git clean -fd --exclude=.env --exclude=.env.local --exclude=uploads --exclude=public/uploads
+
+log "Installing Node dependencies"
+if [ -f package-lock.json ]; then
+  npm ci
 else
-    echo "⚠️ 未检测到全局 PM2，如果使用的是 1Panel Node.js 运行环境，请到面板网站列表手动点击【重启】。"
+  npm install
 fi
 
-echo "=========================================="
-echo "✅ 更新完成！请打开前台和后台检查。"
-echo "=========================================="
+log "Generating Prisma client"
+npx prisma generate
+
+if [ "${SKIP_DB:-0}" != "1" ]; then
+  if [ -d prisma/migrations ] && find prisma/migrations -mindepth 1 -maxdepth 1 -type d | grep -q .; then
+    log "Applying Prisma migrations"
+    npx prisma migrate deploy
+  else
+    log "No Prisma migrations found; syncing schema with prisma db push"
+    if [ "${FORCE_DB_PUSH_ACCEPT_DATA_LOSS:-0}" = "1" ]; then
+      npx prisma db push --accept-data-loss
+    else
+      npx prisma db push
+    fi
+  fi
+else
+  log "Skipping database sync because SKIP_DB=1"
+fi
+
+log "Building Next.js production bundle"
+npm run build
+
+restart_service
+
+if [ -n "$HEALTH_URL" ]; then
+  log "Checking health URL: $HEALTH_URL"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsS --max-time 20 "$HEALTH_URL" >/dev/null
+    log "Health check passed"
+  else
+    log "curl is not installed; skipped health check"
+  fi
+fi
+
+log "Update complete"
