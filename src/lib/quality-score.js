@@ -284,9 +284,12 @@ function computeQualityScore(product) {
 
 /**
  * Determine if a product should be indexable based on score and threshold.
- * Default threshold is 45 (Silver tier minimum).
+ * Default threshold is 70 (Gold tier) — kept in sync with
+ * DEFAULT_INDEX_THRESHOLD in lib/indexing-policy.js, which is the single
+ * source of truth for the live policy. Callers should pass an explicit
+ * threshold; this default is only a safe fallback.
  */
-function isIndexable(score, threshold = 45) {
+function isIndexable(score, threshold = 70) {
   return score >= threshold;
 }
 

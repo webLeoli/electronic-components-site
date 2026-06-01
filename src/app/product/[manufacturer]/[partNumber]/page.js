@@ -12,7 +12,7 @@ import {
   getAvailabilityTone,
 } from '@/lib/seo';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import AddToRfqButton from '@/components/AddToRfqButton';
 import ProductImage, { ProductIcon } from '@/components/ProductImage';
 import { FALLBACK_PARTS } from '@/lib/fallbacks';
@@ -230,11 +230,21 @@ function getPriceTiers(basePrice) {
 }
 
 export default async function ProductPage({ params }) {
-  const { partNumber } = await params;
+  const { manufacturer, partNumber } = await params;
   const product = await getProduct(decodeURIComponent(partNumber));
 
   if (!product) {
     notFound();
+  }
+
+  // Canonicalize the manufacturer URL segment. The page resolves purely by
+  // (unique) partNumber, so any manufacturer slug would otherwise return 200
+  // and create duplicate-content URLs. Redirect mismatches to the canonical
+  // path (308) instead of relying on the canonical tag alone.
+  const canonicalPath = productPath(product.partNumber, product.manufacturer);
+  const canonicalMfrSlug = canonicalPath.split('/')[2];
+  if (decodeURIComponent(manufacturer).toLowerCase() !== canonicalMfrSlug) {
+    permanentRedirect(canonicalPath);
   }
 
   const specs = parseSpecs(product.specs);
@@ -375,6 +385,7 @@ export default async function ProductPage({ params }) {
                 <ProductImage product={product} size={160} priority style={{ flexShrink: 0 }} />
 
                 <div style={{ flex: 1 }}>
+                  <div className="eyebrow">Component detail</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', flexWrap: 'wrap' }}>
                     <h1 className="product-part-number">{product.partNumber}</h1>
                     <StatusBadge status={product.status} />
@@ -419,21 +430,48 @@ export default async function ProductPage({ params }) {
 
             {/* Quick Info Cards */}
             <div className="product-quick-info">
+              <div className="quick-info-item priority">
+                <span className="quick-info-label">Stock</span>
+                <span className="quick-info-value">{getAvailabilityText(product)}</span>
+              </div>
+              <div className="quick-info-item priority">
+                <span className="quick-info-label">Price</span>
+                <span className="quick-info-value">
+                  {product.minPrice > 0 ? `$${product.minPrice.toFixed(product.minPrice < 1 ? 4 : 2)}` : 'RFQ'}
+                </span>
+              </div>
               <div className="quick-info-item">
                 <span className="quick-info-label">Package</span>
                 <span className="quick-info-value">{product.packageType || 'N/A'}</span>
               </div>
               <div className="quick-info-item">
-                <span className="quick-info-label">Mount</span>
-                <span className="quick-info-value">{product.mountType || 'N/A'}</span>
+                <span className="quick-info-label">Lead Time</span>
+                <span className="quick-info-value">{product.leadTime || (hasConfirmedStock(product) ? 'In stock' : 'Confirm')}</span>
+              </div>
+              <div className="quick-info-item">
+                <span className="quick-info-label">MOQ</span>
+                <span className="quick-info-value">{product.moq || 1}</span>
               </div>
               <div className="quick-info-item">
                 <span className="quick-info-label">Lifecycle</span>
                 <span className="quick-info-value" style={{ textTransform: 'capitalize' }}>{product.status}</span>
               </div>
-              <div className="quick-info-item">
-                <span className="quick-info-label">Manufacturer</span>
-                <span className="quick-info-value">{product.manufacturer}</span>
+            </div>
+
+            <div className="product-procurement-strip">
+              <div>
+                <strong>Need a firm quote?</strong>
+                <span>Confirm price, date code, batch, lead time, and alternates before purchase.</span>
+              </div>
+              <div className="product-procurement-actions">
+                {product.datasheet && (
+                  <a href={product.datasheet} target="_blank" rel="noopener noreferrer nofollow" className="btn btn-secondary btn-sm">
+                    Datasheet
+                  </a>
+                )}
+                <Link href={`/rfq?part=${encodeURIComponent(product.partNumber)}`} className="btn btn-primary btn-sm">
+                  Request Quote
+                </Link>
               </div>
             </div>
 

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { invalidateSettingsCache } from '@/lib/settings';
-import { requireAuth } from '@/lib/admin-auth';
+import { requireAuth, requireAdmin } from '@/lib/admin-auth';
 
 // Code integration setting keys
 const CODE_KEYS = [
@@ -30,8 +30,11 @@ export async function GET(request) {
 }
 
 // PUT: Save code integration settings
+// requireAdmin (not requireAuth): custom_head_code is injected site-wide into
+// every visitor's page, so writing it must be restricted to the admin role at
+// the route level — not only by the proxy middleware (defense in depth).
 export async function PUT(request) {
-  const authError = requireAuth(request);
+  const authError = requireAdmin(request);
   if (authError) return authError;
   try {
     const data = await request.json();

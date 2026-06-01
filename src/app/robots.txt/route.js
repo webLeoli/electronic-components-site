@@ -39,6 +39,12 @@ export async function GET() {
 
     if (setting && setting.value && setting.value.trim()) {
       content = setting.value;
+      // Always preserve the Sitemap declaration. A custom robots.txt that
+      // omits it would silently de-list the sitemap from crawlers, so append
+      // it when the admin-provided content doesn't already reference one.
+      if (!/^\s*Sitemap:/im.test(content)) {
+        content = `${content.trimEnd()}\n\nSitemap: ${SITE_URL}/sitemap.xml`;
+      }
     }
   } catch (e) {
     // DB error — use default

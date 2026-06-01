@@ -108,9 +108,13 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Admin login is not configured' }, { status: 503 });
       }
 
-      // Timing-safe comparison to prevent timing attacks on password
-      const passwordMatch = password.length === adminPassword.length &&
-        crypto.timingSafeEqual(Buffer.from(password), Buffer.from(adminPassword));
+      // Timing-safe comparison to prevent timing attacks on password.
+      // Compare byte lengths (not string .length) so the guard matches the
+      // buffers handed to timingSafeEqual — they can differ for non-ASCII input.
+      const passwordBuf = Buffer.from(password);
+      const adminPasswordBuf = Buffer.from(adminPassword);
+      const passwordMatch = passwordBuf.length === adminPasswordBuf.length &&
+        crypto.timingSafeEqual(passwordBuf, adminPasswordBuf);
       if (passwordMatch) {
         const token = createSignedToken(0, 'admin');
         const response = NextResponse.json({
