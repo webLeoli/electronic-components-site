@@ -6,6 +6,8 @@ import { notFound } from 'next/navigation';
 import { productPath, SITE_URL, SITE_NAME, hasConfirmedStock, getAvailabilityText } from '@/lib/seo';
 import { FALLBACK_BRANDS } from '@/lib/fallbacks';
 
+export const dynamic = 'force-dynamic';
+
 function slugifyManufacturer(name) {
   return (name || 'unknown')
     .toLowerCase()
@@ -38,12 +40,9 @@ function parseSpecialties(str) {
   try { return JSON.parse(str); } catch { return []; }
 }
 
-// This route is dynamic because it reads `searchParams.page` for pagination,
-// so it can't be statically cached as a whole. Instead, the page-independent
-// aggregate queries (counts, status/category breakdowns) are cached per
-// manufacturer below via unstable_cache, and only the light, indexed paginated
-// product query runs on every request.
-export async function generateStaticParams() { return []; }
+// This route is dynamic because it reads `searchParams.page` for pagination
+// and resolves manufacturer records from the database on demand. The
+// page-independent aggregate queries are cached per manufacturer below.
 
 // Cache the expensive, page-independent aggregates per manufacturer for 1 hour.
 const getManufacturerStats = (name) => unstable_cache(
