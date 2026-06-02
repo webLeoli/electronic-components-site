@@ -1,92 +1,85 @@
-# FPGACenter — Electronic Component Sourcing Platform
+# FPGACenter
 
-A Next.js 16 production platform for sourcing hard-to-find, obsolete, and in-demand electronic components (FPGAs, ICs, passives, etc.).
+FPGACenter is a Next.js sourcing site for FPGA, CPLD, obsolete IC, and hard-to-find electronic component inquiries.
 
-## Tech Stack
+## Stack
 
-- **Framework**: Next.js 16.2 (App Router, Turbopack)
-- **Database**: PostgreSQL via Prisma ORM
-- **Auth**: Cookie-based session (httpOnly, bcrypt)
-- **Email**: Nodemailer (SMTP)
-- **Styling**: Vanilla CSS
+- Next.js 16 App Router
+- React 19
+- PostgreSQL
+- Prisma ORM
+- Cookie-based admin sessions
+- Nodemailer SMTP notifications
+- Plain CSS
 
-## Quick Start
+## Local Setup
 
 ```bash
-# Install
 npm install
-
-# Configure environment
-cp .env.example .env   # then edit .env with your DB, SMTP, secrets
-
-# Initialize database
-npx prisma migrate dev
-
-# Seed initial data (optional)
-node scripts/seed.mjs
-
-# Dev server
+npx prisma generate
 npm run dev
 ```
 
-## Environment Variables
+Create `.env` before running the app. Required production values include:
 
-| Variable | Required | Description |
-|---|---|---|
-| `DATABASE_URL` | ✅ | PostgreSQL connection string |
-| `ADMIN_PASSWORD` | ✅ | Legacy single-admin password |
-| `SESSION_SECRET` | ✅ | HMAC secret for session signing — change in production! |
-| `SMTP_HOST/PORT/USER/PASS` | Optional | Email notification via nodemailer |
-| `SMTP_FROM` | Optional | Sender address for emails |
-| `ADMIN_EMAIL` | Optional | Admin notification recipient |
-| `SITE_URL` | Optional | Production domain URL |
+- `DATABASE_URL`
+- `SESSION_SECRET`
+- `SITE_URL`
+- SMTP variables if RFQ/contact emails should be sent
+
+## Main Commands
+
+```bash
+npm run dev
+npm run build
+npm run start
+npm run lint
+npm run data:export
+npm run data:import
+```
+
+`npm run build` uses `next build --webpack` because this is more stable on the current VPS than the default build path.
 
 ## Project Structure
 
-```
-src/
-  app/           # Next.js App Router pages + API routes
-    api/admin/   # Admin API (all routes auth-protected)
-    api/rfq/     # Public RFQ submission
-    api/contact/ # Public contact form
-    api/search/  # Public product search
-    admin/       # Admin panel pages
-  components/    # Shared UI components
-  lib/           # Shared utilities
-    admin-auth.js  # Session auth helpers
-    db.js          # Prisma client singleton
-    email.js       # SMTP email sender
-    settings.js    # DB-backed settings with cache
-    tracker.js     # Client-side analytics
-middleware.js      # Route-level auth (admin pages + admin API)
-prisma/schema.prisma
-scripts/         # One-time seed / import scripts
+```text
+src/app/            Next.js pages and API routes
+src/components/     shared UI components
+src/lib/            database, SEO, analytics, and sourcing helpers
+prisma/             Prisma schema and migrations
+scripts/            active data import/export/repair scripts
+docs/               current operational docs and blog drafts
+public/             public static assets
+update.sh           VPS deployment script
 ```
 
-## Admin Panel
-
-Access at `/admin/login`. Three role levels:
-- **admin** — full access
-- **editor** — can manage content, cannot manage users/settings
-- **viewer** — read-only
-
-## Scripts
+## Active Scripts
 
 | Script | Purpose |
-|---|---|
-| `scripts/seed.mjs` | Seed categories, manufacturers, sample products |
-| `scripts/seed-batch1/2/3.mjs` | Bulk product seeds |
-| `scripts/seed-blog.mjs` | Seed blog articles |
-| `scripts/import-products.mjs` | CSV import tool |
-| `scripts/export-products.mjs` | CSV export tool |
-| `scripts/bulk-update.mjs` | Batch product updates |
-| `scripts/enrich-products-specs.mjs` | Enrich specs from external data |
+| --- | --- |
+| `export-safe-data-package.mjs` | Export safe public content data. |
+| `import-safe-data-package.mjs` | Import or replace safe public content data. |
+| `repair-product-sitemap-indexing.mjs` | Repair product sitemap indexability flags. |
+| `compute-quality-scores.mjs` / `rescore-subset.mjs` | Compute product quality and indexing scores. |
+| `set-indexing-policy.mjs` | Show or update indexing threshold settings. |
+| `import-products.mjs` / `import-jsonl.mjs` | Product data import tools. |
+| `import-blog-drafts.mjs` | Import markdown drafts from `docs/blog-drafts`. |
+| `seed.mjs` / `setup-categories.mjs` / `sync-manufacturers.mjs` | Base setup utilities. |
 
-## Commands
+## Production Deploy
+
+On the VPS:
 
 ```bash
-npm run dev    # Development server
-npm run build  # Production build
-npm run start  # Production server
-npm run lint   # ESLint
+cd /opt/fpgacenter && FULL_CLEAN=1 SKIP_DB=1 STOP_APP_BEFORE_BUILD=1 APP_NAME=fpgacenter NODE_OPTIONS="--max-old-space-size=6144" bash update.sh
 ```
+
+`FULL_CLEAN=1` removes untracked/ignored junk and rebuilds the project while preserving `.env`, uploads, and storage directories.
+
+## Data Sync
+
+Code is synced with Git. Products, categories, manufacturers, blogs, and safe SEO settings are synced with safe data packages.
+
+See `docs/production-data-sync.md`.
+
+The data sync tools never import or export RFQ submissions, contact submissions, admin users, environment secrets, uploaded files, logs, or build artifacts.

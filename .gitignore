@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 /.pnp
@@ -10,47 +8,41 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
+# test output
 /coverage
 
-# next.js
+# Next.js
 /.next/
 /out/
 
-# production
+# production output
 /build
 
 # misc
 .DS_Store
 *.pem
 
-# debug
+# debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-/src/generated/prisma
-
-# database — Prisma local artifacts (this project uses PostgreSQL, not SQLite)
-prisma/*.db
-prisma/*.db-journal
-.env*.local
-
-# build logs
+server.*.log
 build-log*.txt
 
-# database dumps
+# env files
+.env*
+.env*.local
+
+# Vercel
+.vercel
+
+# TypeScript / generated code
+*.tsbuildinfo
+next-env.d.ts
+/src/generated/prisma
+
+# database dumps and archives
 *.sql
 *.sql.gz
 *.tar
@@ -58,25 +50,27 @@ build-log*.txt
 *.tgz
 *.zip
 
-# user uploaded files (BOM files, etc.)
+# Prisma migrations are source-controlled even though they contain .sql files.
+!prisma/migrations/
+!prisma/migrations/**
+
+# uploaded/runtime files
 /data/
 /public/uploads/
+!/public/uploads/
 !/public/uploads/.gitkeep
+/storage/
+/public/storage/
 
-# local server logs
-server.*.log
-
-# local SEO rollout artifacts
+# local data packages and imports
 /backups/
 /data-packages/
 /imports/
+
+# generated or temporary media
 /public/images/
-/scripts/blog_posts_output.json
-/scripts/get_blog_posts.js
-/scripts/update_blog_images.js
-/scripts/archive/blog_posts_output.json
-/scripts/archive/get_blog_posts.js
-/scripts/archive/update_blog_images.js
+
+# local SEO rollout artifacts
 /category-seo-ids.txt
 /orphan-classified-ids.txt
 /orphan-descfix-ids.txt
