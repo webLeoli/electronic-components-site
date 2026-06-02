@@ -15,14 +15,27 @@ set -Eeuo pipefail
 #   SKIP_DB=1                             Skip Prisma database sync.
 #   STOP_APP_BEFORE_BUILD=1               Stop PM2 app before building on low-resource VPS.
 #   CLEAN_NEXT=1                          Remove .next before building. Use with STOP_APP_BEFORE_BUILD=1.
+#   FULL_CLEAN=1                          Remove untracked/ignored files for a full GitHub replacement deploy.
+#   PRESERVE_PATHS=".env .env.local uploads public/uploads"
+#                                           Paths to keep during FULL_CLEAN.
 #   FORCE_DB_PUSH_ACCEPT_DATA_LOSS=1      Allow prisma db push --accept-data-loss.
 
 BRANCH="${BRANCH:-master}"
 APP_NAME="${APP_NAME:-fpgacenter}"
 HEALTH_URL="${HEALTH_URL:-}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PRESERVE_PATHS="${PRESERVE_PATHS:-.env .env.local uploads public/uploads storage public/storage}"
+PRESERVE_TMP=""
 
 cd "$SCRIPT_DIR"
+
+cleanup_preserve_tmp() {
+  if [ -n "$PRESERVE_TMP" ] && [ -d "$PRESERVE_TMP" ]; then
+    rm -rf "$PRESERVE_TMP"
+  fi
+}
+
+trap cleanup_preserve_tmp EXIT
 
 log() {
   printf '\n[%s] %s\n' "$(date '+%F %T')" "$*"
@@ -78,6 +91,34 @@ stop_service_for_build() {
   log "STOP_APP_BEFORE_BUILD=1 set, but PM2 app '$APP_NAME' was not found"
 }
 
+preserve_before_full_clean() {
+  PRESERVE_TMP="$(mktemp -d "${TMPDIR:-/tmp}/fpgacenter-preserve.XXXXXX")"
+  log "Preserving server-only paths in $PRESERVE_TMP"
+
+  for path in $PRESERVE_PATHS; do
+    if [ -e "$path" ]; then
+      mkdir -p "$PRESERVE_TMP/$(dirname "$path")"
+      cp -a "$path" "$PRESERVE_TMP/$path"
+      log "Preserved $path"
+    fi
+  done
+}
+
+restore_after_full_clean() {
+  if [ -z "$PRESERVE_TMP" ] || [ ! -d "$PRESERVE_TMP" ]; then
+    return 0
+  fi
+
+  for path in $PRESERVE_PATHS; do
+    if [ -e "$PRESERVE_TMP/$path" ]; then
+      mkdir -p "$(dirname "$path")"
+      rm -rf "$path"
+      cp -a "$PRESERVE_TMP/$path" "$path"
+      log "Restored $path"
+    fi
+  done
+}
+
 log "Starting FPGACenter update in $SCRIPT_DIR"
 
 require_cmd git
@@ -87,7 +128,16 @@ require_cmd npm
 log "Fetching latest code from origin/$BRANCH"
 git fetch origin "$BRANCH"
 git reset --hard "origin/$BRANCH"
-git clean -fd --exclude=.env --exclude=.env.local --exclude=uploads --exclude=public/uploads
+if [ "${FULL_CLEAN:-0}" = "1" ]; then
+  log "FULL_CLEAN=1 enabled; replacing working tree with GitHub version"
+  stop_service_for_build
+  preserve_before_full_clean
+  git clean -ffdx
+  restore_after_full_clean
+  CLEAN_NEXT=1
+else
+  git clean -fd --exclude=.env --exclude=.env.local --exclude=uploads --exclude=public/uploads
+fi
 
 log "Installing Node dependencies"
 if [ -f package-lock.json ]; then
