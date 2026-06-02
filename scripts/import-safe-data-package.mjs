@@ -3,6 +3,7 @@
  * Import a safe data package.
  *
  * Default mode is validation only. Add --apply to write to the database.
+ * Add --replace with --apply to make selected safe content tables match the package.
  * This script never imports RFQ submissions, contact submissions, admin users,
  * sessions, env secrets, or build artifacts.
  */
@@ -27,6 +28,7 @@ function parseArgs() {
   const opts = {
     packageDir: null,
     apply: false,
+    replace: false,
     noBackup: false,
     tables: null,
     adminSettingKeys: DEFAULT_ADMIN_SETTING_KEYS,
@@ -39,6 +41,9 @@ function parseArgs() {
       switch (key) {
         case 'apply':
           opts.apply = true;
+          break;
+        case 'replace':
+          opts.replace = true;
           break;
         case 'no-backup':
           opts.noBackup = true;
@@ -61,7 +66,11 @@ function parseArgs() {
   }
 
   if (!opts.packageDir) {
-    throw new Error('Usage: node scripts/import-safe-data-package.mjs <package-dir> [--apply] [--tables=products,categories]');
+    throw new Error('Usage: node scripts/import-safe-data-package.mjs <package-dir> [--apply] [--replace] [--tables=products,categories]');
+  }
+
+  if (opts.replace && !opts.apply) {
+    throw new Error('--replace requires --apply');
   }
 
   return opts;
@@ -354,6 +363,48 @@ async function importProducts(packageDir, manifest, apply, batchSize) {
   return { read, written, skipped };
 }
 
+async function replaceSelectedTables(tables, adminSettingKeys) {
+  const selected = new Set(tables);
+
+  console.log('Replacing selected safe content tables before import.');
+
+  if (selected.has('products')) {
+    const result = await prisma.product.deleteMany({});
+    console.log(`  deleted products: ${result.count.toLocaleString()}`);
+  } else if (selected.has('categories')) {
+    const result = await prisma.product.updateMany({ data: { categoryId: null } });
+    console.log(`  detached product categories: ${result.count.toLocaleString()}`);
+  }
+
+  if (selected.has('blogPosts')) {
+    const result = await prisma.blogPost.deleteMany({});
+    console.log(`  deleted blog posts: ${result.count.toLocaleString()}`);
+  } else if (selected.has('blogCategories')) {
+    const result = await prisma.blogPost.updateMany({ data: { categoryId: null } });
+    console.log(`  detached blog post categories: ${result.count.toLocaleString()}`);
+  }
+
+  if (selected.has('categories')) {
+    const result = await prisma.category.deleteMany({});
+    console.log(`  deleted categories: ${result.count.toLocaleString()}`);
+  }
+
+  if (selected.has('blogCategories')) {
+    const result = await prisma.blogCategory.deleteMany({});
+    console.log(`  deleted blog categories: ${result.count.toLocaleString()}`);
+  }
+
+  if (selected.has('manufacturers')) {
+    const result = await prisma.manufacturer.deleteMany({});
+    console.log(`  deleted manufacturers: ${result.count.toLocaleString()}`);
+  }
+
+  if (selected.has('adminSettings')) {
+    const result = await prisma.adminSetting.deleteMany({ where: { key: { in: adminSettingKeys } } });
+    console.log(`  deleted allowed admin settings: ${result.count.toLocaleString()}`);
+  }
+}
+
 async function main() {
   const opts = parseArgs();
   const packageDir = resolve(opts.packageDir);
@@ -362,7 +413,7 @@ async function main() {
 
   console.log('Safe data import');
   console.log(`  package: ${packageDir}`);
-  console.log(`  mode: ${opts.apply ? 'APPLY' : 'validate only'}`);
+  console.log(`  mode: ${opts.apply ? (opts.replace ? 'REPLACE + APPLY' : 'APPLY') : 'validate only'}`);
   console.log(`  tables: ${tables.join(', ')}`);
   console.log('');
 
@@ -379,6 +430,11 @@ async function main() {
       label: 'backup-before-safe-data-import',
     });
     console.log('Backup complete.');
+  }
+
+  if (opts.apply && opts.replace) {
+    await replaceSelectedTables(tables, opts.adminSettingKeys);
+    console.log('');
   }
 
   const summary = {};
