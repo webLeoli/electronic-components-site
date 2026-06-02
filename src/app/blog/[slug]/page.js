@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { headers } from 'next/headers';
 import sanitizeHtml from 'sanitize-html';
 import { productPath, SITE_NAME, SITE_URL, hasConfirmedStock, getAvailabilityText } from '@/lib/seo';
+import { getBlogCoverImage, getBlogCoverTheme } from '@/lib/blog-cover';
 import '../blog.css';
 
 export const revalidate = 3600;
@@ -49,13 +50,46 @@ const BLOG_HTML_SANITIZE_OPTIONS = {
     img: ['http', 'https'],
   },
   allowedClasses: {
-    '*': [/^blog-/],
+    '*': [/^blog-/, /^theme-/],
     code: [/^lang-/],
   },
   transformTags: {
     a: sanitizeHtml.simpleTransform('a', { rel: 'noopener noreferrer' }, true),
   },
 };
+
+function escapeHtmlText(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function legacyBlogImagePlaceholder(caption, theme) {
+  const cleanCaption = String(caption || '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const title = cleanCaption || theme.title;
+
+  return `<div class="blog-inline-image-placeholder ${theme.className}"><span>${escapeHtmlText(theme.label)}</span><strong>${escapeHtmlText(title)}</strong></div>`;
+}
+
+function replaceLegacyBlogImages(html, theme) {
+  let nextHtml = html.replace(
+    /<figure\b[^>]*>\s*<img\b[^>]*src=["']\/images\/blog\/[^"']+["'][^>]*>\s*(?:<figcaption\b[^>]*>([\s\S]*?)<\/figcaption>)?\s*<\/figure>/gi,
+    (_, caption) => legacyBlogImagePlaceholder(caption, theme)
+  );
+
+  nextHtml = nextHtml.replace(
+    /<img\b[^>]*src=["']\/images\/blog\/[^"']+["'][^>]*>/gi,
+    () => legacyBlogImagePlaceholder('', theme)
+  );
+
+  return nextHtml;
+}
 
 // Markdown to HTML converter (server-side, full featured)
 // Safely handles mixed HTML+markdown content by protecting existing HTML blocks
@@ -91,7 +125,7 @@ function markdownToHtml(md) {
     return `<div class="blog-table-wrap"><table class="blog-table"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table></div>`;
   });
 
-  // Headings — only convert lines that start with # 
+  // Headings - only convert lines that start with #
   html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
   html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
   html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
@@ -118,7 +152,7 @@ function markdownToHtml(md) {
   // Horizontal rules
   html = html.replace(/^---$/gm, '<hr class="blog-hr" />');
 
-  // Paragraphs — wrap remaining text in <p> tags
+  // Paragraphs - wrap remaining text in <p> tags
   html = html.replace(/\n\n/g, '</p><p>');
   html = html.replace(/\n/g, '<br/>');
   html = `<p>${html}</p>`;
@@ -160,12 +194,13 @@ export async function generateMetadata({ params }) {
   if (!post) return { title: 'Article Not Found' };
   const title = (post.seoTitle || post.title);
   const description = post.seoDesc || post.excerpt || `Read ${post.title} on ${SITE_NAME}`;
+  const coverImage = getBlogCoverImage(post) || `${SITE_URL}/og-image.png`;
   return {
     title,
     description,
     keywords: post.seoKeywords || undefined,
-    openGraph: { title, description, url: `${SITE_URL}/blog/${post.slug}`, siteName: SITE_NAME, type: 'article', images: post.coverImage ? [{ url: post.coverImage }] : [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: title }] },
-    twitter: { card: 'summary_large_image', title, description, images: post.coverImage ? [post.coverImage] : [`${SITE_URL}/og-image.png`] },
+    openGraph: { title, description, url: `${SITE_URL}/blog/${post.slug}`, siteName: SITE_NAME, type: 'article', images: [{ url: coverImage, width: 1200, height: 630, alt: title }] },
+    twitter: { card: 'summary_large_image', title, description, images: [coverImage] },
     alternates: { canonical: `${SITE_URL}/blog/${post.slug}` },
   };
 }
@@ -175,8 +210,10 @@ export default async function BlogPostPage({ params }) {
   const post = await getPost(slug);
 
   if (!post || post.status !== 'published') notFound();
+  const coverImage = getBlogCoverImage(post);
+  const coverTheme = getBlogCoverTheme(post);
 
-  // Increment view count (fire-and-forget) — skip bots to avoid inflated counts
+  // Increment view count (fire-and-forget) - skip bots to avoid inflated counts
   const headersList = await headers();
   const ua = (headersList.get('user-agent') || '').toLowerCase();
   const isBot = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex|sogou|facebookexternalhit|twitterbot|linkedinbot|semrushbot|ahrefsbot|dotbot|mj12bot|bytespider/i.test(ua);
@@ -192,7 +229,7 @@ export default async function BlogPostPage({ params }) {
   
   let contentHtml;
   if (hasMarkdown) {
-    // Has markdown patterns — always convert (whether pure markdown or mixed)
+    // Has markdown patterns - always convert (whether pure markdown or mixed)
     contentHtml = markdownToHtml(post.content);
   } else if (hasHtml) {
     // Pure HTML from WYSIWYG editor
@@ -210,6 +247,7 @@ export default async function BlogPostPage({ params }) {
   // Convert remaining markdown bold/italic if any
   contentHtml = contentHtml.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   contentHtml = contentHtml.replace(/(^|[\s>])\*([^*]+?)\*(?=[\s<.,;!?)]|$)/gm, '$1<em>$2</em>');
+  contentHtml = replaceLegacyBlogImages(contentHtml, coverTheme);
   contentHtml = sanitizeHtml(contentHtml, BLOG_HTML_SANITIZE_OPTIONS);
   
   // Strip HTML tags from a string to get plain text
@@ -264,7 +302,7 @@ export default async function BlogPostPage({ params }) {
     });
   }
 
-  // Schema.org TechArticle — more precise than generic Article for electronics content.
+  // Schema.org TechArticle - more precise than generic Article for electronics content.
   // Enables rich results for technical how-to/guide queries.
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -277,12 +315,12 @@ export default async function BlogPostPage({ params }) {
     author: { '@type': 'Person', name: post.author || SITE_NAME },
     publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL, logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon-512.png` } },
     mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/blog/${post.slug}` },
-    image: post.coverImage || `${SITE_URL}/og-image.png`,
+    image: getBlogCoverImage(post) || `${SITE_URL}/og-image.png`,
     wordCount: (post.content || '').split(/\s+/).length,
     inLanguage: 'en',
     ...(post.category ? { articleSection: post.category.name } : {}),
     ...(post.seoKeywords ? { keywords: post.seoKeywords } : {}),
-    // Speakable — tells Google Assistant which parts to read aloud
+    // Speakable - tells Google Assistant which parts to read aloud
     speakable: {
       '@type': 'SpeakableSpecification',
       cssSelector: ['h1', '.blog-article-meta'],
@@ -330,28 +368,35 @@ export default async function BlogPostPage({ params }) {
                 <h1>{post.title}</h1>
                 <div className="blog-article-meta">
                   <span>{post.author}</span>
-                  <span>·</span>
+                  <span>/</span>
                   <span>{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</span>
-                  <span>·</span>
+                  <span>/</span>
                   <span>{post.readingTime || 1} min read</span>
-                  <span>·</span>
+                  <span>/</span>
                   <span>{post.viewCount?.toLocaleString()} views</span>
                 </div>
               </header>
 
               {/* Cover Image */}
-              {post.coverImage && (
-                <div className="blog-article-cover">
-                  {post.coverImage.endsWith('.webp') ? (
+              <div className="blog-article-cover">
+                {coverImage ? (
+                  coverImage.endsWith('.webp') ? (
                     <picture>
-                      <source srcSet={post.coverImage} type="image/webp" />
-                      <img src={post.coverImage.replace(/\.webp$/, '.png')} alt={post.title} loading="eager" fetchPriority="high" />
+                      <source srcSet={coverImage} type="image/webp" />
+                      <img src={coverImage.replace(/\.webp$/, '.png')} alt={post.title} loading="eager" fetchPriority="high" />
                     </picture>
                   ) : (
-                    <img src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" />
-                  )}
-                </div>
-              )}
+                    <img src={coverImage} alt={post.title} loading="eager" fetchPriority="high" />
+                  )
+                ) : (
+                  <div className={`blog-cover-generated blog-article-generated-cover ${coverTheme.className}`}>
+                    <div className="blog-cover-generated-inner">
+                      <span>{coverTheme.label}</span>
+                      <strong>{coverTheme.title}</strong>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Content */}
               <div className="blog-article-content" dangerouslySetInnerHTML={{ __html: contentHtml }} />
@@ -422,8 +467,8 @@ export default async function BlogPostPage({ params }) {
               {/* CTA */}
               <div className="blog-sidebar-card blog-cta">
                 <h3>Need These Components?</h3>
-                <p>Get a quote for any electronic component — no minimum order.</p>
-                <Link href="/rfq" className="blog-cta-btn">Request a Quote →</Link>
+                <p>Get a quote for any electronic component, with no minimum order.</p>
+                <Link href="/rfq" className="blog-cta-btn">Request a Quote</Link>
               </div>
             </aside>
           </div>

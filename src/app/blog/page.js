@@ -1,6 +1,7 @@
 import prisma from '@/lib/db';
 import Link from 'next/link';
 import { SITE_NAME, SITE_URL } from '@/lib/seo';
+import { getBlogCoverImage, getBlogCoverTheme } from '@/lib/blog-cover';
 import './blog.css';
 
 export const revalidate = 3600;
@@ -8,10 +9,9 @@ export const revalidate = 3600;
 export async function generateMetadata({ searchParams }) {
   const sp = await searchParams;
   const page = Math.max(1, parseInt(sp?.page) || 1);
-  const categorySlug = sp?.category || '';
-  
-  // Canonical always points to the base /blog URL — category filters and pagination
-  // are faceted views of the same page, not independent canonical entities.
+
+  // Canonical always points to the base /blog URL; category filters and
+  // pagination are faceted views of the same collection.
   const canonicalUrl = `${SITE_URL}/blog`;
   const title = page > 1 ? `Technical Articles & Guides - Page ${page}` : 'Technical Articles & Guides';
 
@@ -88,13 +88,12 @@ export default async function BlogPage({ searchParams }) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <div className="blog-page">
         <div className="container">
-          {/* Hero */}
           <div className="blog-hero">
+            <span className="blog-hero-kicker">FPGACenter Knowledge Base</span>
             <h1>Technical Articles & Guides</h1>
-            <p>Expert insights on electronic components, design tips, and product comparisons</p>
+            <p>Lifecycle, FPGA/CPLD sourcing, quality inspection, and procurement guides for hard-to-find components.</p>
           </div>
 
-          {/* Category Tabs */}
           {categories.length > 0 && (
             <div className="blog-category-tabs">
               <Link href="/blog" className={`blog-cat-tab ${!categorySlug ? 'active' : ''}`}>All</Link>
@@ -106,59 +105,58 @@ export default async function BlogPage({ searchParams }) {
             </div>
           )}
 
-          {/* Posts Grid */}
           {posts.length === 0 ? (
             <div className="blog-empty">
-              <span style={{ fontSize: 48 }}>✍️</span>
+              <span className="blog-empty-mark">No posts</span>
               <h2>No articles yet</h2>
               <p>Check back soon for technical guides and product insights.</p>
             </div>
           ) : (
             <div className="blog-grid">
-              {posts.map(post => (
-                <Link href={`/blog/${post.slug}`} key={post.id} className="blog-card">
-                  <div
-                    className="blog-card-cover"
-                    style={post.coverImage
-                      ? { backgroundImage: `url(${post.coverImage})` }
-                      : { background: 'linear-gradient(135deg, #0F1D32 0%, #142644 50%, #1a2d4a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }
-                    }
-                  >
-                    {!post.coverImage && (
-                      <span style={{ fontSize: 36, opacity: 0.18 }}>
-                        {post.category?.slug?.includes('fpga') ? '🔮' :
-                         post.category?.slug?.includes('micro') ? '⚙️' :
-                         post.category?.slug?.includes('power') ? '⚡' : '📡'}
-                      </span>
-                    )}
-                  </div>
-                  <div className="blog-card-body">
-                    {post.category && (
-                      <span className="blog-card-cat">{post.category.name}</span>
-                    )}
-                    <h2 className="blog-card-title">{post.title}</h2>
-                    {post.excerpt && (
-                      <p className="blog-card-excerpt">{post.excerpt}</p>
-                    )}
-                    <div className="blog-card-meta">
-                      <span>{post.author}</span>
-                      <span>·</span>
-                      <span>{post.readingTime || 1} min read</span>
-                      <span>·</span>
-                      <span>{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : ''}</span>
+              {posts.map(post => {
+                const coverImage = getBlogCoverImage(post);
+                const coverTheme = getBlogCoverTheme(post);
+
+                return (
+                  <Link href={`/blog/${post.slug}`} key={post.id} className="blog-card">
+                    <div
+                      className={`blog-card-cover ${coverImage ? 'has-image' : `blog-cover-generated ${coverTheme.className}`}`}
+                      style={coverImage ? { backgroundImage: `url(${coverImage})` } : undefined}
+                    >
+                      {!coverImage && (
+                        <div className="blog-cover-generated-inner">
+                          <span>{coverTheme.label}</span>
+                          <strong>{coverTheme.title}</strong>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </Link>
-              ))}
+                    <div className="blog-card-body">
+                      {post.category && (
+                        <span className="blog-card-cat">{post.category.name}</span>
+                      )}
+                      <h2 className="blog-card-title">{post.title}</h2>
+                      {post.excerpt && (
+                        <p className="blog-card-excerpt">{post.excerpt}</p>
+                      )}
+                      <div className="blog-card-meta">
+                        <span>{post.author}</span>
+                        <span aria-hidden="true">/</span>
+                        <span>{post.readingTime || 1} min read</span>
+                        <span aria-hidden="true">/</span>
+                        <span>{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : ''}</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           )}
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="blog-pagination">
-              {page > 1 && <Link href={`/blog?page=${page - 1}${categorySlug ? `&category=${categorySlug}` : ''}`} className="blog-page-btn">← Previous</Link>}
+              {page > 1 && <Link href={`/blog?page=${page - 1}${categorySlug ? `&category=${categorySlug}` : ''}`} className="blog-page-btn">Previous</Link>}
               <span className="blog-page-info">Page {page} of {totalPages}</span>
-              {page < totalPages && <Link href={`/blog?page=${page + 1}${categorySlug ? `&category=${categorySlug}` : ''}`} className="blog-page-btn">Next →</Link>}
+              {page < totalPages && <Link href={`/blog?page=${page + 1}${categorySlug ? `&category=${categorySlug}` : ''}`} className="blog-page-btn">Next</Link>}
             </div>
           )}
         </div>
