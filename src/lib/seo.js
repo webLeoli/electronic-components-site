@@ -1,3 +1,8 @@
+import {
+  getProductDisplayImage,
+  generateRepresentativeImageAlt,
+} from './product-image-resolver';
+
 const SITE_NAME = 'FPGACenter';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'https://fpgacenter.com';
 // Brand positioning (2026-05-17): obsolete & hard-to-find sourcing is the
@@ -59,6 +64,26 @@ export function getSchemaAvailability(product) {
   return 'https://schema.org/LimitedAvailability';
 }
 
+function absoluteSiteUrl(url) {
+  if (!url) return null;
+  return url.startsWith('http')
+    ? url
+    : `${SITE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
+function getProductSeoImage(product) {
+  const image = getProductDisplayImage(product);
+  if (!image?.src) return null;
+
+  return {
+    url: absoluteSiteUrl(image.src),
+    alt: image.kind === 'exact'
+      ? `${product.partNumber} ${product.manufacturer} Electronic Component`
+      : generateRepresentativeImageAlt(product, image),
+    kind: image.kind,
+  };
+}
+
 export function generateProductMeta(product) {
   const mfr = product.manufacturer || 'Electronic Component';
   const encodedPN = encodeURIComponent(product.partNumber);
@@ -109,18 +134,17 @@ export function generateProductMeta(product) {
     },
   };
 
-  // Include product image for rich previews (social sharing, chat embeds)
-  if (product.imageUrl) {
-    const imageUrl = product.imageUrl.startsWith('http')
-      ? product.imageUrl
-      : `${SITE_URL}${product.imageUrl.startsWith('/') ? '' : '/'}${product.imageUrl}`;
+  // Include exact images when available; otherwise use package-family images.
+  // Representative images are generic package visuals, not exact part photos.
+  const seoImage = getProductSeoImage(product);
+  if (seoImage) {
     meta.openGraph.images = [{
-      url: imageUrl,
-      alt: `${product.partNumber} ${product.manufacturer} Electronic Component`,
+      url: seoImage.url,
+      alt: seoImage.alt,
       width: 600,
       height: 600,
     }];
-    meta.twitter.images = [imageUrl];
+    meta.twitter.images = [seoImage.url];
   }
 
   return meta;
@@ -243,14 +267,9 @@ export function generateProductJsonLd(product) {
     offers,
   };
 
-  // Add product image — use generic component image as fallback for Rich Results
-  if (product.imageUrl) {
-    jsonLd.image = product.imageUrl.startsWith('http')
-      ? product.imageUrl
-      : `${SITE_URL}${product.imageUrl.startsWith('/') ? '' : '/'}${product.imageUrl}`;
-  } else {
-    jsonLd.image = `${SITE_URL}/og-image.png`;
-  }
+  // Prefer exact photos; fall back to package-family representative images.
+  const seoImage = getProductSeoImage(product);
+  jsonLd.image = seoImage?.url || `${SITE_URL}/og-image.png`;
 
   // Additional properties for richer structured data
   const additionalProperties = [];

@@ -21,6 +21,8 @@ import {
   getProductVisualType,
   getComponentSvg,
   generateProductAlt,
+  getProductDisplayImage,
+  generateRepresentativeImageAlt,
 } from '@/lib/component-images';
 
 export default function ProductImage({
@@ -35,24 +37,32 @@ export default function ProductImage({
   // Auto-generate alt text if not provided
   const altText = alt || generateProductAlt(product);
 
-  // If product has a real image, use it
-  if (product?.imageUrl) {
+  const displayImage = getProductDisplayImage(product);
+
+  // If product has a real image or a curated representative package image, use it
+  if (displayImage?.src) {
+    const imageAlt = displayImage.kind === 'exact'
+      ? altText
+      : (alt || generateRepresentativeImageAlt(product, displayImage));
+
     return (
       <div
-        className={`product-image-wrapper ${className}`}
+        className={`product-image-wrapper ${displayImage.kind === 'exact' ? '' : 'product-image-representative'} ${className}`}
         style={{
           width: size, height: size,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', borderRadius: variant === 'thumbnail' ? '6px' : '12px',
-          background: 'var(--color-bg-secondary)',
+          background: displayImage.kind === 'exact' ? 'var(--color-bg-secondary)' : '#F7F9FC',
+          border: displayImage.kind === 'exact' ? undefined : '1px solid var(--color-border)',
           ...style,
         }}
       >
         <img
-          src={product.imageUrl}
-          alt={altText}
+          src={displayImage.src}
+          alt={imageAlt}
           width={size}
           height={size}
+          decoding="async"
           style={{ objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }}
           loading={priority ? 'eager' : 'lazy'}
           {...(priority ? { fetchPriority: 'high' } : {})}

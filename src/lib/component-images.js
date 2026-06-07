@@ -1,4 +1,9 @@
 import { hasConfirmedStock } from './seo';
+export {
+  getProductRepresentativeImage,
+  getProductDisplayImage,
+  generateRepresentativeImageAlt,
+} from './product-image-resolver';
 
 /**
  * Component Image System — FPGACenter
