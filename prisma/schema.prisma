@@ -34,6 +34,17 @@ model Product {
   @@index([status])
   @@index([qualityScore])
   @@index([indexable])
+  // Composite indexes for the hot read paths at 700K+ rows:
+  // - related-products / same-manufacturer widgets sort by stock
+  // - category and manufacturer listings sort by partNumber
+  // - sitemap lastmod queries sort indexable rows by updatedAt
+  // - 404 page popular-parts widget filters status + sorts stock
+  @@index([categoryId, stock])
+  @@index([manufacturer, stock])
+  @@index([categoryId, partNumber])
+  @@index([manufacturer, partNumber])
+  @@index([indexable, updatedAt])
+  @@index([status, stock])
 }
 
 model Category {

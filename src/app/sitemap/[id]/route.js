@@ -1,6 +1,17 @@
+import { unstable_cache } from 'next/cache';
 import { getSitemapEntries, STATIC_CONTENT_DATE } from '@/lib/sitemap-data';
 
 export const dynamic = 'force-dynamic';
+
+// Each shard can require a heavy query (product shards page through 5000 rows;
+// category/manufacturer shards run GROUP BY lastmod maps). Cache per shard id
+// for 6h so crawler traffic doesn't hit Postgres per request. Dates survive the
+// cache as ISO strings, which formatDate() below already handles.
+const getCachedSitemapEntries = unstable_cache(
+  (id) => getSitemapEntries(id),
+  ['sitemap-entries'],
+  { revalidate: 21600, tags: ['sitemap'] }
+);
 
 function escapeXml(value) {
   return String(value)
@@ -20,7 +31,7 @@ function formatDate(value) {
 
 export async function GET(_request, { params }) {
   const { id } = await params;
-  const entries = await getSitemapEntries(id);
+  const entries = await getCachedSitemapEntries(id);
 
   if (entries.length === 0) {
     return new Response(

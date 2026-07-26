@@ -3,7 +3,7 @@ import { unstable_cache } from 'next/cache';
 import { SITE_NAME, SITE_URL, getAvailabilityText, hasConfirmedStock } from '@/lib/seo';
 import { getFpgaSeries, getSeriesStats } from '@/lib/fpga-growth';
 
-export const dynamic = 'force-dynamic';
+// ISR: regenerate at most hourly.
 export const revalidate = 3600;
 
 export const metadata = {

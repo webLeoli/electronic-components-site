@@ -6,7 +6,8 @@ import { notFound } from 'next/navigation';
 import { productPath, SITE_URL, SITE_NAME, hasConfirmedStock, getAvailabilityText } from '@/lib/seo';
 import { FALLBACK_BRANDS } from '@/lib/fallbacks';
 
-export const dynamic = 'force-dynamic';
+// Dynamic by inference (reads searchParams for pagination); page-independent
+// aggregates are cached per manufacturer below.
 
 function slugifyManufacturer(name) {
   return (name || 'unknown')
@@ -16,6 +17,21 @@ function slugifyManufacturer(name) {
     .replace(/^-|-$/g, '');
 }
 
+// Fallback list for manufacturers that exist in Product but have no
+// Manufacturer row yet. The DISTINCT is a full-table aggregate over 700K+ rows,
+// so it MUST be cached: uncached it was a per-request seq scan reachable by any
+// bogus /manufacturer/* URL (a trivial DB DoS via crawlers/scanners).
+const getDistinctManufacturerNames = unstable_cache(
+  async () => {
+    const rows = await prisma.$queryRawUnsafe(
+      `SELECT DISTINCT "manufacturer" FROM "Product" LIMIT 5000`
+    );
+    return rows.map(r => r.manufacturer);
+  },
+  ['distinct-manufacturer-fallback'],
+  { revalidate: 86400 }
+);
+
 const getManufacturer = cache(async (slug) => {
   const manufacturer = await prisma.manufacturer.findUnique({
     where: { slug },
@@ -23,12 +39,10 @@ const getManufacturer = cache(async (slug) => {
   });
   if (manufacturer) return manufacturer;
 
-  const distinctMfrs = await prisma.$queryRawUnsafe(
-    `SELECT DISTINCT "manufacturer" FROM "Product" LIMIT 5000`
-  );
-  const match = distinctMfrs.find(m => slugifyManufacturer(m.manufacturer) === slug);
+  const distinctNames = await getDistinctManufacturerNames();
+  const match = distinctNames.find(name => slugifyManufacturer(name) === slug);
   if (match) {
-    return { name: match.manufacturer, slug };
+    return { name: match, slug };
   }
 
   const brandName = FALLBACK_BRANDS.find(b => slugifyManufacturer(b) === slug);

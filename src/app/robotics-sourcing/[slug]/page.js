@@ -13,12 +13,12 @@ import {
   MIN_COUNT_FOR_DISPLAY,
 } from "@/lib/robotics-growth";
 
-export const dynamic = "force-dynamic";
+// On-demand ISR: built on first hit, then revalidated hourly.
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
-  // force-dynamic makes prerendering a no-op, so return [] like the
-  // fpga-sourcing twin instead of a slug list that would never be used.
+  // Empty list = on-demand ISR: pages build on first request (no DB needed at
+  // build time), then revalidate hourly. Same pattern as fpga-sourcing/[slug].
   // Only live subsystems have a real page; the rest route to RFQ from the hub.
   return [];
 }

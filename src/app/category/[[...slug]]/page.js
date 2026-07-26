@@ -9,7 +9,8 @@ import CategoryIcon from '@/components/CategoryIcon';
 import { ProductIcon } from '@/components/ProductImage';
 import { FALLBACK_CATEGORIES } from '@/lib/fallbacks';
 
-export const dynamic = 'force-dynamic';
+// Dynamic by inference (reads searchParams for pagination/filters); the
+// heavy data queries are cached below.
 export const revalidate = 3600;
 
 // ----------------------------------------------------------------------------

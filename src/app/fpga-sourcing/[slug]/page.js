@@ -4,7 +4,7 @@ import prisma from '@/lib/db';
 import { SITE_NAME, SITE_URL, productPath, getAvailabilityText, hasConfirmedStock } from '@/lib/seo';
 import { buildSeriesWhere, getFpgaSeriesBySlug } from '@/lib/fpga-growth';
 
-export const dynamic = 'force-dynamic';
+// On-demand ISR: built on first hit, then revalidated hourly.
 export const revalidate = 3600;
 
 export async function generateStaticParams() {

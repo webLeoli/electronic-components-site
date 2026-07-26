@@ -8,8 +8,8 @@ import { buildProgrammableLogicWhere, getFpgaSeries } from '@/lib/fpga-growth';
 import { getSubsystems } from '@/lib/robotics-growth';
 import { unstable_cache } from 'next/cache';
 
-// ISR: revalidate every 5 minutes
-export const dynamic = 'force-dynamic';
+// ISR: the homepage re-renders at most every 5 minutes; data-layer caches below
+// keep the expensive queries warm between regenerations.
 export const revalidate = 300;
 
 export const metadata = {

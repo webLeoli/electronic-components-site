@@ -7,7 +7,7 @@ import {
   MIN_COUNT_FOR_DISPLAY,
 } from "@/lib/robotics-growth";
 
-export const dynamic = "force-dynamic";
+// ISR: regenerate at most hourly.
 export const revalidate = 3600;
 
 export const metadata = {
