@@ -1,4 +1,5 @@
 import { cache } from 'react';
+import { escapeHtml } from '@/lib/text';
 import prisma from '@/lib/db';
 /* eslint-disable @next/next/no-img-element -- Blog cover images may be uploaded or externally hosted; remote image optimization is intentionally disabled. */
 import Link from 'next/link';
@@ -58,14 +59,6 @@ const BLOG_HTML_SANITIZE_OPTIONS = {
   },
 };
 
-function escapeHtmlText(value) {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 function legacyBlogImagePlaceholder(caption, theme) {
   const cleanCaption = String(caption || '')
@@ -74,7 +67,7 @@ function legacyBlogImagePlaceholder(caption, theme) {
     .trim();
   const title = cleanCaption || theme.title;
 
-  return `<div class="blog-inline-image-placeholder ${theme.className}"><span>${escapeHtmlText(theme.label)}</span><strong>${escapeHtmlText(title)}</strong></div>`;
+  return `<div class="blog-inline-image-placeholder ${theme.className}"><span>${escapeHtml(theme.label)}</span><strong>${escapeHtml(title)}</strong></div>`;
 }
 
 function replaceLegacyBlogImages(html, theme) {

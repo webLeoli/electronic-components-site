@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { formatCount } from '@/lib/text';
 import prisma from '@/lib/db';
 import { productPath, SITE_NAME, SITE_URL, SITE_DESC, SITE_TAGLINE, hasConfirmedStock, getAvailabilityText } from '@/lib/seo';
 import CategoryIcon from '@/components/CategoryIcon';
@@ -190,8 +191,9 @@ const getHomeData = unstable_cache(
         byParent.get(pid).push(cat);
       }
 
+      const catById = new Map(allCategories.map(c => [c.id, c]));
       function sumProducts(catId) {
-        const cat = allCategories.find(c => c.id === catId);
+        const cat = catById.get(catId);
         let total = cat?._count?.products || 0;
         const children = byParent.get(catId) || [];
         for (const child of children) {
@@ -233,11 +235,6 @@ const getHomeData = unstable_cache(
 );
 
 
-function formatCount(n) {
-  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M+`;
-  if (n >= 1000) return `${Math.round(n / 1000).toLocaleString()}K+`;
-  return n.toLocaleString();
-}
 
 export default async function HomePage() {
   const { categories, popularProducts, manufacturers, totalProducts, totalManufacturers } = await getHomeData();

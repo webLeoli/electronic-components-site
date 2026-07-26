@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { formatCount } from '@/lib/text';
 import { unstable_cache } from 'next/cache';
 import { SITE_NAME, SITE_URL, getAvailabilityText, hasConfirmedStock } from '@/lib/seo';
 import { getFpgaSeries, getSeriesStats } from '@/lib/fpga-growth';
@@ -32,11 +33,6 @@ const getLandingData = unstable_cache(
   { revalidate: 3600, tags: ['fpga-sourcing'] },
 );
 
-function formatCount(value) {
-  if (!value) return '0';
-  if (value >= 1000) return `${Math.round(value / 1000).toLocaleString()}K+`;
-  return value.toLocaleString();
-}
 
 export default async function FpgaSourcingPage() {
   const seriesStats = await getLandingData();

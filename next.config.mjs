@@ -3,6 +3,9 @@ const nextConfig = {
   // Explicitly normalize URLs — redirect /path/ → /path (prevents duplicate content)
   trailingSlash: false,
 
+  // Don't advertise the framework in response headers
+  poweredByHeader: false,
+
   // Compression — enable gzip/brotli at the framework level
   compress: true,
 
@@ -59,6 +62,15 @@ const nextConfig = {
         source: '/(robots.txt|sitemap.xml|sitemap:path*)',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=3600, s-maxage=3600' },
+        ],
+      },
+      {
+        // Static marketing images in /public (hero backgrounds, og-image,
+        // package photos) — without this Next serves them with max-age=0 and
+        // every page view revalidates a ~150KB background image.
+        source: '/:path*.(png|webp|jpg|jpeg|svg|gif)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400' },
         ],
       },
     ];

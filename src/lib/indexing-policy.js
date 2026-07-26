@@ -4,7 +4,7 @@ import { isIndexable } from '@/lib/quality-score';
 // Default threshold raised from 45 → 70 on 2026-05-17 to match the
 // Gold-tier strategy: only let products with score ≥ 70 into the index.
 // Silver (45-69) is now considered insufficient on its own; products must
-// either be rewritten by desc-templates.js v2 (which lifts them to Gold)
+// either be rewritten with richer generated descriptions (lifting them to Gold)
 // or stay out of the index.
 const DEFAULT_INDEX_THRESHOLD = 70;
 const THRESHOLD_KEY = 'quality_index_threshold';

@@ -9,6 +9,7 @@
  */
 
 import nodemailer from 'nodemailer';
+import { escapeHtml } from '@/lib/text';
 
 let _transporter = null;
 
@@ -79,18 +80,6 @@ export async function sendEmail({ to, subject, text, html }) {
   return false;
 }
 
-/**
- * Escape HTML special characters to prevent injection in email templates.
- */
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 /**
  * Send RFQ notification to admin

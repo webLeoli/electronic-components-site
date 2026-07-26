@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatCount } from '@/lib/text';
 import { SITE_NAME, SITE_URL } from "@/lib/seo";
 import {
   getSubsystems,
@@ -47,11 +48,6 @@ function getLandingData() {
   );
 }
 
-function formatCount(value) {
-  if (!value) return "0";
-  if (value >= 1000) return `${Math.round(value / 1000).toLocaleString()}K+`;
-  return value.toLocaleString();
-}
 
 export default async function RoboticsSourcingPage() {
   const subsystems = await getLandingData();

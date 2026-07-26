@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { formatCount } from '@/lib/text';
 import prisma from '@/lib/db';
 import { SITE_NAME, SITE_URL, SITE_DESC, generateOrganizationJsonLd } from '@/lib/seo';
 
@@ -107,11 +108,6 @@ const FAQS = [
   },
 ];
 
-function formatCount(n) {
-  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M+`;
-  if (n >= 1000) return `${Math.round(n / 1000).toLocaleString()}K+`;
-  return n.toLocaleString();
-}
 
 export const revalidate = 3600;
 

@@ -54,7 +54,13 @@ export default async function BlogPage({ searchParams }) {
   const [posts, total, categories] = await Promise.all([
     prisma.blogPost.findMany({
       where,
-      include: { category: { select: { name: true, slug: true } } },
+      // Explicit select: the card list never renders `content`, and pulling 12
+      // full article bodies per request is the page's biggest cost.
+      select: {
+        id: true, slug: true, title: true, excerpt: true, author: true,
+        coverImage: true, tags: true, readingTime: true, publishedAt: true,
+        category: { select: { name: true, slug: true } },
+      },
       orderBy: { publishedAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit,

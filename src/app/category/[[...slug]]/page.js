@@ -231,7 +231,13 @@ export default async function CategoryPage({ params, searchParams }) {
     orderBy,
     skip: (page - 1) * ITEMS_PER_PAGE,
     take: ITEMS_PER_PAGE,
-    include: { category: { select: { slug: true, name: true } } },
+    // Explicit select: without it every row drags along specs/datasheet blobs
+    // (multi-KB JSON) that the table renderer never reads.
+    select: {
+      partNumber: true, manufacturer: true, description: true, packageType: true,
+      mountType: true, status: true, minPrice: true, stock: true, moq: true,
+      imageUrl: true, category: { select: { slug: true, name: true } },
+    },
   });
 
   // Breadcrumb — flat URLs, hierarchy expressed via breadcrumb trail

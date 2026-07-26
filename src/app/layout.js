@@ -9,9 +9,10 @@ import CodeInjection from '@/components/CodeInjection';
 import { RfqCartProvider } from '@/lib/rfq-cart';
 import { SITE_NAME, SITE_DESC, SITE_URL, SITE_TAGLINE } from '@/lib/seo';
 
+// No `weight` array: this loads Inter's single variable-font file (all weights
+// in one woff2) instead of five separate static-weight files.
 const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
   variable: '--font-inter',
   display: 'swap',
 });
@@ -45,7 +46,7 @@ export const metadata = {
     description: SITE_DESC,
     images: [`${SITE_URL}/og-image.png`],
   },
-  // robots.txt is handled by src/app/robots.js
+  // robots.txt is handled by src/app/robots.txt/route.js
   // Note: do NOT set alternates.canonical here — it would be inherited by all
   // child pages as the homepage URL, causing massive canonical conflicts.
   // Each page sets its own canonical via page-level metadata.

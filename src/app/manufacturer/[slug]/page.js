@@ -140,7 +140,12 @@ export default async function ManufacturerPage({ params, searchParams }) {
     getManufacturerStats(manufacturer.name),
     prisma.product.findMany({
       where: { manufacturer: manufacturer.name },
-      include: { category: { select: { slug: true, name: true } } },
+      // Explicit select keeps specs/datasheet blobs out of the 20-row page.
+      select: {
+        partNumber: true, manufacturer: true, description: true, packageType: true,
+        mountType: true, status: true, minPrice: true, stock: true, moq: true,
+        imageUrl: true, category: { select: { slug: true, name: true } },
+      },
       orderBy: { partNumber: 'asc' },
       skip: (page - 1) * ITEMS_PER_PAGE,
       take: ITEMS_PER_PAGE,

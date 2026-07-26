@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { unstable_cache } from 'next/cache';
 import prisma from '@/lib/db';
 import { productPath } from '@/lib/seo';
 
@@ -7,16 +8,25 @@ export const metadata = {
   robots: { index: false, follow: true },
 };
 
-export default async function ProductNotFound() {
-  // Fetch popular products to reduce bounce rate
-  let hotProducts = [];
-  try {
-    hotProducts = await prisma.product.findMany({
+// 404s are exactly what crawlers/scanners generate in volume, and this list is
+// identical for every 404 - cache it instead of sorting the table per request.
+const getHotProducts = unstable_cache(
+  async () =>
+    prisma.product.findMany({
       where: { status: 'active', stock: { gt: 0 } },
       select: { partNumber: true, manufacturer: true, minPrice: true, stock: true },
       orderBy: { stock: 'desc' },
       take: 6,
-    });
+    }),
+  ['product-404-hot-products'],
+  { revalidate: 3600 }
+);
+
+export default async function ProductNotFound() {
+  // Fetch popular products to reduce bounce rate
+  let hotProducts = [];
+  try {
+    hotProducts = await getHotProducts();
   } catch {}
 
   return (
