@@ -52,9 +52,14 @@ export default function AdminBlogPage() {
           <h1>Blog Posts <span className="admin-count">({total})</span></h1>
           <p>Manage technical articles for SEO</p>
         </div>
-        <button className="admin-btn admin-btn-primary" onClick={() => router.push('/admin/blog/editor')}>
-          ✏️ New Article
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="admin-btn admin-btn-ghost" onClick={() => router.push('/admin/blog/generate')}>
+            🤖 AI Writer
+          </button>
+          <button className="admin-btn admin-btn-primary" onClick={() => router.push('/admin/blog/editor')}>
+            ✏️ New Article
+          </button>
+        </div>
       </div>
 
       <div className="admin-toolbar">

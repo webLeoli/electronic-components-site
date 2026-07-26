@@ -12,6 +12,7 @@
     "data:import": "node scripts/import-safe-data-package.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
     "@prisma/client": "5.22.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.3.1",

@@ -2,29 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
 import { revalidateBlog } from '@/lib/revalidate';
-
-// Strip dangerous HTML while preserving basic formatting tags
-function sanitizeHtml(html) {
-  if (!html) return '';
-  return html
-    .replace(/<script[\s>][\s\S]*?<\/script>/gi, '')
-    .replace(/<script[\s>][\s\S]*$/gi, '')
-    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-    .replace(/on\w+\s*=\s*[^\s>]+/gi, '')
-    .replace(/<iframe[\s>][\s\S]*?<\/iframe>/gi, '')
-    .replace(/<object[\s>][\s\S]*?<\/object>/gi, '')
-    .replace(/<embed[\s>][\s\S]*?>/gi, '')
-    .replace(/<link[\s>][\s\S]*?>/gi, '')
-    .replace(/javascript:/gi, '')
-    .replace(/data:text\/html/gi, '')
-    .replace(/vbscript:/gi, '');
-}
-
-// Helper: calculate reading time
-function calcReadingTime(content) {
-  const words = (content || '').split(/\s+/).filter(Boolean).length;
-  return Math.max(1, Math.ceil(words / 200));
-}
+import { stripDangerousHtml as sanitizeHtml, calcReadingTime } from '@/lib/blog-content';
 
 // GET: List blog posts
 export async function GET(request) {
