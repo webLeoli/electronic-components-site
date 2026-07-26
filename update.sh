@@ -24,7 +24,9 @@ BRANCH="${BRANCH:-master}"
 APP_NAME="${APP_NAME:-fpgacenter}"
 HEALTH_URL="${HEALTH_URL:-}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PRESERVE_PATHS="${PRESERVE_PATHS:-.env .env.local uploads public/uploads storage public/storage}"
+# NOTE: "data" holds customer RFQ BOM uploads (data/bom-uploads) - removing it
+# from this list would let FULL_CLEAN=1 permanently delete customer files.
+PRESERVE_PATHS="${PRESERVE_PATHS:-.env .env.local uploads public/uploads storage public/storage data}"
 PRESERVE_TMP=""
 
 cd "$SCRIPT_DIR"

@@ -80,3 +80,9 @@ next-env.d.ts
 
 # local UI/QA screenshots
 /screenshots/
+
+# playwright CLI debug artifacts
+/.playwright-cli/
+
+# misc local output
+/output/
