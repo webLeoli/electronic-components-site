@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { sendRfqNotification } from '@/lib/email';
-import { rateLimit } from '@/lib/rate-limit';
+import { sendContactNotification } from '@/lib/email';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 // IP-based rate limiter — max 5 submissions per hour per IP.
 // Backed by Redis when REDIS_URL is set (cluster-safe), in-memory otherwise.
@@ -9,8 +9,7 @@ const CONTACT_RATE_LIMIT = { windowMs: 60 * 60 * 1000, max: 5, prefix: 'contact'
 
 export async function POST(request) {
   try {
-    const forwarded = request.headers.get('x-forwarded-for');
-    const ip = forwarded ? forwarded.split(',')[0].trim() : 'unknown';
+    const ip = getClientIp(request);
 
     if (!(await rateLimit(ip, CONTACT_RATE_LIMIT))) {
       return NextResponse.json(
@@ -67,19 +66,11 @@ export async function POST(request) {
       // Continue even if DB save fails — email notification is more important
     }
 
-    // Send email notification to admin (reuse existing email infrastructure)
-    const notificationData = {
-      id: `CONTACT-${Date.now()}`,
-      name: contactData.name,
-      email: contactData.email,
-      company: contactData.company,
-      phone: contactData.phone,
-      parts: JSON.stringify([{ subject: contactData.subject, message: contactData.message }]),
-      message: `[Contact Form - ${contactData.subject}]\n\n${contactData.message}`,
-    };
-
-    // Fire and forget email
-    sendRfqNotification(notificationData).catch(() => {});
+    // Fire-and-forget admin notification with a dedicated contact template
+    // (the RFQ template rendered an empty parts table for contact messages).
+    sendContactNotification(contactData).catch(err =>
+      console.error('[Contact email] notification failed:', err)
+    );
 
     return NextResponse.json({
       success: true,

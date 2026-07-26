@@ -98,3 +98,21 @@ export async function rateLimit(identifier, { windowMs, max, prefix = 'rl' }) {
 
   return memCheck(key, windowMs, max);
 }
+
+/**
+ * Derive the client IP for rate-limit keying.
+ *
+ * The FIRST entry of x-forwarded-for is client-supplied and trivially
+ * spoofable — keying limits on it lets an attacker rotate the header and
+ * bypass every limit. Behind a reverse proxy (nginx/Caddy), the proxy APPENDS
+ * the address it actually saw as the LAST entry, so that is the only value we
+ * trust.
+ */
+export function getClientIp(request) {
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) {
+    const parts = forwarded.split(',').map((s) => s.trim()).filter(Boolean);
+    if (parts.length) return parts[parts.length - 1];
+  }
+  return request.headers.get('x-real-ip') || 'unknown';
+}

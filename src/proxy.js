@@ -9,12 +9,15 @@ const ROLE_RESTRICTED_PAGES = {
 };
 
 const SESSION_SECRET = process.env.SESSION_SECRET;
-const EFFECTIVE_SESSION_SECRET = SESSION_SECRET || 'dev-only-session-secret';
 const SESSION_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
 
-if (!SESSION_SECRET && process.env.NODE_ENV === 'production') {
-  throw new Error('SESSION_SECRET is required in production.');
+// Required in EVERY environment - a known fallback secret would allow forged
+// admin sessions whenever the env var is missing (see src/lib/admin-auth.js).
+if (!SESSION_SECRET) {
+  throw new Error('SESSION_SECRET environment variable is required. Set it in .env.');
 }
+
+const EFFECTIVE_SESSION_SECRET = SESSION_SECRET;
 
 /**
  * Verify a session token using Web Crypto API (Edge Runtime compatible).

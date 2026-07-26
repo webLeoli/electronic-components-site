@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 const SEARCH_RATE_LIMIT = { windowMs: 60 * 1000, max: 30, prefix: 'search' };
 const MIN_QUERY_LENGTH = 3;
@@ -17,8 +17,7 @@ const PRODUCT_SELECT = {
  */
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const forwarded = request.headers.get('x-forwarded-for');
-  const ip = forwarded ? forwarded.split(',')[0].trim() : 'unknown';
+  const ip = getClientIp(request);
   const q = (searchParams.get('q') || '').trim().substring(0, 100);
   const limit = Math.min(Math.max(parseInt(searchParams.get('limit')) || 20, 1), 25);
 

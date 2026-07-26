@@ -3,7 +3,7 @@ import prisma from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { getAdminSession } from '@/lib/admin-auth';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 const SESSION_SECRET = process.env.SESSION_SECRET;
 
@@ -26,15 +26,17 @@ function createSignedToken(userId, role) {
   return `${payload}:${hmac}`;
 }
 
-// --- Brute-force protection: IP-based rate limiting ---
+// --- Brute-force protection ---
 // Backed by Redis when REDIS_URL is set (cluster-safe), in-memory otherwise.
+// Two independent buckets: per-IP AND per-account, so neither rotating IPs nor
+// spraying many accounts from one IP gets unlimited attempts.
 const LOGIN_RATE_LIMIT = { windowMs: 15 * 60 * 1000, max: 5, prefix: 'login' };
+const LOGIN_USER_RATE_LIMIT = { windowMs: 15 * 60 * 1000, max: 10, prefix: 'login-user' };
 
 // POST: Login
 export async function POST(request) {
   try {
-    const forwarded = request.headers.get('x-forwarded-for');
-    const ip = forwarded ? forwarded.split(',')[0].trim() : 'unknown';
+    const ip = getClientIp(request);
 
     if (!(await rateLimit(ip, LOGIN_RATE_LIMIT))) {
       return NextResponse.json(
@@ -47,6 +49,13 @@ export async function POST(request) {
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email/Username and Password are required' }, { status: 400 });
+    }
+
+    if (!(await rateLimit(String(email).toLowerCase(), LOGIN_USER_RATE_LIMIT))) {
+      return NextResponse.json(
+        { error: 'Too many login attempts. Please try again in 15 minutes.' },
+        { status: 429 }
+      );
     }
 
     // Attempt 1: Multi-user mode via AdminUser table
@@ -83,9 +92,10 @@ export async function POST(request) {
     // or if the user simply types the master password (acting as master admin).
     if (email === 'admin' || !user) {
       let adminPassword = process.env.ADMIN_PASSWORD || null;
+      let fromDb = false;
       try {
         const setting = await prisma.adminSetting.findUnique({ where: { key: 'admin_password' } });
-        if (setting) adminPassword = setting.value;
+        if (setting) { adminPassword = setting.value; fromDb = true; }
       } catch {}
 
       if (!adminPassword) {
@@ -93,13 +103,28 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Admin login is not configured' }, { status: 503 });
       }
 
-      // Timing-safe comparison to prevent timing attacks on password.
-      // Compare byte lengths (not string .length) so the guard matches the
-      // buffers handed to timingSafeEqual — they can differ for non-ASCII input.
-      const passwordBuf = Buffer.from(password);
-      const adminPasswordBuf = Buffer.from(adminPassword);
-      const passwordMatch = passwordBuf.length === adminPasswordBuf.length &&
-        crypto.timingSafeEqual(passwordBuf, adminPasswordBuf);
+      // DB-stored master passwords are bcrypt hashes ($2...). Plaintext values
+      // (legacy rows, or the ADMIN_PASSWORD env var) are compared timing-safe;
+      // a matching plaintext DB row is upgraded to a hash on the spot so the
+      // cleartext credential disappears from the database.
+      let passwordMatch = false;
+      if (adminPassword.startsWith('$2')) {
+        passwordMatch = await bcrypt.compare(password, adminPassword);
+      } else {
+        const passwordBuf = Buffer.from(password);
+        const adminPasswordBuf = Buffer.from(adminPassword);
+        passwordMatch = passwordBuf.length === adminPasswordBuf.length &&
+          crypto.timingSafeEqual(passwordBuf, adminPasswordBuf);
+        if (passwordMatch && fromDb) {
+          try {
+            const hashed = await bcrypt.hash(password, 10);
+            await prisma.adminSetting.update({
+              where: { key: 'admin_password' },
+              data: { value: hashed },
+            });
+          } catch {}
+        }
+      }
       if (passwordMatch) {
         const token = createSignedToken(0, 'admin');
         const response = NextResponse.json({

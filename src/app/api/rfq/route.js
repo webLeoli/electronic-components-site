@@ -5,7 +5,7 @@ import path from 'path';
 import crypto from 'crypto';
 import prisma from '@/lib/db';
 import { sendRfqNotification, sendRfqConfirmation } from '@/lib/email';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 // Derive a precise channel label from tracking data — 5-layer priority
 function deriveSourceChannel(tracking) {
@@ -216,9 +216,7 @@ function generateSecureFilename(ext) {
 
 export async function POST(request) {
   try {
-    // Get client IP
-    const forwarded = request.headers.get('x-forwarded-for');
-    const ip = forwarded ? forwarded.split(',')[0].trim() : 'unknown';
+    const ip = getClientIp(request);
     const userAgent = request.headers.get('user-agent') || '';
 
     // Rate limit check
@@ -408,10 +406,12 @@ export async function POST(request) {
       },
     });
 
-    // Send email notifications (only for non-spam, fire and forget)
+    // Send email notifications (only for non-spam, fire and forget).
+    // .catch is mandatory: an unhandled rejection here (bad SMTP config, TLS
+    // error thrown before sendEmail's own retry loop) would crash the process.
     if (!isSpam) {
-      sendRfqNotification(rfq);   // Notify admin
-      sendRfqConfirmation(rfq);   // Confirm to customer
+      sendRfqNotification(rfq).catch(err => console.error('[RFQ email] admin notification failed:', err));
+      sendRfqConfirmation(rfq).catch(err => console.error('[RFQ email] customer confirmation failed:', err));
     }
 
     return NextResponse.json({

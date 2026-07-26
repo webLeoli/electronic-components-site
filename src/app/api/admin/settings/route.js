@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiError } from '@/lib/api-error';
 import prisma from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { getAdminSession } from '@/lib/admin-auth';
@@ -49,19 +50,25 @@ export async function PUT(request) {
         return NextResponse.json({ error: 'Admin password is not configured' }, { status: 503 });
       }
 
-      if (currentPassword !== adminPassword) {
+      // Stored value may be a bcrypt hash ($2...) or a legacy plaintext value.
+      const currentOk = adminPassword.startsWith('$2')
+        ? await bcrypt.compare(currentPassword || '', adminPassword)
+        : currentPassword === adminPassword;
+      if (!currentOk) {
         return NextResponse.json({ error: 'Current password is incorrect' }, { status: 401 });
       }
 
+      // Always store the new master password as a bcrypt hash - never plaintext.
+      const hashedNew = await bcrypt.hash(newPassword, 10);
       await prisma.adminSetting.upsert({
         where: { key: 'admin_password' },
-        update: { value: newPassword },
-        create: { key: 'admin_password', value: newPassword },
+        update: { value: hashedNew },
+        create: { key: 'admin_password', value: hashedNew },
       });
 
       return NextResponse.json({ success: true, message: 'Password updated successfully' });
     }
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/settings');
   }
 }

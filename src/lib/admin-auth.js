@@ -10,11 +10,14 @@ import crypto from 'crypto';
 
 const SESSION_SECRET = process.env.SESSION_SECRET;
 
-if (!SESSION_SECRET && process.env.NODE_ENV === 'production') {
-  throw new Error('SESSION_SECRET is required in production.');
+// Required in EVERY environment. A publicly-known fallback secret would let
+// anyone forge an admin session on any deploy where the env var is missing
+// (e.g. NODE_ENV accidentally unset on a VPS).
+if (!SESSION_SECRET) {
+  throw new Error('SESSION_SECRET environment variable is required. Set it in .env.');
 }
 
-const EFFECTIVE_SESSION_SECRET = SESSION_SECRET || 'dev-only-session-secret';
+const EFFECTIVE_SESSION_SECRET = SESSION_SECRET;
 const SESSION_MAX_AGE = 24 * 60 * 60 * 1000;
 
 /**

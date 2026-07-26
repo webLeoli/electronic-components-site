@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiError } from '@/lib/api-error';
 import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-auth';
 import { revalidateBlog } from '@/lib/revalidate';
@@ -57,7 +58,7 @@ export async function PUT(request) {
     const saved = await saveAiWriterConfig(body);
     return NextResponse.json({ config: maskAiWriterConfig(saved) });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/blog/generate');
   }
 }
 
@@ -139,6 +140,6 @@ export async function POST(request) {
       { status: 201 },
     );
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/blog/generate');
   }
 }
