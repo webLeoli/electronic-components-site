@@ -41,7 +41,7 @@ const SECTIONS = [
   },
   {
     title: '5. Cookies and Tracking',
-    content: `Our website uses cookies and similar technologies to enhance your experience:\n\n• **Essential Cookies**: Necessary for website functionality (session management, authentication).\n• **Analytics Cookies**: Help us understand how visitors use our site (Google Analytics). These collect anonymized data.\n• **Preference Cookies**: Remember your settings and preferences.\n\nYou can control cookies through your browser settings. Disabling cookies may affect some website functionality. We do not use cookies for targeted advertising.`,
+    content: `Our website uses cookies and similar technologies to enhance your experience:\n\n• **Essential Cookies**: Necessary for website functionality (session management, authentication).\n• **Analytics Cookies and Local Storage**: Help us understand how visitors use our site (Google Analytics, plus our own first-party analytics stored in your browser's local storage). Our first-party analytics record pages viewed, searches, referral source, and device type during your visit; if you submit a quote request, this visit context is attached to it so we can serve you better.\n• **Preference Cookies**: Remember your settings and preferences.\n\nYou can control cookies through your browser settings. Disabling cookies may affect some website functionality. We do not use cookies for targeted advertising.`,
   },
   {
     title: '6. Your Rights',
@@ -49,7 +49,7 @@ const SECTIONS = [
   },
   {
     title: '7. Data Retention',
-    content: `We retain your personal information for as long as necessary to fulfill the purposes described in this policy:\n\n• **Account Data**: Retained while your account is active, plus 3 years after account closure.\n• **Order Records**: Retained for 7 years for tax and legal compliance.\n• **RFQ Data**: Retained for 2 years after the last interaction.\n• **Marketing Preferences**: Until you unsubscribe or request deletion.\n• **Website Analytics**: Anonymized data retained for 26 months.`,
+    content: `We retain your personal information for as long as necessary to fulfill the purposes described in this policy:\n\n• **Account Data**: Retained while your account is active, plus 3 years after account closure.\n• **Order Records**: Retained for 7 years for tax and legal compliance.\n• **RFQ Data**: Business records are retained for the life of the inquiry; associated technical data (IP address, browser details, visit context) is removed after 24 months.\n• **Marketing Preferences**: Until you unsubscribe or request deletion.\n• **Website Analytics**: Retained for up to 26 months, after which it is deleted or anonymized.`,
   },
   {
     title: '8. International Data Transfers',
