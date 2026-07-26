@@ -87,6 +87,22 @@ export function requireAuth(request) {
 }
 
 /**
+ * Guard: require a role that may write content (admin or editor).
+ * Route-level defense in depth: the edge proxy also blocks viewer writes, but
+ * mutating handlers must not depend on the proxy matcher staying intact.
+ */
+export function requireEditor(request) {
+  const session = getAdminSession(request);
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized — please log in' }, { status: 401 });
+  }
+  if (session.role !== 'admin' && session.role !== 'editor') {
+    return NextResponse.json({ error: 'Forbidden — write access requires editor role' }, { status: 403 });
+  }
+  return null;
+}
+
+/**
  * Guard: require admin role specifically.
  * Returns 401 if not authenticated, 403 if insufficient role.
  */

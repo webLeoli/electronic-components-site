@@ -13,12 +13,21 @@ export async function GET(request) {
       orderBy: { partNumber: 'asc' },
     });
 
-    // Build CSV
+    // Build CSV. Every cell is quote-escaped, and cells starting with a
+    // formula trigger character (= + - @ tab CR) get a leading apostrophe so
+    // Excel/Sheets treat them as text - a part number like "=CMD(...)" must
+    // never execute on an admin's machine (CSV formula injection).
+    const csvCell = (value) => {
+      let s = String(value ?? '');
+      if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+      return `"${s.replace(/"/g, '""')}"`;
+    };
+
     const headers = ['Part Number', 'Manufacturer', 'Description', 'Category', 'Status', 'Stock', 'Min Price', 'MOQ', 'Lead Time', 'Package', 'Mount Type', 'Datasheet', 'Image URL'];
     const rows = products.map(p => [
       p.partNumber,
       p.manufacturer || '',
-      (p.description || '').replace(/"/g, '""'),
+      p.description || '',
       p.category?.name || '',
       p.status,
       p.stock || 0,
@@ -33,7 +42,7 @@ export async function GET(request) {
 
     const csv = [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+      ...rows.map(row => row.map(csvCell).join(',')),
     ].join('\n');
 
     return new Response(csv, {

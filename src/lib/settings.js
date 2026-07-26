@@ -8,8 +8,20 @@ let settingsCache = null;
 let cacheExpiry = 0;
 const CACHE_TTL = 30 * 1000; // 30 seconds — short enough for multi-process deployments
 
+// Only non-secret, render-relevant keys are ever loaded into this cache.
+// adminSetting also stores secrets (the hashed master password, AI provider
+// API keys in ai_writer_config) - those must never ride along in an object
+// that gets passed into server components, where one careless spread would
+// ship them to the client.
+const SAFE_SETTING_KEYS = [
+  'ga_measurement_id',
+  'gsc_verification',
+  'fb_pixel_id',
+  'custom_head_code',
+];
+
 /**
- * Get all admin settings as a key-value object.
+ * Get safe (non-secret) admin settings as a key-value object.
  * Cached for 30s to reduce DB load while staying reasonably fresh.
  */
 export async function getSettings() {
@@ -19,7 +31,9 @@ export async function getSettings() {
   }
 
   try {
-    const rows = await prisma.adminSetting.findMany();
+    const rows = await prisma.adminSetting.findMany({
+      where: { key: { in: SAFE_SETTING_KEYS } },
+    });
     const settings = {};
     for (const row of rows) {
       settings[row.key] = row.value;

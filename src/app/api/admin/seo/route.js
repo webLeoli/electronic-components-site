@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { requireAuth } from '@/lib/admin-auth';
+import { requireAuth, requireAdmin } from '@/lib/admin-auth';
 import { getSitemapSummary } from '@/lib/sitemap-data';
 
 export async function GET(request) {
@@ -29,7 +29,8 @@ export async function GET(request) {
 }
 
 export async function PUT(request) {
-  const authError = requireAuth(request);
+  // requireAdmin: robots.txt/sitemap settings can deindex the whole site.
+  const authError = requireAdmin(request);
   if (authError) return authError;
   try {
     const body = await request.json();

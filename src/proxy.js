@@ -117,6 +117,19 @@ export async function proxy(request) {
 
     // Role-based access control for write operations
     if (request.method !== 'GET') {
+      // CSRF second layer on top of sameSite=lax: when a browser sends an
+      // Origin header on a mutating request, it must match our own host.
+      // Requests without an Origin (curl, server-to-server) pass through -
+      // they cannot carry a victim's cookie anyway.
+      const origin = request.headers.get('origin');
+      if (origin) {
+        let originHost = null;
+        try { originHost = new URL(origin).host; } catch {}
+        if (originHost !== request.nextUrl.host) {
+          return NextResponse.json({ error: 'Cross-origin request rejected' }, { status: 403 });
+        }
+      }
+
       // Viewers can only read
       if (role === 'viewer') {
         return NextResponse.json({ error: 'Viewer accounts have read-only access' }, { status: 403 });

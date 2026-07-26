@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { apiError } from '@/lib/api-error';
 import prisma from '@/lib/db';
 import { invalidateSettingsCache } from '@/lib/settings';
-import { requireAuth, requireAdmin } from '@/lib/admin-auth';
+import { requireAdmin } from '@/lib/admin-auth';
 
 // Code integration setting keys
 const CODE_KEYS = [
@@ -14,7 +14,7 @@ const CODE_KEYS = [
 
 // GET: Load all code integration settings
 export async function GET(request) {
-  const authError = requireAuth(request);
+  const authError = requireAdmin(request);
   if (authError) return authError;
   try {
     const settings = await prisma.adminSetting.findMany({

@@ -3,7 +3,7 @@ import { apiError } from '@/lib/api-error';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
-import { requireAuth } from '@/lib/admin-auth';
+import { requireEditor } from '@/lib/admin-auth';
 import {
   buildImageAlt,
   buildSeoImageName,
@@ -15,7 +15,7 @@ import {
 // POST: Upload blog image file. Videos are intentionally not accepted here
 // because blog uploads live on the app server and can grow too quickly.
 export async function POST(request) {
-  const authError = requireAuth(request);
+  const authError = requireEditor(request);
   if (authError) return authError;
   try {
     const formData = await request.formData();

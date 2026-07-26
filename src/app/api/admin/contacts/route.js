@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { requireAuth } from '@/lib/admin-auth';
+import { requireAuth, requireEditor } from '@/lib/admin-auth';
 
 export async function GET(request) {
   const authError = requireAuth(request);
@@ -31,7 +31,7 @@ export async function GET(request) {
 }
 
 export async function PUT(request) {
-  const authError = requireAuth(request);
+  const authError = requireEditor(request);
   if (authError) return authError;
 
   try {
@@ -55,7 +55,7 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
-  const authError = requireAuth(request);
+  const authError = requireEditor(request);
   if (authError) return authError;
 
   try {

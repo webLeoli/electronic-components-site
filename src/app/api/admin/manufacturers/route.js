@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { apiError } from '@/lib/api-error';
 import prisma from '@/lib/db';
-import { requireAuth } from '@/lib/admin-auth';
+import { requireAuth, requireEditor } from '@/lib/admin-auth';
 import { manufacturerSlug } from '@/lib/manufacturer-map';
 import { revalidateManufacturer, revalidateAllProducts } from '@/lib/revalidate';
 
@@ -34,7 +34,7 @@ export async function GET(request) {
 
 // POST: Create manufacturer
 export async function POST(request) {
-  const authError = requireAuth(request);
+  const authError = requireEditor(request);
   if (authError) return authError;
   try {
     const data = await request.json();
@@ -66,7 +66,7 @@ export async function POST(request) {
 
 // PUT: Update manufacturer
 export async function PUT(request) {
-  const authError = requireAuth(request);
+  const authError = requireEditor(request);
   if (authError) return authError;
   try {
     const data = await request.json();
@@ -121,7 +121,7 @@ export async function PUT(request) {
 
 // DELETE: Delete manufacturer
 export async function DELETE(request) {
-  const authError = requireAuth(request);
+  const authError = requireEditor(request);
   if (authError) return authError;
   try {
     const { searchParams } = new URL(request.url);

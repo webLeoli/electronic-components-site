@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { apiError } from '@/lib/api-error';
 import { revalidatePath } from 'next/cache';
-import { requireAuth } from '@/lib/admin-auth';
+import { requireEditor } from '@/lib/admin-auth';
 
 /**
  * POST /api/admin/revalidate
@@ -13,7 +13,7 @@ import { requireAuth } from '@/lib/admin-auth';
  *   { "all": true }                              — refresh the entire site (root layout)
  */
 export async function POST(request) {
-  const authError = requireAuth(request);
+  const authError = requireEditor(request);
   if (authError) return authError;
 
   try {
