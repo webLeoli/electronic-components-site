@@ -5,6 +5,7 @@ import CategoryIcon from '@/components/CategoryIcon';
 import { ProductIcon } from '@/components/ProductImage';
 import { FALLBACK_CATEGORIES, FALLBACK_PARTS, FALLBACK_BRANDS } from '@/lib/fallbacks';
 import { buildProgrammableLogicWhere, getFpgaSeries } from '@/lib/fpga-growth';
+import { getSubsystems } from '@/lib/robotics-growth';
 import { unstable_cache } from 'next/cache';
 
 // ISR: revalidate every 5 minutes
@@ -12,20 +13,20 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 300;
 
 export const metadata = {
-  title: `${SITE_NAME} — Legacy FPGA & CPLD Sourcing`,
+  title: `${SITE_NAME} - Legacy FPGA & CPLD Sourcing`,
   description: SITE_DESC,
   alternates: { canonical: SITE_URL },
   openGraph: {
-    title: `${SITE_NAME} — Legacy FPGA & CPLD Sourcing`,
+    title: `${SITE_NAME} - Legacy FPGA & CPLD Sourcing`,
     description: SITE_DESC,
     url: SITE_URL,
     siteName: SITE_NAME,
     type: 'website',
-    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: `${SITE_NAME} — Obsolete & FPGA Component Sourcing` }],
+    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: `${SITE_NAME} - Obsolete & FPGA Component Sourcing` }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${SITE_NAME} — Legacy FPGA & CPLD Sourcing`,
+    title: `${SITE_NAME} - Legacy FPGA & CPLD Sourcing`,
     description: SITE_DESC,
     images: [`${SITE_URL}/og-image.png`],
   },
@@ -53,6 +54,7 @@ const PRODUCT_SELECT = {
 };
 
 const FPGA_SERIES_SHORTCUTS = getFpgaSeries().slice(0, 8);
+const ROBOTICS_SUBSYSTEM_SHORTCUTS = getSubsystems();
 
 function getDailyRotationKey(date = new Date()) {
   return date.toISOString().slice(0, 10);
@@ -180,7 +182,7 @@ const getHomeData = unstable_cache(
       ]);
 
       // Build recursive product count for L1 categories
-      // L1 → sum of (L2 children → sum of L3 children direct product counts)
+      // L1 sums L2 children and their L3 direct product counts.
       const byParent = new Map();
       for (const cat of allCategories) {
         const pid = cat.parentId || '__root__';
@@ -315,6 +317,10 @@ export default async function HomePage() {
               <span>FPGA</span>
               <strong>Legacy FPGA/CPLD sourcing</strong>
             </Link>
+            <Link href="/robotics-sourcing" className="home-service-nav-item">
+              <span>Robotics</span>
+              <strong>Chinese alternatives for robot BOMs</strong>
+            </Link>
             <Link href="/manufacturers" className="home-service-nav-item">
               <span>Brands</span>
               <strong>Xilinx, Altera, Lattice lines</strong>
@@ -339,7 +345,7 @@ export default async function HomePage() {
               <h2 className="section-title">Featured FPGA and CPLD parts</h2>
               <p className="section-subtitle">Programmable logic quote targets with stock, package, and lifecycle signals</p>
             </div>
-            <Link href="/fpga-sourcing" className="view-all">View FPGA Sourcing →</Link>
+            <Link href="/fpga-sourcing" className="view-all">View FPGA Sourcing</Link>
           </div>
 
           <div className="table-wrapper">
@@ -366,7 +372,7 @@ export default async function HomePage() {
                       </div>
                     </td>
                     <td>{part.manufacturer}</td>
-                    <td>{part.category?.name || '—'}</td>
+                    <td>{part.category?.name || '-'}</td>
                     <td>{part.packageType || 'Check'}</td>
                     <td>
                       <span className={hasConfirmedStock(part) ? 'text-success' : 'text-muted'}>
@@ -407,7 +413,7 @@ export default async function HomePage() {
               <h2 className="section-title">High-intent FPGA and CPLD families</h2>
               <p className="section-subtitle">Built for the searches procurement teams use when an exact programmable logic part is constrained.</p>
             </div>
-            <Link href="/fpga-sourcing" className="view-all">All FPGA Series →</Link>
+            <Link href="/fpga-sourcing" className="view-all">All FPGA Series</Link>
           </div>
 
           <div className="series-grid compact">
@@ -422,6 +428,37 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Robotics alternatives */}
+      <section className="section" id="robotics-sourcing-section">
+        <div className="container">
+          <div className="section-header">
+            <div>
+              <h2 className="section-title">Robotics Chinese alternative sourcing</h2>
+              <p className="section-subtitle">Cross-reference Western robot BOM parts to vetted Chinese functional alternatives for new and cost-down designs.</p>
+            </div>
+            <Link href="/robotics-sourcing" className="view-all">Robotics Sourcing</Link>
+          </div>
+
+          <div className="series-grid compact">
+            {ROBOTICS_SUBSYSTEM_SHORTCUTS.map(subsystem => (
+              <Link
+                href={subsystem.live ? `/robotics-sourcing/${subsystem.slug}` : `/rfq?category=${encodeURIComponent(subsystem.shortTitle + ' Alternatives')}`}
+                key={subsystem.slug}
+                className="series-card"
+              >
+                <span className="series-family">{subsystem.family}</span>
+                <h3>{subsystem.shortTitle}</h3>
+                <p>{subsystem.role}</p>
+                <div className="series-card-stats">
+                  <span>{subsystem.chineseBrands.join(' / ')}</span>
+                  <span>{subsystem.live ? 'Guide live' : 'RFQ on request'}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Product Categories */}
       <section className="section" style={{ background: 'var(--color-bg-secondary)' }} id="categories-section">
         <div className="container">
@@ -430,7 +467,7 @@ export default async function HomePage() {
               <h2 className="section-title">Browse supporting component categories</h2>
               <p className="section-subtitle">Use category pages for BOM completion after the FPGA/CPLD sourcing path.</p>
             </div>
-            <Link href="/category" className="view-all">All Categories →</Link>
+            <Link href="/category" className="view-all">All Categories</Link>
           </div>
 
           <div className="category-grid">
@@ -485,7 +522,7 @@ export default async function HomePage() {
               <h2 className="section-title">Manufacturer coverage</h2>
               <p className="section-subtitle">Xilinx, Altera, Intel, Lattice, Microchip, Actel, and broader BOM support across {formatCount(totalManufacturers)} manufacturers</p>
             </div>
-            <Link href="/manufacturers" className="view-all">All Manufacturers →</Link>
+            <Link href="/manufacturers" className="view-all">All Manufacturers</Link>
           </div>
 
           <div className="brands-marquee-wrapper">
@@ -518,7 +555,7 @@ export default async function HomePage() {
               Send the exact ordering code, target quantity, package preference, date-code requirement, or a full BOM. Our team will confirm stock, lead time, MOQ, pricing, and alternates.
             </p>
             <div style={{ display: 'flex', gap: 'var(--space-md)', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link href="/rfq?category=FPGA%20and%20CPLD" className="btn btn-primary btn-lg">Submit FPGA RFQ →</Link>
+              <Link href="/rfq?category=FPGA%20and%20CPLD" className="btn btn-primary btn-lg">Submit FPGA RFQ</Link>
               <Link href="/contact" className="btn btn-secondary btn-lg">Contact Sales</Link>
             </div>
           </div>

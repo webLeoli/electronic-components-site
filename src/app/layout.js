@@ -63,6 +63,8 @@ export default function RootLayout({ children }) {
           '@context': 'https://schema.org',
           '@type': 'SiteNavigationElement',
           name: [
+            'FPGA & CPLD Sourcing',
+            'Robotics Component Sourcing',
             'Electronic Component Categories',
             'Request for Quote',
             'BOM Quote Tool',
@@ -73,6 +75,8 @@ export default function RootLayout({ children }) {
             'Contact Us',
           ],
           url: [
+            `${SITE_URL}/fpga-sourcing`,
+            `${SITE_URL}/robotics-sourcing`,
             `${SITE_URL}/category`,
             `${SITE_URL}/rfq`,
             `${SITE_URL}/bom`,

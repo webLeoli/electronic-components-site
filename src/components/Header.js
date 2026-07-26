@@ -7,6 +7,7 @@ import RfqCartIndicator from './RfqCartIndicator';
 // Main visible categories. Keep FPGA/CPLD first because it is the site's growth wedge.
 const MAIN_CATEGORIES = [
   { name: 'FPGA/CPLD', href: '/fpga-sourcing', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 20v3"/><path d="M15 20v3"/><path d="M1 9h3"/><path d="M1 15h3"/><path d="M20 9h3"/><path d="M20 15h3"/></svg> },
+  { name: 'Robotics', href: '/robotics-sourcing', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8V4"/><path d="M8 4h8"/><rect x="5" y="8" width="14" height="10" rx="2"/><path d="M9 13h.01"/><path d="M15 13h.01"/><path d="M8 18v2"/><path d="M16 18v2"/></svg> },
   { name: 'Embedded', slug: 'embedded', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/></svg> },
   { name: 'Power', slug: 'power-management', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
   { name: 'Memory', slug: 'memory', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="10" rx="2" ry="2"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/></svg> },
@@ -146,7 +147,7 @@ export default function Header() {
                   className="cat-more-item cat-more-all"
                   onClick={() => setMoreOpen(false)}
                 >
-                  All Categories →
+                  All Categories
                 </Link>
               </div>
             )}

@@ -2867,7 +2867,7 @@ select.input option {
 }
 
 .product-faq-item[open] .product-faq-q::after {
-  content: '−';
+  content: '-';
   color: var(--color-accent);
 }
 
@@ -3961,7 +3961,7 @@ a {
   border-radius: 10px;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16);
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   overflow: hidden;
 }
 
@@ -4143,8 +4143,14 @@ a {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .home-service-nav-item:nth-child(2) {
+  .home-service-nav-item:nth-child(even) {
     border-right: 0;
+  }
+
+  /* 5 items in a 2-col grid: let the last one fill its row instead of leaving
+     an empty cell. */
+  .home-service-nav-item:last-child {
+    grid-column: 1 / -1;
   }
 }
 

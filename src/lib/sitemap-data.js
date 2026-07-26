@@ -1,15 +1,21 @@
 import prisma from '@/lib/db';
 import { productPath, SITE_URL } from '@/lib/seo';
 import { getFpgaSeries } from '@/lib/fpga-growth';
+import { getLiveSubsystems } from '@/lib/robotics-growth';
 
 const MAX_URLS_PER_SITEMAP = 50000;
 const PRODUCTS_PER_SITEMAP = 5000;
-const STATIC_CONTENT_DATE = '2025-04-01T00:00:00.000Z';
+// Bump this whenever static-page content meaningfully changes (new pages added,
+// sitewide nav/layout changes). A stale value makes new URLs enter the sitemap
+// with a lastmod predating their existence, which teaches crawlers to distrust
+// the field sitewide.
+const STATIC_CONTENT_DATE = '2026-07-26T00:00:00.000Z';
 
 const STATIC_PAGES = [
   { path: '', changeFrequency: 'daily', priority: 1.0 },
   { path: '/category', changeFrequency: 'weekly', priority: 0.9 },
   { path: '/fpga-sourcing', changeFrequency: 'weekly', priority: 0.95 },
+  { path: '/robotics-sourcing', changeFrequency: 'weekly', priority: 0.9 },
   { path: '/manufacturers', changeFrequency: 'weekly', priority: 0.8 },
   { path: '/rfq', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/bom', changeFrequency: 'monthly', priority: 0.6 },
@@ -116,8 +122,13 @@ function getStaticPages() {
     changeFrequency: 'weekly',
     priority: 0.85,
   }));
+  const roboticsSubsystemPages = getLiveSubsystems().map(subsystem => ({
+    path: `/robotics-sourcing/${subsystem.slug}`,
+    changeFrequency: 'weekly',
+    priority: 0.8,
+  }));
 
-  return [...STATIC_PAGES, ...fpgaSeriesPages].map(page => ({
+  return [...STATIC_PAGES, ...fpgaSeriesPages, ...roboticsSubsystemPages].map(page => ({
     url: `${SITE_URL}${page.path}`,
     lastModified: STATIC_CONTENT_DATE,
     changeFrequency: page.changeFrequency,

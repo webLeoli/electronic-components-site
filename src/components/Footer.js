@@ -37,6 +37,7 @@ export default function Footer() {
           <div className="footer-col">
             <h4>Products</h4>
             <Link href="/fpga-sourcing">FPGA &amp; CPLD Sourcing</Link>
+            <Link href="/robotics-sourcing">Robotics Alternatives</Link>
             <Link href="/category/embedded">Embedded &amp; Programmable</Link>
             <Link href="/category/power-management">Power Management</Link>
             <Link href="/category/memory">Memory ICs</Link>
@@ -49,6 +50,7 @@ export default function Footer() {
             <h4>Procurement</h4>
             <Link href="/rfq">Request a Quote</Link>
             <Link href="/bom">Upload BOM</Link>
+            <Link href="/robotics-sourcing/fpga-logic">Robotics FPGA Alternatives</Link>
             <Link href="/fpga-sourcing/xilinx-spartan-6">Spartan-6 Sourcing</Link>
             <Link href="/fpga-sourcing/altera-cyclone">Cyclone FPGA Sourcing</Link>
             <Link href="/search">Part Search</Link>
