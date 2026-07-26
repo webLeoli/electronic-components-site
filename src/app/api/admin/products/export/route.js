@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiError } from '@/lib/api-error';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
 
@@ -42,6 +43,6 @@ export async function GET(request) {
       },
     });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/products/export');
   }
 }

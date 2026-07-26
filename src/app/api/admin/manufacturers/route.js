@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiError } from '@/lib/api-error';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
 import { manufacturerSlug } from '@/lib/manufacturer-map';
@@ -27,7 +28,7 @@ export async function GET(request) {
 
     return NextResponse.json({ manufacturers: enriched });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/manufacturers');
   }
 }
 
@@ -59,7 +60,7 @@ export async function POST(request) {
     return NextResponse.json(manufacturer, { status: 201 });
   } catch (e) {
     if (e.code === 'P2002') return NextResponse.json({ error: 'Manufacturer already exists' }, { status: 409 });
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/manufacturers');
   }
 }
 
@@ -114,7 +115,7 @@ export async function PUT(request) {
 
     return NextResponse.json(manufacturer);
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/manufacturers');
   }
 }
 
@@ -132,6 +133,6 @@ export async function DELETE(request) {
     if (existing) revalidateManufacturer(existing.slug);
     return NextResponse.json({ success: true });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/manufacturers');
   }
 }

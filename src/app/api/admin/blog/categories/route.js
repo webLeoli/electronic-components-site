@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiError } from '@/lib/api-error';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
 
@@ -12,7 +13,7 @@ export async function GET(request) {
     });
     return NextResponse.json({ categories });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/blog/categories');
   }
 }
 
@@ -27,7 +28,7 @@ export async function POST(request) {
     return NextResponse.json(cat, { status: 201 });
   } catch (e) {
     if (e.code === 'P2002') return NextResponse.json({ error: 'Category already exists' }, { status: 409 });
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/blog/categories');
   }
 }
 
@@ -43,7 +44,7 @@ export async function PUT(request) {
     const cat = await prisma.blogCategory.update({ where: { id: data.id }, data: updateData });
     return NextResponse.json(cat);
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/blog/categories');
   }
 }
 
@@ -59,6 +60,6 @@ export async function DELETE(request) {
     await prisma.blogCategory.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/blog/categories');
   }
 }

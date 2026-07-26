@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiError } from '@/lib/api-error';
 import prisma from '@/lib/db';
 import { invalidateSettingsCache } from '@/lib/settings';
 import { requireAuth, requireAdmin } from '@/lib/admin-auth';
@@ -25,7 +26,7 @@ export async function GET(request) {
     }
     return NextResponse.json(result);
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/settings/code');
   }
 }
 
@@ -62,6 +63,6 @@ export async function PUT(request) {
 
     return NextResponse.json({ success: true });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/settings/code');
   }
 }

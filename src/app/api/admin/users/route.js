@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiError } from '@/lib/api-error';
 import prisma from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { getAdminSession } from '@/lib/admin-auth';
@@ -20,7 +21,7 @@ export async function GET(request) {
     });
     return NextResponse.json({ users });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/users');
   }
 }
 
@@ -64,7 +65,7 @@ export async function POST(request) {
 
     return NextResponse.json({ success: true, user });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/users');
   }
 }
 
@@ -100,7 +101,7 @@ export async function PUT(request) {
 
     return NextResponse.json({ success: true, user });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/users');
   }
 }
 
@@ -125,6 +126,6 @@ export async function DELETE(request) {
     await prisma.adminUser.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/users');
   }
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiError } from '@/lib/api-error';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
 import { revalidateCategory } from '@/lib/revalidate';
@@ -18,7 +19,7 @@ export async function GET(request) {
 
     return NextResponse.json({ categories });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/categories');
   }
 }
 
@@ -47,7 +48,7 @@ export async function POST(request) {
     return NextResponse.json(category, { status: 201 });
   } catch (e) {
     if (e.code === 'P2002') return NextResponse.json({ error: 'Slug already exists' }, { status: 409 });
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/categories');
   }
 }
 
@@ -75,7 +76,7 @@ export async function PUT(request) {
     revalidateCategory(category.slug);
     return NextResponse.json(category);
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/categories');
   }
 }
 
@@ -105,6 +106,6 @@ export async function DELETE(request) {
     if (existing) revalidateCategory(existing.slug);
     return NextResponse.json({ success: true });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/categories');
   }
 }

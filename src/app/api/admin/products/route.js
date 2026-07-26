@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiError } from '@/lib/api-error';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
 import { computeQualityScore } from '@/lib/quality-score';
@@ -40,7 +41,7 @@ export async function GET(request) {
 
     return NextResponse.json({ products, total, page, totalPages: Math.ceil(total / limit) });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/products');
   }
 }
 
@@ -99,7 +100,7 @@ export async function POST(request) {
     return NextResponse.json(scored, { status: 201 });
   } catch (e) {
     if (e.code === 'P2002') return NextResponse.json({ error: 'Part number already exists' }, { status: 409 });
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/products');
   }
 }
 
@@ -157,7 +158,7 @@ export async function PUT(request) {
 
     return NextResponse.json(scored);
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/products');
   }
 }
 
@@ -182,6 +183,6 @@ export async function DELETE(request) {
     }
     return NextResponse.json({ success: true });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/products');
   }
 }

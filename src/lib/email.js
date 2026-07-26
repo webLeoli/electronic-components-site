@@ -238,3 +238,43 @@ export async function sendRfqConfirmation(rfq) {
     html,
   });
 }
+
+/**
+ * Send contact-form notification to admin.
+ * Dedicated template - contact messages previously reused the RFQ template,
+ * which rendered an empty parts table and linked to the wrong admin page.
+ */
+export async function sendContactNotification(contact) {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) return false;
+
+  // Never allow CR/LF from user input anywhere near a header line.
+  const safeName = String(contact.name || '').replace(/[\r\n]+/g, ' ').trim();
+  const safeSubject = String(contact.subject || 'No subject').replace(/[\r\n]+/g, ' ').trim();
+  const siteUrl = process.env.SITE_URL || 'https://fpgacenter.com';
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+      <h2 style="color:#172033">New contact message</h2>
+      <table style="border-collapse:collapse;width:100%;font-size:14px">
+        <tr><td style="padding:6px 12px 6px 0;color:#64748b">From</td><td style="padding:6px 0"><strong>${escapeHtml(safeName)}</strong> &lt;${escapeHtml(contact.email)}&gt;</td></tr>
+        ${contact.company ? `<tr><td style="padding:6px 12px 6px 0;color:#64748b">Company</td><td style="padding:6px 0">${escapeHtml(contact.company)}</td></tr>` : ''}
+        ${contact.phone ? `<tr><td style="padding:6px 12px 6px 0;color:#64748b">Phone</td><td style="padding:6px 0">${escapeHtml(contact.phone)}</td></tr>` : ''}
+        <tr><td style="padding:6px 12px 6px 0;color:#64748b">Subject</td><td style="padding:6px 0">${escapeHtml(safeSubject)}</td></tr>
+      </table>
+      <div style="margin:16px 0;padding:16px;background:#f8fafc;border-left:3px solid #ef4f24;white-space:pre-wrap;font-size:14px">${escapeHtml(contact.message)}</div>
+      <p><a href="${siteUrl}/admin/contacts" style="color:#ef4f24">Open Contact Messages in admin</a></p>
+    </div>`;
+
+  const text = `New contact message\n\nFrom: ${safeName} <${contact.email}>\n` +
+    (contact.company ? `Company: ${contact.company}\n` : '') +
+    (contact.phone ? `Phone: ${contact.phone}\n` : '') +
+    `Subject: ${safeSubject}\n\n${contact.message}\n\n${siteUrl}/admin/contacts`;
+
+  return sendEmail({
+    to: adminEmail,
+    subject: `Contact form: ${safeSubject} - ${safeName}`,
+    text,
+    html,
+  });
+}

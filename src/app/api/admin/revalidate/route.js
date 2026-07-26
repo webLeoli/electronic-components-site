@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiError } from '@/lib/api-error';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from '@/lib/admin-auth';
 
@@ -32,6 +33,6 @@ export async function POST(request) {
     revalidatePath(path, type);
     return NextResponse.json({ success: true, revalidated: path, type: type || 'default' });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/revalidate');
   }
 }

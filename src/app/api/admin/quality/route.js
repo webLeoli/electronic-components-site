@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiError } from '@/lib/api-error';
 import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
 import { computeQualityScore, TIERS } from '@/lib/quality-score';
@@ -105,7 +106,7 @@ export async function GET(request) {
       lastAction,
     });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/quality');
   }
 }
 
@@ -235,7 +236,7 @@ export async function POST(request) {
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/quality');
   }
 }
 
@@ -259,6 +260,6 @@ export async function PUT(request) {
     revalidateProduct(product.partNumber, product.manufacturer);
     return NextResponse.json({ success: true, product });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return apiError(e, 'admin/quality');
   }
 }
