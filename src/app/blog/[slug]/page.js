@@ -139,15 +139,30 @@ function markdownToHtml(md) {
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<figure class="blog-figure"><img src="$2" alt="$1" loading="lazy" /><figcaption>$1</figcaption></figure>');
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="blog-link">$1</a>');
 
-  // Unordered lists (markdown - syntax, not inside HTML)
-  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul class="blog-list">$&</ul>');
+  // Lists are converted block-wise: a run of consecutive marker lines becomes ONE
+  // list element with no stray newlines inside, so the later \n -> <br/> pass
+  // can't inject breaks between items. Ordered lists must be handled with their
+  // own wrapper — the previous line-by-line approach left "1." items as orphan
+  // <li> outside any list, dropping the numbering entirely.
+  html = html.replace(/(?:^\d+\. .+$\n?)+/gm, (block) => {
+    const items = block.trim().split('\n')
+      .map((line) => `<li>${line.replace(/^\d+\. /, '')}</li>`).join('');
+    return `<ol class="blog-list">${items}</ol>\n`;
+  });
 
-  // Ordered lists
-  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(?:^- .+$\n?)+/gm, (block) => {
+    const items = block.trim().split('\n')
+      .map((line) => `<li>${line.replace(/^- /, '')}</li>`).join('');
+    return `<ul class="blog-list">${items}</ul>\n`;
+  });
 
-  // Blockquotes
-  html = html.replace(/^> (.+)$/gm, '<blockquote class="blog-quote">$1</blockquote>');
+  // Blockquotes: consecutive "> " lines merge into a single quote block instead
+  // of one fragmented <blockquote> per line.
+  html = html.replace(/(?:^> .*$\n?)+/gm, (block) => {
+    const inner = block.trim().split('\n')
+      .map((line) => line.replace(/^> ?/, '')).join('<br/>');
+    return `<blockquote class="blog-quote">${inner}</blockquote>\n`;
+  });
 
   // Horizontal rules
   html = html.replace(/^---$/gm, '<hr class="blog-hr" />');
@@ -177,15 +192,11 @@ function markdownToHtml(md) {
   return html;
 }
 
-// Extract headings for TOC
-function extractToc(md) {
-  const headings = [];
-  const regex = /^(#{2,3}) (.+)$/gm;
-  let match;
-  while ((match = regex.exec(md)) !== null) {
-    headings.push({ level: match[1].length, text: match[2], id: match[2] });
-  }
-  return headings;
+// og:image and schema.org image must be absolute URLs; uploaded covers are
+// stored as site-relative paths.
+function toAbsoluteUrl(url) {
+  if (!url) return url;
+  return /^https?:\/\//i.test(url) ? url : `${SITE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 }
 
 export async function generateMetadata({ params }) {
@@ -194,7 +205,7 @@ export async function generateMetadata({ params }) {
   if (!post) return { title: 'Article Not Found' };
   const title = (post.seoTitle || post.title);
   const description = post.seoDesc || post.excerpt || `Read ${post.title} on ${SITE_NAME}`;
-  const coverImage = getBlogCoverImage(post) || `${SITE_URL}/og-image.png`;
+  const coverImage = toAbsoluteUrl(getBlogCoverImage(post)) || `${SITE_URL}/og-image.png`;
   return {
     title,
     description,
@@ -256,30 +267,34 @@ export default async function BlogPostPage({ params }) {
   // Generate URL-safe slug from text
   const slugify = (text) => text.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').substring(0, 80);
 
-  // Extract headings from HTML for TOC (handles nested HTML in headings)
-  const tocFromHtml = (html) => {
-    const headings = [];
-    const regex = /<h([23])([^>]*)>([\s\S]*?)<\/h[23]>/gi;
-    let match;
-    while ((match = regex.exec(html)) !== null) {
-      const text = stripHtml(match[3]);
-      if (text) {
-        headings.push({ level: parseInt(match[1]), text, id: slugify(text) });
-      }
-    }
-    return headings;
-  };
-  // Always extract TOC from the final rendered HTML
-  const toc = tocFromHtml(contentHtml);
-
-  // Inject id attributes into h2/h3 headings for TOC anchor navigation
+  // Inject unique id attributes into h2/h3 headings for TOC anchor navigation.
+  // Duplicate heading texts (and non-ASCII headings that slugify to nothing)
+  // get numbered suffixes so every anchor is unique and non-empty.
+  const usedIds = new Set();
   contentHtml = contentHtml.replace(/<h([23])([^>]*)>([\s\S]*?)<\/h[23]>/gi, (full, level, attrs, inner) => {
+    const existing = attrs.match(/\bid\s*=\s*["']([^"']*)["']/);
+    if (existing) {
+      usedIds.add(existing[1]);
+      return full;
+    }
     const text = stripHtml(inner);
-    const id = slugify(text);
-    // Don't add id if one already exists
-    if (/\bid\s*=/.test(attrs)) return full;
+    if (!text) return full;
+    const base = slugify(text) || 'section';
+    let id = base;
+    let n = 2;
+    while (usedIds.has(id)) id = `${base}-${n++}`;
+    usedIds.add(id);
     return `<h${level} id="${id}"${attrs}>${inner}</h${level}>`;
   });
+
+  // Build the TOC from the final injected ids so sidebar anchors always match.
+  const toc = [];
+  const tocRegex = /<h([23])[^>]*\bid\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/h[23]>/gi;
+  let tocMatch;
+  while ((tocMatch = tocRegex.exec(contentHtml)) !== null) {
+    const text = stripHtml(tocMatch[3]);
+    if (text) toc.push({ level: parseInt(tocMatch[1]), text, id: tocMatch[2] });
+  }
 
   // Related products
   const relatedPartNumbers = (post.relatedProducts || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -315,7 +330,7 @@ export default async function BlogPostPage({ params }) {
     author: { '@type': 'Person', name: post.author || SITE_NAME },
     publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL, logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon-512.png` } },
     mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/blog/${post.slug}` },
-    image: getBlogCoverImage(post) || `${SITE_URL}/og-image.png`,
+    image: toAbsoluteUrl(getBlogCoverImage(post)) || `${SITE_URL}/og-image.png`,
     wordCount: (post.content || '').split(/\s+/).length,
     inLanguage: 'en',
     ...(post.category ? { articleSection: post.category.name } : {}),
@@ -380,14 +395,9 @@ export default async function BlogPostPage({ params }) {
               {/* Cover Image */}
               <div className="blog-article-cover">
                 {coverImage ? (
-                  coverImage.endsWith('.webp') ? (
-                    <picture>
-                      <source srcSet={coverImage} type="image/webp" />
-                      <img src={coverImage.replace(/\.webp$/, '.png')} alt={post.title} loading="eager" fetchPriority="high" />
-                    </picture>
-                  ) : (
-                    <img src={coverImage} alt={post.title} loading="eager" fetchPriority="high" />
-                  )
+                  // No <picture>/.png fallback: the fallback file never existed,
+                  // so non-webp browsers got a 404 image. Serve the cover as-is.
+                  <img src={coverImage} alt={post.title} loading="eager" fetchPriority="high" />
                 ) : (
                   <div className={`blog-cover-generated blog-article-generated-cover ${coverTheme.className}`}>
                     <div className="blog-cover-generated-inner">

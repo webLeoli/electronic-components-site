@@ -1,5 +1,6 @@
 import prisma from '@/lib/db';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { SITE_NAME, SITE_URL } from '@/lib/seo';
 import { getBlogCoverImage, getBlogCoverTheme } from '@/lib/blog-cover';
 import './blog.css';
@@ -10,9 +11,11 @@ export async function generateMetadata({ searchParams }) {
   const sp = await searchParams;
   const page = Math.max(1, parseInt(sp?.page) || 1);
 
-  // Canonical always points to the base /blog URL; category filters and
-  // pagination are faceted views of the same collection.
-  const canonicalUrl = `${SITE_URL}/blog`;
+  // Category filters canonicalize to /blog (faceted views of the same
+  // collection), but paginated pages self-canonicalize: pointing page 2+ at
+  // page 1 tells Google they are duplicates and buries every post beyond the
+  // first page.
+  const canonicalUrl = page > 1 ? `${SITE_URL}/blog?page=${page}` : `${SITE_URL}/blog`;
   const title = page > 1 ? `Technical Articles & Guides - Page ${page}` : 'Technical Articles & Guides';
 
   return {
@@ -64,6 +67,9 @@ export default async function BlogPage({ searchParams }) {
   ]);
 
   const totalPages = Math.ceil(total / limit);
+
+  // A page past the end must 404, not render an indexable empty state.
+  if (page > 1 && posts.length === 0) notFound();
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -154,7 +160,16 @@ export default async function BlogPage({ searchParams }) {
 
           {totalPages > 1 && (
             <div className="blog-pagination">
-              {page > 1 && <Link href={`/blog?page=${page - 1}${categorySlug ? `&category=${categorySlug}` : ''}`} className="blog-page-btn">Previous</Link>}
+              {page > 1 && (
+                <Link
+                  href={page - 1 === 1
+                    ? (categorySlug ? `/blog?category=${categorySlug}` : '/blog')
+                    : `/blog?page=${page - 1}${categorySlug ? `&category=${categorySlug}` : ''}`}
+                  className="blog-page-btn"
+                >
+                  Previous
+                </Link>
+              )}
               <span className="blog-page-info">Page {page} of {totalPages}</span>
               {page < totalPages && <Link href={`/blog?page=${page + 1}${categorySlug ? `&category=${categorySlug}` : ''}`} className="blog-page-btn">Next</Link>}
             </div>
