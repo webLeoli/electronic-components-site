@@ -82,7 +82,10 @@ function seededRandom(seed) {
 
 const getDailyRotatingProducts = unstable_cache(
   async (rotationKey) => {
-    const where = buildProgrammableLogicWhere({ stockedOnly: true });
+    // Indexed boolean instead of the 30-branch ILIKE OR predicate: the flag is
+    // precomputed by scripts/flag-programmable-logic.mjs. The final fallback
+    // below still uses the live predicate in case the flag was never backfilled.
+    const where = { isProgrammableLogic: true, stock: { gt: 0 } };
     const idRange = await prisma.product.aggregate({
       where,
       _min: { id: true },

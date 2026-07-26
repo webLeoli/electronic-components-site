@@ -1,10 +1,14 @@
 // Trigram (pg_trgm) GIN indexes for ILIKE '%q%' search on the Product table.
-// These cannot be expressed in schema.prisma, so they are applied via raw SQL.
+//
+// These ARE also declared in schema.prisma (type: Gin + gin_trgm_ops) so that
+// `prisma db push` knows about them and never drops them - that exact accident
+// happened once. This script exists because it builds them CONCURRENTLY (no
+// write lock), which Prisma cannot do; use it for first-time production setup.
 //
 // Usage: node scripts/add-search-indexes.mjs
-//
-// Uses CREATE INDEX CONCURRENTLY so a production run does not lock writes.
 // Safe to re-run (IF NOT EXISTS). Expect a few minutes per index on ~700K rows.
+// After any bulk UPDATE touching indexed columns, run VACUUM ANALYZE "Product"
+// or searches degrade until autovacuum merges the GIN pending lists.
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 

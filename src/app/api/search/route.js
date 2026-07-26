@@ -59,22 +59,21 @@ export async function GET(request) {
       products = products.concat(containsMatches);
     }
 
-    // True total count (capped at reasonable limit)
-    const totalPrefix = await prisma.product.count({
-      where: { partNumber: { startsWith: q, mode: 'insensitive' } },
-    });
-    const totalContains = await prisma.product.count({
+    // One distinct total: partNumber-contains is a superset of the prefix
+    // layer, so a single OR count is both cheaper (one query instead of two)
+    // and correct - the old prefix+contains sum could double-count prefix
+    // rows beyond the first page.
+    const total = await prisma.product.count({
       where: {
         OR: [
           { partNumber: { contains: q, mode: 'insensitive' } },
           { description: { contains: q, mode: 'insensitive' } },
           { manufacturer: { contains: q, mode: 'insensitive' } },
         ],
-        partNumber: { notIn: [...prefixIds] },
       },
     });
 
-    return NextResponse.json({ products, total: totalPrefix + totalContains });
+    return NextResponse.json({ products, total });
   } catch (e) {
     console.error('[API Search] Error:', e.message);
     return NextResponse.json({ products: [], total: 0, error: 'Search failed' }, { status: 500 });

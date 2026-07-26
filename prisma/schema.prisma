@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pg_trgm]
 }
 
 model Product {
@@ -25,6 +27,11 @@ model Product {
   imageUrl      String?
   qualityScore  Int       @default(0)
   indexable     Boolean   @default(false)
+  // Precomputed "is this an FPGA/CPLD-adjacent part" flag. Derived offline by
+  // scripts/flag-programmable-logic.mjs (run after bulk product imports) from
+  // the predicate in src/lib/fpga-series-data.js. Lets the homepage rotation
+  // filter on an indexed boolean instead of a 30-branch ILIKE OR per request.
+  isProgrammableLogic Boolean @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   category     Category? @relation(fields: [categoryId], references: [id])
@@ -45,6 +52,15 @@ model Product {
   @@index([manufacturer, partNumber])
   @@index([indexable, updatedAt])
   @@index([status, stock])
+  @@index([isProgrammableLogic, stock])
+  // Trigram GIN indexes power ILIKE '%q%' search. They MUST be declared here:
+  // `prisma db push` drops any index it doesn't know about, which is exactly
+  // how these got silently dropped once. scripts/add-search-indexes.mjs
+  // creates them CONCURRENTLY (no write lock) with matching names for
+  // first-time production rollout.
+  @@index([partNumber(ops: raw("gin_trgm_ops"))], type: Gin, map: "Product_partNumber_trgm_idx")
+  @@index([manufacturer(ops: raw("gin_trgm_ops"))], type: Gin, map: "Product_manufacturer_trgm_idx")
+  @@index([description(ops: raw("gin_trgm_ops"))], type: Gin, map: "Product_description_trgm_idx")
 }
 
 model Category {

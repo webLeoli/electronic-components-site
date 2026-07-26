@@ -69,7 +69,12 @@ export default async function SearchPage({ searchParams }) {
         orderBy,
         skip: (page - 1) * ITEMS_PER_PAGE,
         take: ITEMS_PER_PAGE,
-        include: { category: { select: { slug: true, name: true } } },
+        // Explicit select keeps specs/datasheet blobs out of the result rows.
+        select: {
+          partNumber: true, manufacturer: true, description: true, packageType: true,
+          mountType: true, status: true, minPrice: true, stock: true, moq: true,
+          imageUrl: true, category: { select: { slug: true, name: true } },
+        },
       });
     }
   }

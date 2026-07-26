@@ -150,6 +150,27 @@ export async function generateMetadata({ params, searchParams }) {
 const ITEMS_PER_PAGE = 20;
 const MAX_PAGES = 100; // Limit deep pagination to protect database
 
+// Product list page, cached per unique (where, orderBy, page) combination.
+// Args are JSON strings because unstable_cache keys on serialized arguments.
+const getCategoryProductList = unstable_cache(
+  async (whereJson, orderByJson, page) =>
+    prisma.product.findMany({
+      where: JSON.parse(whereJson),
+      orderBy: JSON.parse(orderByJson),
+      skip: (page - 1) * ITEMS_PER_PAGE,
+      take: ITEMS_PER_PAGE,
+      // Explicit select: without it every row drags along specs/datasheet
+      // blobs (multi-KB JSON) that the table renderer never reads.
+      select: {
+        partNumber: true, manufacturer: true, description: true, packageType: true,
+        mountType: true, status: true, minPrice: true, stock: true, moq: true,
+        imageUrl: true, category: { select: { slug: true, name: true } },
+      },
+    }),
+  ['category-product-list'],
+  { revalidate: 300, tags: ['categories'] }
+);
+
 export default async function CategoryPage({ params, searchParams }) {
   const { slug } = await params;
   
@@ -225,20 +246,14 @@ export default async function CategoryPage({ params, searchParams }) {
   const validSorts = ['partNumber', 'manufacturer', 'minPrice', 'stock', 'status'];
   orderBy[validSorts.includes(sort) ? sort : 'partNumber'] = order === 'desc' ? 'desc' : 'asc';
 
-  // Fetch products
-  const products = await prisma.product.findMany({
-    where: productWhere,
-    orderBy,
-    skip: (page - 1) * ITEMS_PER_PAGE,
-    take: ITEMS_PER_PAGE,
-    // Explicit select: without it every row drags along specs/datasheet blobs
-    // (multi-KB JSON) that the table renderer never reads.
-    select: {
-      partNumber: true, manufacturer: true, description: true, packageType: true,
-      mountType: true, status: true, minPrice: true, stock: true, moq: true,
-      imageUrl: true, category: { select: { slug: true, name: true } },
-    },
-  });
+  // Fetch products (cached 5 min per unique where/sort/page combination -
+  // catalog data changes on batch imports, not per second, and crawlers hammer
+  // paginated category listings)
+  const products = await getCategoryProductList(
+    JSON.stringify(productWhere),
+    JSON.stringify(orderBy),
+    page,
+  );
 
   // Breadcrumb — flat URLs, hierarchy expressed via breadcrumb trail
   const breadcrumbItems = [{ name: 'Home', url: '/' }, { name: 'Categories', url: '/category' }];
