@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { useRfqCart } from '@/lib/rfq-cart';
+import { useRfqCart, MAX_CART_ITEMS } from '@/lib/rfq-cart';
 
 export default function BomTool() {
   const [lines, setLines] = useState([]);
@@ -11,7 +11,7 @@ export default function BomTool() {
   const [parseError, setParseError] = useState('');
   const [parsed, setParsed] = useState(false);
   const fileInputRef = useRef(null);
-  const { addItem } = useRfqCart();
+  const { addItem, count: cartCount } = useRfqCart();
 
   // Parse CSV/TSV text into structured lines
   const parseBOM = (text) => {
@@ -91,15 +91,15 @@ export default function BomTool() {
     const selected = lines.filter(l => l.selected);
     if (selected.length === 0) return;
     for (const l of selected) {
-      addItem({
-        partNumber: l.partNumber,
-        manufacturer: l.manufacturer,
-        qty: parseInt(l.qty) || 1,
-      });
+      addItem(l.partNumber, l.manufacturer, parseInt(l.qty) || 1);
     }
   };
 
   const selectedCount = lines.filter(l => l.selected).length;
+  // The cart caps at MAX_CART_ITEMS and silently ignores adds past it. Surface
+  // that BEFORE the buyer clicks Submit, or lines vanish without a trace.
+  const cartCapacity = Math.max(0, MAX_CART_ITEMS - cartCount);
+  const overCapacity = selectedCount > cartCapacity;
 
   return (
     <div className="container" style={{ paddingTop: 'var(--space-xl)', paddingBottom: 'var(--space-3xl)' }}>
@@ -123,11 +123,11 @@ export default function BomTool() {
         {!parsed ? (
           <>
             {/* Upload Section */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-lg)', marginBottom: 'var(--space-lg)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 'var(--space-lg)', marginBottom: 'var(--space-lg)' }}>
               {/* File Upload */}
               <div className="card" style={{ padding: 'var(--space-xl)', textAlign: 'center' }}>
                 <div style={{ fontSize: '48px', marginBottom: 'var(--space-md)' }}>📁</div>
-                <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: 'var(--space-sm)' }}>Upload CSV / Excel</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: 'var(--space-sm)' }}>Upload CSV / TSV</h3>
                 <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: 'var(--space-md)' }}>
                   Upload a .csv or .txt file with your BOM data
                 </p>
@@ -238,9 +238,15 @@ IRF540NPBF,Infineon,300,N-Channel MOSFET`}
               </table>
             </div>
 
+            {overCapacity && (
+              <div className="alert alert-warning" style={{ marginTop: 'var(--space-lg)', padding: 'var(--space-md)', borderRadius: '8px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.4)', color: 'var(--color-warning, #b45309)', fontSize: '14px' }}>
+                The RFQ form holds up to {MAX_CART_ITEMS} lines ({cartCapacity} slot{cartCapacity === 1 ? '' : 's'} left in your current inquiry).
+                Only the first {cartCapacity} selected parts will carry over — for a larger BOM, attach the file directly on the RFQ page instead.
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-lg)', gap: 'var(--space-md)' }}>
               <Link href="/rfq" className="btn btn-primary btn-lg" onClick={addToRfq}>
-                Submit RFQ for {selectedCount} Parts →
+                Submit RFQ for {overCapacity ? `${cartCapacity} of ${selectedCount}` : selectedCount} Parts →
               </Link>
             </div>
           </>

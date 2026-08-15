@@ -3,7 +3,7 @@ import prisma from '@/lib/db';
 import { requireAuth, requireEditor } from '@/lib/admin-auth';
 
 export async function GET(request) {
-  const authError = requireAuth(request);
+  const authError = await requireAuth(request);
   if (authError) return authError;
 
   const { searchParams } = new URL(request.url);
@@ -31,7 +31,7 @@ export async function GET(request) {
 }
 
 export async function PUT(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
 
   try {
@@ -55,7 +55,7 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
 
   try {

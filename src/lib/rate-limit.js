@@ -52,7 +52,28 @@ return current
 // --- In-memory fallback (per process only) ---
 const memStore = globalForRl.__rlMem || (globalForRl.__rlMem = new Map());
 
+/**
+ * The in-memory limiter counts per process, which is correct for a single
+ * instance and silently wrong for several: with N workers and no Redis every
+ * limit becomes N times looser, and nothing in the logs says so. PM2 exposes the
+ * worker index in NODE_APP_INSTANCE, so the one situation where this matters is
+ * detectable — warn once instead of letting a scale-up quietly disable the
+ * quotas on the quote form.
+ */
+function warnIfClusteredWithoutRedis() {
+  if (globalForRl.__rlClusterWarned) return;
+  const instance = process.env.NODE_APP_INSTANCE ?? process.env.pm_id;
+  if (instance === undefined) return;
+  globalForRl.__rlClusterWarned = true;
+  console.error(
+    `[rate-limit] Running as PM2 instance ${instance} with no REDIS_URL. ` +
+    'Rate limits are counted per process, so every quota is multiplied by the ' +
+    'number of workers. Set REDIS_URL, or run a single instance (fork mode).'
+  );
+}
+
 function memCheck(key, windowMs, max) {
+  warnIfClusteredWithoutRedis();
   const now = Date.now();
   const prev = memStore.get(key) || [];
   const timestamps = prev.filter((t) => now - t < windowMs);
@@ -99,20 +120,47 @@ export async function rateLimit(identifier, { windowMs, max, prefix = 'rl' }) {
   return memCheck(key, windowMs, max);
 }
 
+// How many proxies of our own sit in front of the app. Each one appends an
+// entry to x-forwarded-for, so this is how far from the END the real client
+// address sits. 1 = nginx only (the documented setup). 2 = a CDN/WAF in front
+// of nginx. Getting this wrong is not cosmetic:
+//   - too LOW (CDN present, still counting 1): every visitor keys to the CDN's
+//     address, so all quotas collapse into one shared bucket — the quote form
+//     becomes 3 submissions per hour for the entire site, and one attacker
+//     locks every admin out of login. Silent: the logs show ordinary 429s.
+//   - too HIGH: the key comes from a client-supplied entry, which is spoofable
+//     by rotating the header, so the limits stop limiting anything.
+// Default 1 preserves the previous behaviour exactly.
+const TRUSTED_PROXY_HOPS = Math.max(
+  1,
+  parseInt(process.env.TRUSTED_PROXY_HOPS || '1', 10) || 1
+);
+
 /**
- * Derive the client IP for rate-limit keying.
+ * Derive the client IP for rate-limit keying (and for the ipAddress stored on
+ * leads).
  *
  * The FIRST entry of x-forwarded-for is client-supplied and trivially
  * spoofable — keying limits on it lets an attacker rotate the header and
- * bypass every limit. Behind a reverse proxy (nginx/Caddy), the proxy APPENDS
- * the address it actually saw as the LAST entry, so that is the only value we
- * trust.
+ * bypass every limit. Each proxy APPENDS the address it actually saw, so we
+ * count TRUSTED_PROXY_HOPS back from the end: that is the last entry we
+ * control and the first one the client cannot forge.
  */
 export function getClientIp(request) {
   const forwarded = request.headers.get('x-forwarded-for');
   if (forwarded) {
     const parts = forwarded.split(',').map((s) => s.trim()).filter(Boolean);
-    if (parts.length) return parts[parts.length - 1];
+    if (parts.length) {
+      // Clamp for requests carrying fewer entries than configured hops (health
+      // checks, or the CDN bypassed): fall back to the oldest entry rather than
+      // indexing off the front of the list.
+      // NOTE: setting hops > 1 means trusting that traffic really did pass
+      // through that many of our proxies. Anyone who can reach the origin
+      // directly can forge the entry we read. Restrict the origin to the CDN's
+      // address ranges at the firewall; hop-counting alone cannot enforce it.
+      const index = Math.max(0, parts.length - TRUSTED_PROXY_HOPS);
+      return parts[index];
+    }
   }
   return request.headers.get('x-real-ip') || 'unknown';
 }

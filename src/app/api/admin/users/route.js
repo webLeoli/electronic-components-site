@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server';
 import { apiError } from '@/lib/api-error';
 import prisma from '@/lib/db';
 import bcrypt from 'bcryptjs';
-import { getAdminSession } from '@/lib/admin-auth';
+import { getAdminSession, requireAdmin } from '@/lib/admin-auth';
 
 // GET: List all admin users
 export async function GET(request) {
-  const session = getAdminSession(request);
-  if (!session || session.role !== 'admin') {
-    return NextResponse.json({ error: 'Only admins can manage users' }, { status: 403 });
-  }
+  // requireAdmin, not a bare token check: this endpoint can re-activate a
+  // disabled account or mint a new admin, so it must verify the caller is
+  // still active in the database rather than trusting a 24h-old cookie.
+  const authError = await requireAdmin(request);
+  if (authError) return authError;
 
   try {
     const users = await prisma.adminUser.findMany({
@@ -27,10 +28,11 @@ export async function GET(request) {
 
 // POST: Create new admin user
 export async function POST(request) {
-  const session = getAdminSession(request);
-  if (!session || session.role !== 'admin') {
-    return NextResponse.json({ error: 'Only admins can create users' }, { status: 403 });
-  }
+  // requireAdmin, not a bare token check: this endpoint can re-activate a
+  // disabled account or mint a new admin, so it must verify the caller is
+  // still active in the database rather than trusting a 24h-old cookie.
+  const authError = await requireAdmin(request);
+  if (authError) return authError;
 
   try {
     const { email, password, name, userRole } = await request.json();
@@ -71,10 +73,9 @@ export async function POST(request) {
 
 // PUT: Update user (role, status, reset password)
 export async function PUT(request) {
-  const session = getAdminSession(request);
-  if (!session || session.role !== 'admin') {
-    return NextResponse.json({ error: 'Only admins can update users' }, { status: 403 });
-  }
+  // Same reason as above — this is the endpoint that flips isActive and role.
+  const authError = await requireAdmin(request);
+  if (authError) return authError;
 
   try {
     const { id, name, role: newRole, isActive, newPassword } = await request.json();
@@ -107,11 +108,11 @@ export async function PUT(request) {
 
 // DELETE: Delete user
 export async function DELETE(request) {
-  const session = getAdminSession(request);
-  if (!session || session.role !== 'admin') {
-    return NextResponse.json({ error: 'Only admins can delete users' }, { status: 403 });
-  }
-  const callerId = session.userId;
+  const authError = await requireAdmin(request);
+  if (authError) return authError;
+  // Still needed after the guard: the self-deletion check below compares against
+  // the caller's own id, which only the token carries.
+  const callerId = getAdminSession(request).userId;
 
   try {
     const { searchParams } = new URL(request.url);

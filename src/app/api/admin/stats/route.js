@@ -4,7 +4,7 @@ import prisma from '@/lib/db';
 import { requireAuth } from '@/lib/admin-auth';
 
 export async function GET(request) {
-  const authError = requireAuth(request);
+  const authError = await requireAuth(request);
   if (authError) return authError;
   try {
     const [productCount, categoryCount, manufacturerCount, rfqCount, contactCount, recentProducts] = await Promise.all([

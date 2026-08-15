@@ -5,17 +5,17 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { productPath, SITE_URL, SITE_NAME, hasConfirmedStock, getAvailabilityText } from '@/lib/seo';
 import { FALLBACK_BRANDS } from '@/lib/fallbacks';
+import { manufacturerSlug } from '@/lib/manufacturer-canonical';
+import { getStatusInfo } from '@/lib/product-status';
+import { truncateAtWord, formatInt } from '@/lib/text';
+import { LISTING_MAX_PAGES, buildPageList } from '@/lib/pagination';
 
 // Dynamic by inference (reads searchParams for pagination); page-independent
 // aggregates are cached per manufacturer below.
 
-function slugifyManufacturer(name) {
-  return (name || 'unknown')
-    .toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-}
+// Slug logic is shared with productPath() via lib/manufacturer-canonical; a
+// local copy that drifts from it 404s every product page of a brand.
+const slugifyManufacturer = manufacturerSlug;
 
 // Fallback list for manufacturers that exist in Product but have no
 // Manufacturer row yet. The DISTINCT is a full-table aggregate over 700K+ rows,
@@ -61,17 +61,24 @@ function parseSpecialties(str) {
 // Cache the expensive, page-independent aggregates per manufacturer for 1 hour.
 const getManufacturerStats = (name) => unstable_cache(
   async () => {
+    // Every aggregate here excludes consolidated duplicates, matching the listing
+    // query below — otherwise the header claims a part count the pagination can
+    // never reach, and the category breakdown double-counts the same silicon.
     const [totalProducts, categories, statusDist, inStockCount] = await Promise.all([
-      prisma.product.count({ where: { manufacturer: name } }),
+      prisma.product.count({ where: { manufacturer: name, duplicateOfId: null } }),
       prisma.$queryRawUnsafe(
-        `SELECT "categoryId", COUNT(*)::int as "_count" FROM "Product" WHERE "manufacturer" = $1 AND "categoryId" IS NOT NULL GROUP BY "categoryId"`,
+        `SELECT "categoryId", COUNT(*)::int as "_count" FROM "Product"
+          WHERE "manufacturer" = $1 AND "categoryId" IS NOT NULL AND "duplicateOfId" IS NULL
+          GROUP BY "categoryId"`,
         name
       ),
       prisma.$queryRawUnsafe(
-        `SELECT "status", COUNT(*)::int as "cnt" FROM "Product" WHERE "manufacturer" = $1 GROUP BY "status" ORDER BY "cnt" DESC`,
+        `SELECT "status", COUNT(*)::int as "cnt" FROM "Product"
+          WHERE "manufacturer" = $1 AND "duplicateOfId" IS NULL
+          GROUP BY "status" ORDER BY "cnt" DESC`,
         name
       ),
-      prisma.product.count({ where: { manufacturer: name, status: 'active', stock: { gt: 0 } } }),
+      prisma.product.count({ where: { manufacturer: name, status: 'active', stock: { gt: 0 }, duplicateOfId: null } }),
     ]);
 
     const categoryIds = categories.map(c => c.categoryId).filter(Boolean);
@@ -85,23 +92,35 @@ const getManufacturerStats = (name) => unstable_cache(
   { revalidate: 3600, tags: [`manufacturer:${name}`] }
 )();
 
+const ITEMS_PER_PAGE = 20;
+// Shared with /category. Finite so a crafted ?page=999999 cannot request an
+// unbounded offset, but high enough that no listing is walled off — Rochester
+// Electronics alone needs 5,323 pages.
+const MAX_PAGES = LISTING_MAX_PAGES;
+
 export async function generateMetadata({ params, searchParams }) {
   const { slug } = await params;
   const sp = await searchParams;
-  const page = Math.max(1, parseInt(sp?.page) || 1);
+  const page = Math.max(1, Math.min(parseInt(sp?.page) || 1, MAX_PAGES));
   const manufacturer = await getManufacturer(slug);
   if (!manufacturer) return { title: 'Manufacturer Not Found' };
 
   const specialties = parseSpecialties(manufacturer.specialties);
   const specText = specialties.length > 0 ? ` Specializing in ${specialties.slice(0, 3).join(', ')}.` : '';
+  const { totalProducts } = await getManufacturerStats(manufacturer.name);
 
   const title = page > 1
     ? `${manufacturer.name} Electronic Components - Page ${page}`
-    : `Buy ${manufacturer.name} Electronic Components`;
+    : `${manufacturer.name} Electronic Components`;
   const description = manufacturer.description
-    ? manufacturer.description.substring(0, 155) + '...'
-    : `Buy ${manufacturer.name} electronic components at ${SITE_NAME}.${specText} Original parts, global sourcing, no MOQ, fast delivery.`;
-  const canonicalUrl = `${SITE_URL}/manufacturer/${slug}`;
+    ? truncateAtWord(manufacturer.description, 155)
+    : `Source ${manufacturer.name} electronic components at ${SITE_NAME}.${specText} Original parts, global sourcing, RFQ with no published MOQ.`;
+  // Self-canonical for page 2+. The title already says "Page N"; canonicalising
+  // it back to page 1 told Google the page was a duplicate of a page carrying a
+  // different 20 products, and it would drop it along with those listings.
+  const canonicalUrl = page > 1
+    ? `${SITE_URL}/manufacturer/${slug}?page=${page}`
+    : `${SITE_URL}/manufacturer/${slug}`;
 
   return {
     title,
@@ -121,15 +140,14 @@ export async function generateMetadata({ params, searchParams }) {
       images: [`${SITE_URL}/og-image.png`],
     },
     alternates: { canonical: canonicalUrl },
+    ...(totalProducts === 0 ? { robots: { index: false, follow: true } } : {}),
   };
 }
-
-const ITEMS_PER_PAGE = 20;
 
 export default async function ManufacturerPage({ params, searchParams }) {
   const { slug } = await params;
   const sp = await searchParams;
-  const page = Math.max(1, parseInt(sp?.page) || 1);
+  const page = Math.max(1, Math.min(parseInt(sp?.page) || 1, MAX_PAGES));
 
   const manufacturer = await getManufacturer(slug);
   if (!manufacturer) notFound();
@@ -139,7 +157,9 @@ export default async function ManufacturerPage({ params, searchParams }) {
   const [stats, products] = await Promise.all([
     getManufacturerStats(manufacturer.name),
     prisma.product.findMany({
-      where: { manufacturer: manufacturer.name },
+      // duplicateOfId: null — a consolidated row would list a part whose link
+      // 301s straight back to the row above it (see dedupe-part-numbers.mjs).
+      where: { manufacturer: manufacturer.name, duplicateOfId: null },
       // Explicit select keeps specs/datasheet blobs out of the 20-row page.
       select: {
         partNumber: true, manufacturer: true, description: true, packageType: true,
@@ -152,7 +172,16 @@ export default async function ManufacturerPage({ params, searchParams }) {
     }),
   ]);
   const { totalProducts, categories, statusDist, inStockCount, categoryData } = stats;
-  const totalPages = Math.ceil(totalProducts / ITEMS_PER_PAGE);
+
+  // A brand with nothing to list is not a page. getManufacturer() resolves through
+  // three sources — the Manufacturer row, a 24h-cached DISTINCT of product brands,
+  // and FALLBACK_BRANDS — and any of them can go stale after a merge or a brand
+  // deletion, which is how 35 "0 products" pages ended up in the sitemap. Checking
+  // the count here closes all three at once instead of trusting each source.
+  if (!totalProducts) notFound();
+  if (page > 1 && products.length === 0) notFound();
+
+  const totalPages = Math.min(Math.ceil(totalProducts / ITEMS_PER_PAGE), MAX_PAGES);
 
   const categoryMap = Object.fromEntries(categoryData.map(c => [c.id, c]));
 
@@ -195,23 +224,25 @@ export default async function ManufacturerPage({ params, searchParams }) {
     })),
   } : null;
 
-  // FAQ for SEO
+  // FAQ for SEO — skip empty catalogues so Google does not index "stocks 0".
   const faqs = [];
-  faqs.push({
-    q: `Where can I buy ${manufacturer.name} electronic components?`,
-    a: `${SITE_NAME} stocks ${totalProducts.toLocaleString()} ${manufacturer.name} part numbers with ${inStockCount.toLocaleString()} currently in stock. All parts are 100% original with full traceability. No minimum order quantity required. Submit an RFQ for competitive pricing.`,
-  });
-  if (eolCount > 0) {
+  if (totalProducts > 0) {
     faqs.push({
-      q: `Can I still get obsolete ${manufacturer.name} parts?`,
-      a: `Yes. ${SITE_NAME} specializes in sourcing hard-to-find and obsolete components. We have ${eolCount.toLocaleString()} end-of-life/obsolete ${manufacturer.name} part numbers in our database, many available from verified stock or through our global sourcing network.`,
+      q: `Where can I buy ${manufacturer.name} electronic components?`,
+      a: `${SITE_NAME} lists ${formatInt(totalProducts)} ${manufacturer.name} part numbers with ${formatInt(inStockCount)} currently in stock. Submit an RFQ for availability, lead time, and pricing.`,
     });
-  }
-  if (specialties.length > 0) {
-    faqs.push({
-      q: `What types of ${manufacturer.name} products does ${SITE_NAME} carry?`,
-      a: `We stock ${manufacturer.name} products across ${categoryData.length} categories including ${specialties.slice(0, 4).join(', ')}. Browse our full catalog or contact our sourcing team for any specific ${manufacturer.name} part number.`,
-    });
+    if (eolCount > 0) {
+      faqs.push({
+        q: `Can I still get obsolete ${manufacturer.name} parts?`,
+        a: `Yes. ${SITE_NAME} specializes in sourcing hard-to-find and obsolete components. We have ${formatInt(eolCount)} end-of-life/obsolete ${manufacturer.name} part numbers in our database, many available from verified stock or through our global sourcing network.`,
+      });
+    }
+    if (specialties.length > 0) {
+      faqs.push({
+        q: `What types of ${manufacturer.name} products does ${SITE_NAME} carry?`,
+        a: `We list ${manufacturer.name} products across ${categoryData.length} categories including ${specialties.slice(0, 4).join(', ')}. Browse our full catalog or contact our sourcing team for any specific ${manufacturer.name} part number.`,
+      });
+    }
   }
 
   const faqLd = faqs.length > 0 ? {
@@ -280,11 +311,11 @@ export default async function ManufacturerPage({ params, searchParams }) {
         {/* ── Quick Stats ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 'var(--space-md)', marginBottom: 'var(--space-xl)' }}>
           <div className="card" style={{ padding: 'var(--space-md)', textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-accent)' }}>{totalProducts.toLocaleString()}</div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-accent)' }}>{formatInt(totalProducts)}</div>
             <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Total Parts</div>
           </div>
           <div className="card" style={{ padding: 'var(--space-md)', textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-success)' }}>{inStockCount.toLocaleString()}</div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-success)' }}>{formatInt(inStockCount)}</div>
             <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>In Stock</div>
           </div>
           <div className="card" style={{ padding: 'var(--space-md)', textAlign: 'center' }}>
@@ -292,12 +323,12 @@ export default async function ManufacturerPage({ params, searchParams }) {
             <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Categories</div>
           </div>
           <div className="card" style={{ padding: 'var(--space-md)', textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: 800, color: activeCount > 0 ? '#22c55e' : 'var(--color-text-muted)' }}>{activeCount.toLocaleString()}</div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: activeCount > 0 ? '#22c55e' : 'var(--color-text-muted)' }}>{formatInt(activeCount)}</div>
             <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Active</div>
           </div>
           {eolCount > 0 && (
             <div className="card" style={{ padding: 'var(--space-md)', textAlign: 'center' }}>
-              <div style={{ fontSize: '24px', fontWeight: 800, color: '#f59e0b' }}>{eolCount.toLocaleString()}</div>
+              <div style={{ fontSize: '24px', fontWeight: 800, color: '#f59e0b' }}>{formatInt(eolCount)}</div>
               <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>EOL/Obsolete</div>
             </div>
           )}
@@ -411,12 +442,8 @@ export default async function ManufacturerPage({ params, searchParams }) {
                         {product.minPrice > 0 ? `$${product.minPrice.toFixed(product.minPrice < 1 ? 4 : 2)}` : 'RFQ'}
                       </td>
                       <td>
-                        <span className={`badge ${
-                          product.status === 'active' ? 'badge-success' :
-                          product.status === 'obsolete' ? 'badge-danger' :
-                          product.status === 'eol' ? 'badge-warning' : 'badge-info'
-                        }`}>
-                          {product.status === 'nrnd' ? 'NRND' : product.status.toUpperCase()}
+                        <span className={`badge ${getStatusInfo(product.status).badgeClass}`}>
+                          {getStatusInfo(product.status).short}
                         </span>
                       </td>
                       <td>
@@ -433,16 +460,19 @@ export default async function ManufacturerPage({ params, searchParams }) {
                 {page > 1 && (
                   <Link href={`/manufacturer/${slug}?page=${page - 1}`} className="pagination-btn">← Prev</Link>
                 )}
-                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                  const p = i + Math.max(1, page - 3);
-                  if (p > totalPages) return null;
-                  return (
+                {/* Shared with /category: a sliding 7-page window never
+                    reached the far end of a 5,300-page listing like Rochester
+                    Electronics, so decade jumps are included. */}
+                {buildPageList(page, totalPages).map((p, i) =>
+                  typeof p === 'string' ? (
+                    <span key={`dots-${i}`} className="pagination-dots">{p}</span>
+                  ) : (
                     <Link key={p} href={`/manufacturer/${slug}?page=${p}`}
                       className={`pagination-btn ${p === page ? 'active' : ''}`}>
                       {p}
                     </Link>
-                  );
-                })}
+                  )
+                )}
                 {page < totalPages && (
                   <Link href={`/manufacturer/${slug}?page=${page + 1}`} className="pagination-btn">Next →</Link>
                 )}

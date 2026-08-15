@@ -70,6 +70,10 @@ next-env.d.ts
 # generated or temporary media
 /public/images/
 
+# server-only representative package photos (referenced by
+# src/lib/product-image-resolver.js; preserved by update.sh PRESERVE_PATHS)
+/public/package-images/
+
 # local SEO rollout artifacts
 /category-seo-ids.txt
 /orphan-classified-ids.txt

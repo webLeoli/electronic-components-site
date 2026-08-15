@@ -22,8 +22,12 @@ export default function AddToRfqButton({
   const [showToast, setShowToast] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
 
+  // Match the cart's own dedupe key (partNumber + manufacturer), otherwise the
+  // button claims "Already in RFQ" for the same PN from a different maker.
   const isInCart = items.some(
-    item => item.partNumber.toUpperCase() === partNumber.toUpperCase()
+    item =>
+      item.partNumber.toUpperCase() === partNumber.toUpperCase() &&
+      (item.manufacturer || '').toUpperCase() === (manufacturer || '').toUpperCase()
   );
 
   const handleAdd = (e) => {

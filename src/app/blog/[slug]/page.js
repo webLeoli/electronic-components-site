@@ -1,13 +1,13 @@
 import { cache } from 'react';
 import { escapeHtml } from '@/lib/text';
 import prisma from '@/lib/db';
-/* eslint-disable @next/next/no-img-element -- Blog cover images may be uploaded or externally hosted; remote image optimization is intentionally disabled. */
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { headers } from 'next/headers';
 import sanitizeHtml from 'sanitize-html';
 import { productPath, SITE_NAME, SITE_URL, hasConfirmedStock, getAvailabilityText } from '@/lib/seo';
-import { getBlogCoverImage, getBlogCoverTheme } from '@/lib/blog-cover';
+import { getBlogCoverAlt, getBlogCoverImage, getBlogCoverMobileImage, getBlogCoverTheme } from '@/lib/blog-cover';
+import { extractFaqEntries } from '@/lib/blog-content';
 import '../blog.css';
 
 export const revalidate = 3600;
@@ -28,7 +28,9 @@ const BLOG_HTML_SANITIZE_OPTIONS = {
   ],
   allowedAttributes: {
     a: ['href', 'name', 'target', 'rel', 'class'],
-    img: ['src', 'alt', 'title', 'loading', 'width', 'height', 'class'],
+    // fetchpriority/decoding are kept so an author can mark the hero image as
+    // the LCP element; without them the hint is silently stripped at render.
+    img: ['src', 'alt', 'title', 'loading', 'width', 'height', 'class', 'fetchpriority', 'decoding'],
     code: ['class'],
     pre: ['class'],
     div: ['class'],
@@ -195,15 +197,18 @@ function toAbsoluteUrl(url) {
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   const post = await getPost(slug);
-  if (!post) return { title: 'Article Not Found' };
+  if (!post || post.status !== 'published') {
+    return { title: 'Article Not Found', robots: { index: false, follow: false } };
+  }
   const title = (post.seoTitle || post.title);
   const description = post.seoDesc || post.excerpt || `Read ${post.title} on ${SITE_NAME}`;
   const coverImage = toAbsoluteUrl(getBlogCoverImage(post)) || `${SITE_URL}/og-image.png`;
+  const coverAlt = getBlogCoverAlt(post);
   return {
     title,
     description,
     keywords: post.seoKeywords || undefined,
-    openGraph: { title, description, url: `${SITE_URL}/blog/${post.slug}`, siteName: SITE_NAME, type: 'article', images: [{ url: coverImage, width: 1200, height: 630, alt: title }] },
+    openGraph: { title, description, url: `${SITE_URL}/blog/${post.slug}`, siteName: SITE_NAME, type: 'article', images: [{ url: coverImage, width: 1200, height: 630, alt: coverAlt }] },
     twitter: { card: 'summary_large_image', title, description, images: [coverImage] },
     alternates: { canonical: `${SITE_URL}/blog/${post.slug}` },
   };
@@ -215,6 +220,8 @@ export default async function BlogPostPage({ params }) {
 
   if (!post || post.status !== 'published') notFound();
   const coverImage = getBlogCoverImage(post);
+  const mobileCoverImage = getBlogCoverMobileImage(post);
+  const coverAlt = getBlogCoverAlt(post);
   const coverTheme = getBlogCoverTheme(post);
 
   // Increment view count (fire-and-forget) - skip bots to avoid inflated counts
@@ -253,7 +260,29 @@ export default async function BlogPostPage({ params }) {
   contentHtml = contentHtml.replace(/(^|[\s>])\*([^*]+?)\*(?=[\s<.,;!?)]|$)/gm, '$1<em>$2</em>');
   contentHtml = replaceLegacyBlogImages(contentHtml, coverTheme);
   contentHtml = sanitizeHtml(contentHtml, BLOG_HTML_SANITIZE_OPTIONS);
-  
+
+  // Cross-links to articles that are still drafts would be live 404s: the route
+  // above calls notFound() for anything not published. Publish order cannot fix
+  // this, because a cluster's pillar and its spokes link to each other in both
+  // directions — whichever goes first has a broken link until the other lands.
+  // So unwrap anchors pointing at unpublished slugs and keep the link text. They
+  // become real links automatically the next time this page revalidates after
+  // the target is published.
+  const linkedSlugs = [...new Set([...contentHtml.matchAll(/href="\/blog\/([^"#?]+)/g)].map(m => m[1]))];
+  if (linkedSlugs.length > 0) {
+    const liveTargets = await prisma.blogPost.findMany({
+      where: { slug: { in: linkedSlugs }, status: 'published' },
+      select: { slug: true },
+    });
+    const liveSlugs = new Set(liveTargets.map(p => p.slug));
+    if (linkedSlugs.some(slug => !liveSlugs.has(slug))) {
+      contentHtml = contentHtml.replace(
+        /<a\b[^>]*href="\/blog\/([^"#?]+)[^"]*"[^>]*>([\s\S]*?)<\/a>/gi,
+        (full, slug, text) => (liveSlugs.has(slug) ? full : text),
+      );
+    }
+  }
+
   // Strip HTML tags from a string to get plain text
   const stripHtml = (html) => html.replace(/<[^>]+>/g, '').trim();
   
@@ -289,12 +318,15 @@ export default async function BlogPostPage({ params }) {
     if (text) toc.push({ level: parseInt(tocMatch[1]), text, id: tocMatch[2] });
   }
 
+  // FAQ structured data, lifted from the article's own FAQ section.
+  const faqEntries = extractFaqEntries(contentHtml, stripHtml);
+
   // Related products
   const relatedPartNumbers = (post.relatedProducts || '').split(',').map(s => s.trim()).filter(Boolean);
   let relatedProducts = [];
   if (relatedPartNumbers.length > 0) {
     relatedProducts = await prisma.product.findMany({
-      where: { partNumber: { in: relatedPartNumbers } },
+      where: { partNumber: { in: relatedPartNumbers }, duplicateOfId: null },
       select: { partNumber: true, manufacturer: true, description: true, minPrice: true, stock: true, status: true },
     });
   }
@@ -346,12 +378,25 @@ export default async function BlogPostPage({ params }) {
     ],
   };
 
+  // FAQPage: the form generative engines quote most readily. Emitted only when
+  // the article actually carries a FAQ section, so no page ships empty markup.
+  const faqLd = faqEntries.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqEntries.map(entry => ({
+      '@type': 'Question',
+      name: entry.question,
+      acceptedAnswer: { '@type': 'Answer', text: entry.answer },
+    })),
+  } : null;
+
   const tags = (post.tags || '').split(',').map(t => t.trim()).filter(Boolean);
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+      {faqLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />}
       <article className="blog-article-page">
         <div className="container">
           {/* Breadcrumbs */}
@@ -367,39 +412,65 @@ export default async function BlogPostPage({ params }) {
             )}
           </nav>
 
+          <header className="blog-article-hero">
+            <div className="blog-article-hero-copy">
+              {post.category && <span className="blog-article-cat">{post.category.name}</span>}
+              <h1>{post.title}</h1>
+              {post.excerpt && <p className="blog-article-deck">{post.excerpt}</p>}
+              <div className="blog-article-meta" aria-label="Article details">
+                <span className="blog-meta-author">By {post.author}</span>
+                {post.publishedAt && (
+                  <time dateTime={post.publishedAt.toISOString()}>
+                    {new Date(post.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </time>
+                )}
+                <span>{post.readingTime || 1} min read</span>
+              </div>
+            </div>
+
+            <div className="blog-article-cover">
+              {coverImage ? (
+                <picture>
+                  {mobileCoverImage && <source media="(max-width: 768px)" srcSet={mobileCoverImage} />}
+                  <img
+                    src={coverImage}
+                    alt={coverAlt}
+                    width="1200"
+                    height="630"
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                  />
+                </picture>
+              ) : (
+                <div className={`blog-cover-generated blog-article-generated-cover ${coverTheme.className}`}>
+                  <div className="blog-cover-generated-inner">
+                    <span>{coverTheme.label}</span>
+                    <strong>{coverTheme.title}</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+          </header>
+
           <div className="blog-article-layout">
             {/* Main Content */}
             <div className="blog-article-main">
-              {/* Header */}
-              <header className="blog-article-header">
-                {post.category && <span className="blog-article-cat">{post.category.name}</span>}
-                <h1>{post.title}</h1>
-                <div className="blog-article-meta">
-                  <span>{post.author}</span>
-                  <span>/</span>
-                  <span>{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</span>
-                  <span>/</span>
-                  <span>{post.readingTime || 1} min read</span>
-                  <span>/</span>
-                  <span>{post.viewCount?.toLocaleString()} views</span>
-                </div>
-              </header>
-
-              {/* Cover Image */}
-              <div className="blog-article-cover">
-                {coverImage ? (
-                  // No <picture>/.png fallback: the fallback file never existed,
-                  // so non-webp browsers got a 404 image. Serve the cover as-is.
-                  <img src={coverImage} alt={post.title} loading="eager" fetchPriority="high" />
-                ) : (
-                  <div className={`blog-cover-generated blog-article-generated-cover ${coverTheme.className}`}>
-                    <div className="blog-cover-generated-inner">
-                      <span>{coverTheme.label}</span>
-                      <strong>{coverTheme.title}</strong>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {toc.length > 2 && (
+                <details className="blog-mobile-toc">
+                  <summary>
+                    <span>In this article</span>
+                    <small>{toc.length} sections</small>
+                  </summary>
+                  <nav>
+                    {toc.map((item, i) => (
+                      <a key={i} href={`#${item.id}`} className={`level-${item.level}`}>
+                        {item.text}
+                      </a>
+                    ))}
+                  </nav>
+                </details>
+              )}
 
               {/* Content */}
               <div className="blog-article-content" dangerouslySetInnerHTML={{ __html: contentHtml }} />

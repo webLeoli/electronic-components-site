@@ -12,7 +12,16 @@
 import { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
 
 const STORAGE_KEY = 'fpgacenter_rfq_cart';
-const MAX_ITEMS = 50; // Safety: prevent abuse
+// Safety cap. Exported so feeders (BOM tool) can warn instead of silently
+// dropping lines past the cap — ADD returns state unchanged when full.
+export const MAX_CART_ITEMS = 50;
+const MAX_ITEMS = MAX_CART_ITEMS;
+
+// Identity key used by ADD-merge and REMOVE — one definition so the two can
+// never disagree with each other or with UI "in cart" checks.
+function itemKey(partNumber, manufacturer) {
+  return `${String(partNumber || '').trim().toUpperCase()}::${String(manufacturer || '').trim().toUpperCase()}`;
+}
 
 // Actions
 const ACTIONS = {
@@ -34,8 +43,9 @@ function cartReducer(state, action) {
       if (!partNumber) return state;
       
       // Check if already in cart
+      const key = itemKey(partNumber, manufacturer);
       const exists = state.items.findIndex(
-        item => item.partNumber.toUpperCase() === partNumber.toUpperCase()
+        item => itemKey(item.partNumber, item.manufacturer) === key
       );
       
       let newItems;
@@ -63,6 +73,13 @@ function cartReducer(state, action) {
     }
 
     case ACTIONS.REMOVE: {
+      if (typeof action.payload === 'object' && action.payload?.partNumber) {
+        const key = itemKey(action.payload.partNumber, action.payload.manufacturer);
+        return {
+          ...state,
+          items: state.items.filter(item => itemKey(item.partNumber, item.manufacturer) !== key),
+        };
+      }
       return {
         ...state,
         items: state.items.filter((_, i) => i !== action.payload),
@@ -70,11 +87,20 @@ function cartReducer(state, action) {
     }
 
     case ACTIONS.UPDATE: {
-      const { index, field, value } = action.payload;
-      const newItems = [...state.items];
-      if (newItems[index]) {
-        newItems[index] = { ...newItems[index], [field]: value };
+      const { index, field, value, partNumber, manufacturer } = action.payload;
+      // Identity-addressed update (RFQ form lines don't share the cart's
+      // ordering, so a row index there must never be used against this array).
+      const at = partNumber !== undefined
+        ? state.items.findIndex(item => itemKey(item.partNumber, item.manufacturer) === itemKey(partNumber, manufacturer))
+        : index;
+      if (at == null || at < 0 || !state.items[at]) return state;
+      // Blanking the part number = removing the item. Keeping a row with an
+      // empty PN would leave a ghost no identity-based call can address again.
+      if (field === 'partNumber' && !String(value ?? '').trim()) {
+        return { ...state, items: state.items.filter((_, i) => i !== at) };
       }
+      const newItems = [...state.items];
+      newItems[at] = { ...newItems[at], [field]: value };
       return { ...state, items: newItems };
     }
 
@@ -150,6 +176,12 @@ export function RfqCartProvider({ children }) {
     dispatch({ type: ACTIONS.UPDATE, payload: { index, field, value } });
   }, []);
 
+  // Update by identity — for callers (RFQ form) whose own row order differs
+  // from the cart's.
+  const updateItemByKey = useCallback((partNumber, manufacturer, field, value) => {
+    dispatch({ type: ACTIONS.UPDATE, payload: { partNumber, manufacturer, field, value } });
+  }, []);
+
   const clearCart = useCallback(() => {
     dispatch({ type: ACTIONS.CLEAR });
   }, []);
@@ -165,6 +197,7 @@ export function RfqCartProvider({ children }) {
     addItem,
     removeItem,
     updateItem,
+    updateItemByKey,
     clearCart,
     importBulk,
   };

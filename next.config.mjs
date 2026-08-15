@@ -1,3 +1,42 @@
+import {
+  MANUFACTURER_ALIAS_GROUPS,
+  LEGACY_BRAND_SLUGS,
+  manufacturerSlug,
+} from './src/lib/manufacturer-canonical.js';
+
+// 301s for the brand slugs retired by scripts/merge-manufacturers.mjs, generated
+// from the alias table itself so the two can never disagree. Both URL shapes that
+// embed a brand slug are covered:
+//   /manufacturer/<old>        → /manufacturer/<new>
+//   /product/<old>/:partNumber → /product/<new>/:partNumber
+// The brand segment is a single path component, so one rule per retired brand
+// covers every product URL under it (~90K products across ~45 rules). The product
+// route also 301s stale segments on its own; these rules just answer without a
+// database round-trip, and keep working for parts that have since been removed.
+function manufacturerRedirects() {
+  // Keyed by source: several spellings can share one slug ("TI Burr-Brown™" and
+  // "TI Burr-Brown" both slugify to ti-burr-brown), and Next rejects duplicate
+  // sources.
+  const bySource = new Map();
+  const pairs = [
+    ...Object.entries(MANUFACTURER_ALIAS_GROUPS).flatMap(([canonical, aliases]) =>
+      aliases.map(alias => [canonical, manufacturerSlug(alias)])),
+    // Slugs that changed shape without a rename (accent folding).
+    ...Object.entries(LEGACY_BRAND_SLUGS).map(([oldSlug, canonical]) => [canonical, oldSlug]),
+  ];
+  for (const [canonical, from] of pairs) {
+    const to = manufacturerSlug(canonical);
+    if (!from || from === to) continue;
+    for (const rule of [
+      { source: `/manufacturer/${from}`, destination: `/manufacturer/${to}`, permanent: true },
+      { source: `/product/${from}/:partNumber`, destination: `/product/${to}/:partNumber`, permanent: true },
+    ]) {
+      if (!bySource.has(rule.source)) bySource.set(rule.source, rule);
+    }
+  }
+  return [...bySource.values()];
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Explicitly normalize URLs — redirect /path/ → /path (prevents duplicate content)
@@ -13,6 +52,22 @@ const nextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
+  },
+
+  // Permanent redirects for retired/duplicate URLs.
+  async redirects() {
+    return [
+      {
+        // Duplicate taxonomy entry: /category/clock-dds and /category/dds both
+        // rendered "Direct Digital Synthesis (DDS)" as their H1. clock-dds held
+        // zero products and had no seoTitle/seoDesc, so it was a thin duplicate
+        // of the real page (82 products). Consolidate the link equity.
+        source: '/category/clock-dds',
+        destination: '/category/dds',
+        permanent: true,
+      },
+      ...manufacturerRedirects(),
+    ];
   },
 
   // Security & caching response headers

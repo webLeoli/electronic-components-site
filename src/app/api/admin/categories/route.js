@@ -6,7 +6,7 @@ import { revalidateCategory } from '@/lib/revalidate';
 
 // GET: List all categories as tree
 export async function GET(request) {
-  const authError = requireAuth(request);
+  const authError = await requireAuth(request);
   if (authError) return authError;
   try {
     const categories = await prisma.category.findMany({
@@ -25,7 +25,7 @@ export async function GET(request) {
 
 // POST: Create category
 export async function POST(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
   try {
     const data = await request.json();
@@ -54,7 +54,7 @@ export async function POST(request) {
 
 // PUT: Update category
 export async function PUT(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
   try {
     const data = await request.json();
@@ -82,7 +82,7 @@ export async function PUT(request) {
 
 // DELETE: Delete category
 export async function DELETE(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
   try {
     const { searchParams } = new URL(request.url);

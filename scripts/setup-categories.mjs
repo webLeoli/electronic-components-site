@@ -21,7 +21,11 @@ const CATEGORIES = [
         { name: 'Microprocessors (MPU)', slug: 'microprocessors' },
         { name: 'System On Chip (SoC)', slug: 'soc' },
         { name: 'DSP - Digital Signal Processors', slug: 'dsp' },
-        { name: 'Application Specific Processors', slug: 'application-specific-processors' },
+        // Slug kept for URL stability; the category holds clock generators,
+        // buffers, jitter attenuators and oscillators, not processors. See
+        // scripts/rename-clock-timing-category.mjs. A re-run of this script
+        // overwrites `name`, so this entry must stay in step with that rename.
+        { name: 'Clock Generators & Timing ICs', slug: 'application-specific-processors' },
       ]},
       { name: 'FPGAs & Programmable Logic', slug: 'fpgas-programmable-logic', children: [
         { name: 'FPGAs', slug: 'fpgas' },

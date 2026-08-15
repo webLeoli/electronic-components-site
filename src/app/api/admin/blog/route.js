@@ -7,7 +7,7 @@ import { stripDangerousHtml as sanitizeHtml, calcReadingTime } from '@/lib/blog-
 
 // GET: List blog posts
 export async function GET(request) {
-  const authError = requireAuth(request);
+  const authError = await requireAuth(request);
   if (authError) return authError;
   try {
     const { searchParams } = new URL(request.url);
@@ -47,7 +47,7 @@ export async function GET(request) {
 
 // POST: Create blog post
 export async function POST(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
   try {
     const data = await request.json();
@@ -86,7 +86,7 @@ export async function POST(request) {
 
 // PUT: Update blog post
 export async function PUT(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
   try {
     const data = await request.json();
@@ -128,7 +128,7 @@ export async function PUT(request) {
 
 // DELETE: Delete blog post
 export async function DELETE(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
   try {
     const { searchParams } = new URL(request.url);

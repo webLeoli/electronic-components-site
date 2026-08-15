@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import prisma from '@/lib/db';
 import { SITE_NAME, SITE_URL, productPath, getAvailabilityText, hasConfirmedStock } from '@/lib/seo';
 import { buildSeriesWhere, getFpgaSeriesBySlug } from '@/lib/fpga-growth';
+import { getStatusInfo } from '@/lib/product-status';
+import { formatInt } from '@/lib/text';
 
 // On-demand ISR: built on first hit, then revalidated hourly.
 export const revalidate = 3600;
@@ -75,11 +77,6 @@ async function getSeriesPageData(series) {
   return { total, inStock, constrained, products };
 }
 
-function statusLabel(status) {
-  if (status === 'eol') return 'EOL';
-  if (status === 'nrnd') return 'NRND';
-  return (status || 'active').toUpperCase();
-}
 
 export default async function FpgaSeriesPage({ params }) {
   const { slug } = await params;
@@ -137,9 +134,9 @@ export default async function FpgaSeriesPage({ params }) {
             </div>
           </div>
           <aside className="series-detail-card">
-            <div><strong>{total.toLocaleString()}</strong><span>matching part numbers</span></div>
-            <div><strong>{inStock.toLocaleString()}</strong><span>stock signals</span></div>
-            <div><strong>{constrained.toLocaleString()}</strong><span>EOL/obsolete/NRND</span></div>
+            <div><strong>{formatInt(total)}</strong><span>matching part numbers</span></div>
+            <div><strong>{formatInt(inStock)}</strong><span>stock signals</span></div>
+            <div><strong>{formatInt(constrained)}</strong><span>EOL/obsolete/NRND</span></div>
             <Link href={`/rfq?category=${encodeURIComponent(series.shortTitle)}`} className="btn btn-primary">Request {series.shortTitle} Quote</Link>
           </aside>
         </section>
@@ -188,12 +185,8 @@ export default async function FpgaSeriesPage({ params }) {
                     </td>
                     <td>{product.leadTime || 'RFQ'}</td>
                     <td>
-                      <span className={`badge ${
-                        product.status === 'active' ? 'badge-success' :
-                        product.status === 'obsolete' ? 'badge-danger' :
-                        product.status === 'eol' ? 'badge-warning' : 'badge-info'
-                      }`}>
-                        {statusLabel(product.status)}
+                      <span className={`badge ${getStatusInfo(product.status).badgeClass}`}>
+                        {getStatusInfo(product.status).short}
                       </span>
                     </td>
                     <td><Link href={`/rfq?part=${encodeURIComponent(product.partNumber)}`} className="btn btn-outline btn-sm">Verify</Link></td>

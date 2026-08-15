@@ -9,12 +9,25 @@ import {
   getUploadPolicy,
   validateImageUpload,
 } from '@/lib/image-upload-policy';
+import { enforceMaxBody } from '@/lib/request-limits';
+
+// Ceiling for the whole multipart body, above every per-folder policy (max
+// 2MB) plus its envelope. The policy check is what reports a precise limit to
+// the user; this only stops the heap from filling first.
+const UPLOAD_MAX_BODY = 8 * 1024 * 1024;
 
 export async function POST(request) {
-  const authError = requireAuth(request);
+  const authError = await requireAuth(request);
   if (authError) return authError;
 
   try {
+    // Ahead of formData(), which buffers the whole body. The per-policy size
+    // check below only runs once that has already happened; this is the
+    // coarse ceiling that keeps an oversized upload out of the heap. Policies
+    // top out at 2MB, so the largest legitimate upload is far under this.
+    const tooLarge = enforceMaxBody(request, UPLOAD_MAX_BODY);
+    if (tooLarge) return tooLarge;
+
     const formData = await request.formData();
     const file = formData.get('file');
     const folder = formData.get('folder') || 'products';

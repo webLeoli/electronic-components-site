@@ -21,6 +21,7 @@ import {
   readJsonl,
   timestamp,
 } from './safe-data-package-lib.mjs';
+import { runPostImportMaintenance } from './post-import-maintenance.mjs';
 
 const prisma = new PrismaClient();
 
@@ -306,6 +307,10 @@ function productData(row, categoryMap) {
     indexable: !!row.indexable,
     createdAt: parseDate(row.createdAt),
     updatedAt: parseDate(row.updatedAt),
+    // Sitemap <lastmod> source. Prefer the exported value; fall back to the
+    // row's updatedAt so a package produced before this column existed still
+    // yields a sane date instead of null.
+    contentUpdatedAt: parseDate(row.contentUpdatedAt) ?? parseDate(row.updatedAt),
   };
 }
 
@@ -462,6 +467,10 @@ async function main() {
   console.log(opts.apply ? 'Import complete.' : 'Validation complete.');
   for (const [table, result] of Object.entries(summary)) {
     console.log(`  ${table}: read=${result.read.toLocaleString()} written=${result.written.toLocaleString()}${result.skipped ? ` skipped=${result.skipped.toLocaleString()}` : ''}`);
+  }
+
+  if (opts.apply && summary.products?.written > 0) {
+    await runPostImportMaintenance(prisma);
   }
 }
 

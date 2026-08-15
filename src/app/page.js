@@ -5,8 +5,10 @@ import { productPath, SITE_NAME, SITE_URL, SITE_DESC, SITE_TAGLINE, hasConfirmed
 import CategoryIcon from '@/components/CategoryIcon';
 import { ProductIcon } from '@/components/ProductImage';
 import { FALLBACK_CATEGORIES, FALLBACK_PARTS, FALLBACK_BRANDS } from '@/lib/fallbacks';
+import { DISTRIBUTOR_BRANDS } from '@/lib/manufacturer-canonical';
 import { buildProgrammableLogicWhere, getFpgaSeries } from '@/lib/fpga-growth';
 import { getSubsystems } from '@/lib/robotics-growth';
+import { getStatusInfo } from '@/lib/product-status';
 import { unstable_cache } from 'next/cache';
 
 // ISR: the homepage re-renders at most every 5 minutes; data-layer caches below
@@ -85,7 +87,13 @@ const getDailyRotatingProducts = unstable_cache(
     // Indexed boolean instead of the 30-branch ILIKE OR predicate: the flag is
     // precomputed by scripts/flag-programmable-logic.mjs. The final fallback
     // below still uses the live predicate in case the flag was never backfilled.
-    const where = { isProgrammableLogic: true, stock: { gt: 0 } };
+    const where = {
+      isProgrammableLogic: true,
+      stock: { gt: 0 },
+      duplicateOfId: null,
+      status: { notIn: ['obsolete', 'eol', 'nrnd'] },
+      manufacturer: { notIn: Array.from(DISTRIBUTOR_BRANDS) },
+    };
     const idRange = await prisma.product.aggregate({
       where,
       _min: { id: true },
@@ -143,7 +151,13 @@ const getDailyRotatingProducts = unstable_cache(
 
     if (products.length === 0) {
       return prisma.product.findMany({
-        where: buildProgrammableLogicWhere(),
+        where: {
+          ...buildProgrammableLogicWhere(),
+          duplicateOfId: null,
+          stock: { gt: 0 },
+          status: { notIn: ['obsolete', 'eol', 'nrnd'] },
+          manufacturer: { notIn: Array.from(DISTRIBUTOR_BRANDS) },
+        },
         select: PRODUCT_SELECT,
         orderBy: [{ stock: 'desc' }, { qualityScore: 'desc' }, { partNumber: 'asc' }],
         take: DAILY_ROTATION_SIZE,
@@ -172,16 +186,31 @@ const getHomeData = unstable_cache(
         }),
         // Daily rotating products: deterministic random sample per UTC day.
         getDailyRotatingProducts(rotationKey),
-        // Top manufacturers with verified slugs from Manufacturer table
-        prisma.manufacturer.findMany({
-          select: { name: true, slug: true },
-          orderBy: { name: 'asc' },
-          take: 24,
-        }),
-        // Overall stats
+        // Homepage equity goes to brands that actually have products, ranked
+        // by catalogue depth — alphabetical take(24) started at 4D Systems /
+        // ABLIC and skipped Xilinx.
+        prisma.$queryRawUnsafe(`
+          SELECT m.name, m.slug
+          FROM "Manufacturer" m
+          INNER JOIN (
+            SELECT "manufacturer", COUNT(*)::int AS cnt
+            FROM "Product"
+            WHERE "duplicateOfId" IS NULL
+            GROUP BY "manufacturer"
+          ) p ON p."manufacturer" = m.name
+          WHERE p.cnt > 0
+          ORDER BY p.cnt DESC
+          LIMIT 24
+        `),
         Promise.all([
-          prisma.product.count(),
-          prisma.manufacturer.count(),
+          prisma.product.count({ where: { duplicateOfId: null } }),
+          prisma.$queryRawUnsafe(`
+            SELECT COUNT(*)::int AS cnt
+            FROM "Manufacturer" m
+            INNER JOIN (
+              SELECT DISTINCT "manufacturer" FROM "Product" WHERE "duplicateOfId" IS NULL
+            ) p ON p."manufacturer" = m.name
+          `),
         ]),
       ]);
 
@@ -220,7 +249,7 @@ const getHomeData = unstable_cache(
         popularProducts: popularProducts.length > 0 ? popularProducts : null,
         manufacturers: manufacturers.length > 0 ? manufacturers : null,
         totalProducts: stats[0] || 10000,
-        totalManufacturers: stats[1] || 500,
+        totalManufacturers: stats[1]?.[0]?.cnt || 500,
       };
     } catch (e) {
       console.error('Homepage data fetch error:', e.message);
@@ -383,13 +412,8 @@ export default async function HomePage() {
                     {part.minPrice > 0 ? `$${part.minPrice.toFixed(part.minPrice < 1 ? 4 : 2)}` : 'RFQ'}
                     </td>
                     <td>
-                      <span className={`badge ${
-                        part.status === 'active' ? 'badge-success' :
-                        part.status === 'obsolete' ? 'badge-danger' :
-                        part.status === 'eol' ? 'badge-warning' :
-                        'badge-info'
-                      }`}>
-                        {part.status === 'nrnd' ? 'NRND' : part.status.toUpperCase()}
+                      <span className={`badge ${getStatusInfo(part.status).badgeClass}`}>
+                        {getStatusInfo(part.status).short}
                       </span>
                     </td>
                     <td>

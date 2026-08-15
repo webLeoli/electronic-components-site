@@ -11,7 +11,7 @@ import { revalidateAllProducts, revalidateProduct } from '@/lib/revalidate';
  * Returns quality score distribution stats and indexing status.
  */
 export async function GET(request) {
-  const authError = requireAuth(request);
+  const authError = await requireAuth(request);
   if (authError) return authError;
 
   try {
@@ -75,10 +75,12 @@ export async function GET(request) {
       await Promise.all([
         prisma.product.count(),
         prisma.product.count({ where: { indexable: true } }),
-        prisma.product.count({ where: { qualityScore: { gte: 70 } } }),
-        prisma.product.count({ where: { qualityScore: { gte: 45, lt: 70 } } }),
-        prisma.product.count({ where: { qualityScore: { gte: 20, lt: 45 } } }),
-        prisma.product.count({ where: { qualityScore: { lt: 20 } } }),
+        // Bounds come from TIERS so the dashboard cannot drift from the
+        // scoring scale (they were pinned to the pre-reweighting 70/45/20).
+        prisma.product.count({ where: { qualityScore: { gte: TIERS.gold.min } } }),
+        prisma.product.count({ where: { qualityScore: { gte: TIERS.silver.min, lt: TIERS.gold.min } } }),
+        prisma.product.count({ where: { qualityScore: { gte: TIERS.bronze.min, lt: TIERS.silver.min } } }),
+        prisma.product.count({ where: { qualityScore: { lt: TIERS.bronze.min } } }),
         prisma.product.aggregate({ _avg: { qualityScore: true } }),
         getIndexingPolicy(),
       ]);
@@ -115,7 +117,7 @@ export async function GET(request) {
  * Batch operations: re-score, enable/disable indexing by tier.
  */
 export async function POST(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
 
   try {
@@ -245,12 +247,27 @@ export async function POST(request) {
  * Per-product override: force index or noindex a specific product.
  */
 export async function PUT(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
 
   try {
     const { productId, indexable: forceIndexable } = await request.json();
     if (!productId) return NextResponse.json({ error: 'productId required' }, { status: 400 });
+
+    // A consolidated duplicate 301s to its canonical row — force-indexing it
+    // would put a redirecting URL in the sitemap.
+    if (forceIndexable) {
+      const existing = await prisma.product.findUnique({
+        where: { id: productId },
+        select: { duplicateOfId: true, partNumber: true },
+      });
+      if (existing?.duplicateOfId) {
+        return NextResponse.json(
+          { error: `${existing.partNumber} is a consolidated duplicate (301s to its canonical part) and cannot be indexed.` },
+          { status: 400 }
+        );
+      }
+    }
 
     const product = await prisma.product.update({
       where: { id: productId },

@@ -26,7 +26,10 @@ HEALTH_URL="${HEALTH_URL:-}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # NOTE: "data" holds customer RFQ BOM uploads (data/bom-uploads) - removing it
 # from this list would let FULL_CLEAN=1 permanently delete customer files.
-PRESERVE_PATHS="${PRESERVE_PATHS:-.env .env.local uploads public/uploads storage public/storage data}"
+# NOTE: "public/package-images" holds the 21 representative package photos that
+# product pages, OG tags, and Product JSON-LD reference. They live only on the
+# server (not in git), so dropping them here breaks images across the catalogue.
+PRESERVE_PATHS="${PRESERVE_PATHS:-.env .env.local uploads public/uploads storage public/storage data public/package-images}"
 PRESERVE_TMP=""
 
 cd "$SCRIPT_DIR"
@@ -138,7 +141,7 @@ if [ "${FULL_CLEAN:-0}" = "1" ]; then
   restore_after_full_clean
   CLEAN_NEXT=1
 else
-  git clean -fd --exclude=.env --exclude=.env.local --exclude=uploads --exclude=public/uploads
+  git clean -fd --exclude=.env --exclude=.env.local --exclude=uploads --exclude=public/uploads --exclude=public/package-images --exclude=data --exclude=storage --exclude=public/storage
 fi
 
 log "Installing Node dependencies"
@@ -181,6 +184,17 @@ else
   npm run build
 fi
 
+# Import any new/updated blog drafts from docs/blog-drafts into the database
+# (idempotent upsert by slug; never demotes a published post). The publish
+# timer then rolls them out on its own cadence — priority drafts first.
+# Non-fatal: a blog import problem must not block a code deploy.
+log "Importing blog drafts"
+if node scripts/import-blog-drafts.mjs; then
+  log "Blog draft import complete"
+else
+  log "WARNING: blog draft import failed (deploy continues; run manually: node scripts/import-blog-drafts.mjs)"
+fi
+
 restart_service
 
 if [ -n "$HEALTH_URL" ]; then
@@ -190,6 +204,23 @@ if [ -n "$HEALTH_URL" ]; then
     log "Health check passed"
   else
     log "curl is not installed; skipped health check"
+  fi
+
+  # Deeper post-deploy assertions against the PUBLIC url, i.e. through the
+  # proxy. The one that matters most: 59,869 part numbers contain "/", so their
+  # URLs carry %2F, and an nginx block that rewrites the URI decodes it and 404s
+  # every one of them. That failure is invisible to a homepage health check and
+  # to `npm run build`, and it takes out 8% of the catalogue.
+  #
+  # SKIP_SMOKE=1 to bypass, e.g. when deploying with the database unreachable.
+  if [ "${SKIP_SMOKE:-0}" != "1" ]; then
+    log "Running post-deploy smoke check"
+    SMOKE_BASE_URL="${SMOKE_BASE_URL:-${HEALTH_URL%/api/health}}"
+    if BASE_URL="$SMOKE_BASE_URL" node scripts/smoke-check.mjs; then
+      log "Smoke check passed"
+    else
+      fail "Smoke check failed against $SMOKE_BASE_URL (see output above; SKIP_SMOKE=1 to bypass)"
+    fi
   fi
 fi
 

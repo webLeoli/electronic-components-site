@@ -14,7 +14,7 @@ const CODE_KEYS = [
 
 // GET: Load all code integration settings
 export async function GET(request) {
-  const authError = requireAdmin(request);
+  const authError = await requireAdmin(request);
   if (authError) return authError;
   try {
     const settings = await prisma.adminSetting.findMany({
@@ -35,7 +35,7 @@ export async function GET(request) {
 // every visitor's page, so writing it must be restricted to the admin role at
 // the route level — not only by the proxy middleware (defense in depth).
 export async function PUT(request) {
-  const authError = requireAdmin(request);
+  const authError = await requireAdmin(request);
   if (authError) return authError;
   try {
     const data = await request.json();

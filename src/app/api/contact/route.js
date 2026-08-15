@@ -2,16 +2,30 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { sendContactNotification } from '@/lib/email';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { enforceMaxBody } from '@/lib/request-limits';
 
-// IP-based rate limiter — max 5 submissions per hour per IP.
+// A contact message is a name, an email and some prose. Generous for that,
+// nowhere near enough to be worth sending as an attack.
+const CONTACT_MAX_BODY = 256 * 1024;
+
+// IP-based rate limiting in two tiers, same reasoning as /api/rfq: the
+// submission quota is charged only once a request is well-formed, so three
+// typos in the email field cannot spend a visitor's whole hour and lock them
+// out of contacting the company. The wider guard still stops flooding.
 // Backed by Redis when REDIS_URL is set (cluster-safe), in-memory otherwise.
 const CONTACT_RATE_LIMIT = { windowMs: 60 * 60 * 1000, max: 5, prefix: 'contact' };
+const CONTACT_REQUEST_LIMIT = { windowMs: 60 * 60 * 1000, max: 40, prefix: 'contact-req' };
 
 export async function POST(request) {
   try {
+    // Before request.json() buffers the body.
+    const tooLarge = enforceMaxBody(request, CONTACT_MAX_BODY);
+    if (tooLarge) return tooLarge;
+
     const ip = getClientIp(request);
 
-    if (!(await rateLimit(ip, CONTACT_RATE_LIMIT))) {
+    // Flood guard only.
+    if (!(await rateLimit(ip, CONTACT_REQUEST_LIMIT))) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
         { status: 429 }
@@ -35,6 +49,14 @@ export async function POST(request) {
       );
     }
 
+    // Well-formed: now charge the submission quota.
+    if (!(await rateLimit(ip, CONTACT_RATE_LIMIT))) {
+      return NextResponse.json(
+        { error: 'You have sent several messages recently. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     // Sanitize
     const sanitize = (s, maxLen = 500) =>
       s ? String(s).trim().replace(/[<>]/g, '').substring(0, maxLen) : '';
@@ -49,6 +71,7 @@ export async function POST(request) {
     };
 
     // Save to database for admin review
+    let dbSaved = false;
     try {
       await prisma.contactSubmission.create({
         data: {
@@ -61,16 +84,30 @@ export async function POST(request) {
           ipAddress: ip,
         },
       });
+      dbSaved = true;
     } catch (dbErr) {
       console.error('Failed to save contact to DB:', dbErr.message);
-      // Continue even if DB save fails — email notification is more important
     }
 
-    // Fire-and-forget admin notification with a dedicated contact template
-    // (the RFQ template rendered an empty parts table for contact messages).
-    sendContactNotification(contactData).catch(err =>
-      console.error('[Contact email] notification failed:', err)
-    );
+    // Await the notification when the DB row failed: if neither the database
+    // nor the email captured the message, telling the visitor "sent
+    // successfully" silently loses their enquiry.
+    if (dbSaved) {
+      sendContactNotification(contactData).catch(err =>
+        console.error('[Contact email] notification failed:', err)
+      );
+    } else {
+      const emailed = await sendContactNotification(contactData).catch(err => {
+        console.error('[Contact email] notification failed:', err);
+        return false;
+      });
+      if (!emailed) {
+        return NextResponse.json(
+          { error: 'We could not receive your message right now. Please email us directly at sales@fpgacenter.com.' },
+          { status: 500 }
+        );
+      }
+    }
 
     return NextResponse.json({
       success: true,

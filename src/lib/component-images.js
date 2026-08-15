@@ -465,7 +465,7 @@ export function generateProductAlt(product) {
   if (hasConfirmedStock(product)) {
     parts.push('- In Stock');
   } else {
-    parts.push('- Buy Online');
+    parts.push('- RFQ');
   }
 
   return parts.join(' ');

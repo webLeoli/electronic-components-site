@@ -30,6 +30,8 @@ import { createReadStream, existsSync, writeFileSync, readFileSync } from 'fs';
 import { createInterface } from 'readline';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
+import { runPostImportMaintenance } from './post-import-maintenance.mjs';
+import { canonicalManufacturer, manufacturerSlug } from '../src/lib/manufacturer-canonical.js';
 
 const prisma = new PrismaClient();
 
@@ -418,7 +420,10 @@ class LookupCache {
     if (this.manufacturers.has(key)) return;
 
     try {
-      const slug = toSlug(name);
+      // Brand slugs must match lib/manufacturer-canonical.manufacturerSlug():
+      // toSlug() turns "&" into "-" while product URLs turn it into "and", so a
+      // brand created here got a slug its own product pages never linked to.
+      const slug = manufacturerSlug(name);
       // Ensure unique slug
       let finalSlug = slug;
       let attempt = 0;
@@ -672,7 +677,9 @@ async function importCSV(opts) {
       return idx !== undefined && idx < fields.length ? fields[idx] : null;
     };
 
-    const manufacturer = sanitizeString(getField('manufacturer'), 200) || 'Unknown';
+    // Canonicalized on the way in: duplicate brand spellings fork the brand page
+    // and the whole /product/<brand>/… URL space (lib/manufacturer-canonical.js).
+    const manufacturer = canonicalManufacturer(sanitizeString(getField('manufacturer'), 200)) || 'Unknown';
     const description = sanitizeString(getField('description'), 2000);
     const categoryName = sanitizeString(getField('category'), 200);
     const packageType = sanitizeString(getField('packageType'), 100);
@@ -740,6 +747,10 @@ async function importCSV(opts) {
     console.log(`  Error log:              ${opts.logFile}`);
   }
   console.log(`${'═'.repeat(60)}\n`);
+
+  if (!opts.dryRun && (stats.imported > 0 || stats.updated > 0)) {
+    await runPostImportMaintenance(prisma);
+  }
 }
 
 // ============================================================
@@ -790,11 +801,19 @@ async function flushBatch(batch, opts, cache, logger, stats) {
         specs: item.specs,
       };
 
+      // Importers write rendered fields, so they own the sitemap lastmod
+      // (housekeeping jobs must never set it). Kept OUT of productData on
+      // purpose: update mode below treats a non-empty field set as "something
+      // changed", and a timestamp that is always present would make every row
+      // look dirty on every run - re-creating the very lastmod pollution this
+      // column exists to prevent.
+      const contentUpdatedAt = new Date();
+
       if (opts.mode === 'skip') {
         // Only create if not exists
         try {
           await prisma.product.create({
-            data: { partNumber: item.partNumber, ...productData },
+            data: { partNumber: item.partNumber, ...productData, contentUpdatedAt },
           });
           stats.imported++;
         } catch (e) {
@@ -823,7 +842,7 @@ async function flushBatch(batch, opts, cache, logger, stats) {
           if (Object.keys(updateData).length > 0) {
             await prisma.product.update({
               where: { partNumber: item.partNumber },
-              data: updateData,
+              data: { ...updateData, contentUpdatedAt },
             });
             stats.updated++;
           } else {
@@ -831,7 +850,7 @@ async function flushBatch(batch, opts, cache, logger, stats) {
           }
         } else {
           await prisma.product.create({
-            data: { partNumber: item.partNumber, ...productData },
+            data: { partNumber: item.partNumber, ...productData, contentUpdatedAt },
           });
           stats.imported++;
         }
@@ -839,8 +858,8 @@ async function flushBatch(batch, opts, cache, logger, stats) {
         // Upsert: always overwrite all fields
         await prisma.product.upsert({
           where: { partNumber: item.partNumber },
-          create: { partNumber: item.partNumber, ...productData },
-          update: productData,
+          create: { partNumber: item.partNumber, ...productData, contentUpdatedAt },
+          update: { ...productData, contentUpdatedAt },
         });
         // We can't easily tell if it was create or update with upsert
         stats.imported++;

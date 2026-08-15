@@ -125,7 +125,17 @@ export async function proxy(request) {
       if (origin) {
         let originHost = null;
         try { originHost = new URL(origin).host; } catch {}
-        if (originHost !== request.nextUrl.host) {
+        // Compare against the host the browser actually addressed, NOT
+        // request.nextUrl.host: under `next start` that resolves to
+        // localhost:<port> and ignores both Host and X-Forwarded-Host, so
+        // behind the reverse proxy every admin write from the real domain
+        // was rejected as cross-origin (it only ever matched in local dev).
+        // X-Forwarded-Host first — nginx sets it to the public hostname.
+        const forwardedHost = request.headers.get('x-forwarded-host');
+        const expectedHost = (forwardedHost || request.headers.get('host') || '')
+          .split(',')[0]
+          .trim();
+        if (!expectedHost || originHost !== expectedHost) {
           return NextResponse.json({ error: 'Cross-origin request rejected' }, { status: 403 });
         }
       }

@@ -1,5 +1,6 @@
 import prisma from '@/lib/db';
 import { productPath, SITE_URL } from '@/lib/seo';
+import { TIERS } from '@/lib/quality-score';
 import { getFpgaSeries } from '@/lib/fpga-growth';
 import { getLiveSubsystems } from '@/lib/robotics-growth';
 
@@ -19,6 +20,8 @@ const STATIC_PAGES = [
   { path: '/manufacturers', changeFrequency: 'weekly', priority: 0.8 },
   { path: '/rfq', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/bom', changeFrequency: 'monthly', priority: 0.6 },
+  { path: '/tools', changeFrequency: 'monthly', priority: 0.6 },
+  { path: '/tools/fpga-part-number-decoder', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/blog', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/about', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/contact', changeFrequency: 'monthly', priority: 0.5 },
@@ -138,13 +141,27 @@ function getStaticPages() {
 
 async function getCategoryPages() {
   try {
-    const categories = await prisma.category.findMany({
+    const allCategories = await prisma.category.findMany({
       select: { id: true, slug: true, parentId: true },
       orderBy: [{ parentId: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
     });
 
+    // Drop leaf categories that hold no products. Such a page renders nothing
+    // but an empty state, and submitting it invites Google to classify the
+    // sitemap as padded with thin URLs. Branch categories stay: they aggregate
+    // their descendants' products even with no direct rows of their own.
+    const parentIds = new Set(allCategories.map(c => c.parentId).filter(Boolean));
+    const withProducts = new Set(
+      (await prisma.$queryRaw`
+        SELECT DISTINCT "categoryId" FROM "Product" WHERE "categoryId" IS NOT NULL AND "duplicateOfId" IS NULL
+      `).map(row => row.categoryId),
+    );
+    const categories = allCategories.filter(
+      c => withProducts.has(c.id) || parentIds.has(c.id),
+    );
+
     const categoryDates = await getCategoryLastModDates();
-    const categoryById = new Map(categories.map(category => [category.id, category]));
+    const categoryById = new Map(allCategories.map(category => [category.id, category]));
 
     return categories.map(category => {
       let priority = 0.8;
@@ -169,13 +186,26 @@ async function getCategoryPages() {
 
 async function getManufacturerPages() {
   try {
-    const manufacturers = await prisma.manufacturer.findMany({
-      select: { slug: true, name: true },
-      orderBy: { name: 'asc' },
-    });
-    const manufacturerDates = await getManufacturerLastModDates();
+    // Only brands that actually have products. Every Manufacturer row used to
+    // ship here, including 35 that held none — their pages rendered "0 products"
+    // and were submitted to Google as crawlable content. The product-count
+    // aggregate is already computed for lastmod below, so the filter is free.
+    const [manufacturers, manufacturerDates] = await Promise.all([
+      prisma.manufacturer.findMany({
+        select: { slug: true, name: true },
+        orderBy: { name: 'asc' },
+      }),
+      getManufacturerLastModDates(),
+    ]);
+    // duplicateOfId IS NULL matches the manufacturer page's own 404 rule
+    // (manufacturer/[slug]/page.js counts listable rows only) — without it a
+    // brand whose rows are all consolidated duplicates is submitted, then 404s.
+    const withProducts = await prisma.$queryRawUnsafe(
+      `SELECT DISTINCT "manufacturer" FROM "Product" WHERE "duplicateOfId" IS NULL`
+    );
+    const populated = new Set(withProducts.map(row => row.manufacturer));
 
-    return manufacturers.map(manufacturer => ({
+    return manufacturers.filter(m => populated.has(m.name)).map(manufacturer => ({
       url: `${SITE_URL}/manufacturer/${manufacturer.slug}`,
       lastModified: manufacturerDates.get(manufacturer.name) || STATIC_CONTENT_DATE,
       changeFrequency: 'weekly',
@@ -220,24 +250,47 @@ async function getProductPages(batchIndex) {
   if (!Number.isInteger(batchIndex) || batchIndex < 0) return [];
 
   try {
+    const offset = batchIndex * PRODUCTS_PER_SITEMAP;
+    let startId = null;
+
+    // A deep OFFSET on the full sitemap projection makes Postgres scan and
+    // sort the entire 700K-row catalogue for every late shard. Resolve only
+    // the boundary id first: Product_indexable_id_idx makes this an index-only
+    // scan, then the actual 5K-row page is a small forward index scan.
+    if (offset > 0) {
+      const boundary = await prisma.product.findFirst({
+        where: { indexable: true },
+        select: { id: true },
+        orderBy: { id: 'asc' },
+        skip: offset,
+      });
+      if (!boundary) return [];
+      startId = boundary.id;
+    }
+
     const products = await prisma.product.findMany({
-      where: { indexable: true },
+      where: {
+        indexable: true,
+        ...(startId == null ? {} : { id: { gte: startId } }),
+      },
       select: {
         partNumber: true,
         manufacturer: true,
-        updatedAt: true,
+        contentUpdatedAt: true,
         qualityScore: true,
       },
       orderBy: { id: 'asc' },
-      skip: batchIndex * PRODUCTS_PER_SITEMAP,
       take: PRODUCTS_PER_SITEMAP,
     });
 
     return products.map(product => ({
       url: `${SITE_URL}${productPath(product.partNumber, product.manufacturer)}`,
-      lastModified: toIsoDate(product.updatedAt),
-      changeFrequency: product.qualityScore >= 70 ? 'weekly' : 'monthly',
-      priority: product.qualityScore >= 70 ? 0.8 : 0.6,
+      lastModified: toIsoDate(product.contentUpdatedAt),
+      // Gold-tier pages get the higher crawl hint. Reads the tier definition
+      // rather than a literal 70, which silently became "almost nothing"
+      // when the scoring scale was reweighted.
+      changeFrequency: product.qualityScore >= TIERS.gold.min ? 'weekly' : 'monthly',
+      priority: product.qualityScore >= TIERS.gold.min ? 0.8 : 0.6,
     }));
   } catch {
     return [];
@@ -304,29 +357,31 @@ function parseCustomUrlPaths(value) {
 async function getLatestDate(type) {
   try {
     switch (type) {
+      // All three product-derived cases read contentUpdatedAt, not updatedAt:
+      // a housekeeping rescore must not advance any sitemap's lastmod.
       case 'product': {
         const latest = await prisma.product.findFirst({
           where: { indexable: true },
-          orderBy: { updatedAt: 'desc' },
-          select: { updatedAt: true },
+          orderBy: { contentUpdatedAt: 'desc' },
+          select: { contentUpdatedAt: true },
         });
-        return toIsoDate(latest?.updatedAt);
+        return toIsoDate(latest?.contentUpdatedAt);
       }
       case 'category': {
         const latest = await prisma.product.findFirst({
           where: { indexable: true, categoryId: { not: null } },
-          orderBy: { updatedAt: 'desc' },
-          select: { updatedAt: true },
+          orderBy: { contentUpdatedAt: 'desc' },
+          select: { contentUpdatedAt: true },
         });
-        return toIsoDate(latest?.updatedAt);
+        return toIsoDate(latest?.contentUpdatedAt);
       }
       case 'manufacturer': {
         const latest = await prisma.product.findFirst({
           where: { indexable: true },
-          orderBy: { updatedAt: 'desc' },
-          select: { updatedAt: true },
+          orderBy: { contentUpdatedAt: 'desc' },
+          select: { contentUpdatedAt: true },
         });
-        return toIsoDate(latest?.updatedAt);
+        return toIsoDate(latest?.contentUpdatedAt);
       }
       case 'blog': {
         const latest = await prisma.blogPost.findFirst({
@@ -349,7 +404,7 @@ async function getCategoryLastModDates() {
 
   try {
     const results = await prisma.$queryRaw`
-      SELECT "categoryId", MAX("updatedAt") as "lastModified"
+      SELECT "categoryId", MAX("contentUpdatedAt") as "lastModified"
       FROM "Product"
       WHERE "indexable" = true AND "categoryId" IS NOT NULL
       GROUP BY "categoryId"
@@ -368,7 +423,7 @@ async function getManufacturerLastModDates() {
 
   try {
     const results = await prisma.$queryRaw`
-      SELECT "manufacturer", MAX("updatedAt") as "lastModified"
+      SELECT "manufacturer", MAX("contentUpdatedAt") as "lastModified"
       FROM "Product"
       WHERE "indexable" = true AND "manufacturer" IS NOT NULL AND "manufacturer" != ''
       GROUP BY "manufacturer"

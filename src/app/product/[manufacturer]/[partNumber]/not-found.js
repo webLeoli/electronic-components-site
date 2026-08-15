@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { unstable_cache } from 'next/cache';
 import prisma from '@/lib/db';
 import { productPath } from '@/lib/seo';
+import { formatInt } from '@/lib/text';
 
 export const metadata = {
   title: 'Product Not Found',
@@ -100,7 +101,7 @@ export default async function ProductNotFound() {
                   {p.manufacturer || 'Various'}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--space-sm)', fontSize: '13px' }}>
-                  <span className="text-success">{p.stock?.toLocaleString()} in stock</span>
+                  <span className="text-success">{formatInt(p.stock)} in stock</span>
                   <span style={{ fontWeight: 600 }}>{p.minPrice ? `$${p.minPrice.toFixed(2)}` : 'RFQ'}</span>
                 </div>
               </Link>

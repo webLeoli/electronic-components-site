@@ -9,8 +9,14 @@ import { getTrackingData, resetBehaviorData } from '@/lib/tracker';
 export default function RfqForm() {
   const searchParams = useSearchParams();
   const prefilledPart = searchParams.get('part') || '';
+  const prefilledManufacturer = searchParams.get('manufacturer') || '';
   const prefilledCategory = searchParams.get('category') || '';
-  const { items: cartItems, removeItem, clearCart, addItem, count } = useRfqCart();
+  // The product page sends the quantity the buyer actually typed.
+  const prefilledQtyRaw = Number.parseInt(searchParams.get('qty'), 10);
+  const prefilledQty = Number.isFinite(prefilledQtyRaw) && prefilledQtyRaw >= 1
+    ? String(prefilledQtyRaw)
+    : '';
+  const { items: cartItems, removeItem, clearCart, addItem, updateItemByKey, count, initialized: cartReady } = useRfqCart();
   const fileInputRef = useRef(null);
 
   // Local form lines — initialized from cart
@@ -37,35 +43,49 @@ export default function RfqForm() {
   const [bomFile, setBomFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
 
-  // Sync cart items into lines on mount
+  // Wait for localStorage hydration. The first paint has cartItems=[] and
+  // locking initialized here used to drop the persisted inquiry cart.
   useEffect(() => {
-    if (initialized) return;
+    if (!cartReady || initialized) return;
 
     let initialLines = [];
 
     if (cartItems.length > 0) {
-      // Use cart items as the starting lines
+      // cartPn/cartMfr pin the line to its cart entry, so edits and removals
+      // keep addressing the SAME cart item even after the visible fields change.
       initialLines = cartItems.map(item => ({
         partNumber: item.partNumber || '',
         manufacturer: item.manufacturer || '',
         qty: item.qty ? String(item.qty) : '',
         targetPrice: item.targetPrice || '',
+        cartPn: item.partNumber || '',
+        cartMfr: item.manufacturer || '',
       }));
     }
 
-    // If a part was passed via URL and isn't already in cart
     if (prefilledPart) {
-      const exists = initialLines.some(
-        line => line.partNumber.toUpperCase() === prefilledPart.toUpperCase()
+      const existing = initialLines.find(
+        line =>
+          line.partNumber.toUpperCase() === prefilledPart.toUpperCase() &&
+          (!prefilledManufacturer ||
+            (line.manufacturer || '').toUpperCase() === prefilledManufacturer.toUpperCase())
       );
-      if (!exists) {
-        initialLines.push({ partNumber: prefilledPart, manufacturer: '', qty: '', targetPrice: '' });
-        // Also add to global cart
-        addItem(prefilledPart);
+      if (existing) {
+        if (prefilledQty && !existing.qty) existing.qty = prefilledQty;
+        if (prefilledManufacturer && !existing.manufacturer) existing.manufacturer = prefilledManufacturer;
+      } else {
+        initialLines.push({
+          partNumber: prefilledPart,
+          manufacturer: prefilledManufacturer,
+          qty: prefilledQty,
+          targetPrice: '',
+          cartPn: prefilledPart,
+          cartMfr: prefilledManufacturer,
+        });
+        addItem(prefilledPart, prefilledManufacturer, prefilledQty || 1);
       }
     }
 
-    // Always have at least one empty line
     if (initialLines.length === 0) {
       initialLines = [{ partNumber: '', manufacturer: '', qty: '', targetPrice: '' }];
     }
@@ -73,25 +93,35 @@ export default function RfqForm() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLines(initialLines);
     setInitialized(true);
-  }, [cartItems, prefilledPart, initialized, addItem]);
+  }, [cartReady, cartItems, prefilledPart, prefilledManufacturer, prefilledQty, initialized, addItem]);
 
   const addLine = () => {
     setLines([...lines, { partNumber: '', manufacturer: '', qty: '', targetPrice: '' }]);
   };
 
   const removeLine = (index) => {
-    if (lines.length > 1) {
-      setLines(lines.filter((_, i) => i !== index));
-      // Also remove from cart if it was a cart item
-      if (index < count) {
-        removeItem(index);
-      }
+    if (lines.length <= 1) return;
+    const line = lines[index];
+    setLines(lines.filter((_, i) => i !== index));
+    // Remove by the ORIGINAL cart identity — the visible fields may have been
+    // edited, and removing by the edited value leaves a ghost item in the cart.
+    if (line.cartPn) {
+      removeItem({ partNumber: line.cartPn, manufacturer: line.cartMfr });
     }
   };
 
   const updateLine = (index, field, value) => {
+    const line = lines[index];
     const updated = [...lines];
     updated[index] = { ...updated[index], [field]: value };
+    // Keep the cart in step for cart-originated lines, so leaving the page and
+    // coming back doesn't resurrect stale values. The identity fields move
+    // together with the edit.
+    if (line.cartPn) {
+      updateItemByKey(line.cartPn, line.cartMfr, field, value);
+      if (field === 'partNumber') updated[index].cartPn = value;
+      if (field === 'manufacturer') updated[index].cartMfr = value;
+    }
     setLines(updated);
   };
 
@@ -310,9 +340,11 @@ export default function RfqForm() {
             <span className="rfq-col-label" style={{ width: '40px' }}></span>
           </div>
 
-          {lines.map((line, i) => (
-            <div key={i} className={`rfq-part-row ${i < count ? 'from-cart' : ''}`}>
-              {i < count && (
+          {lines.map((line, i) => {
+            const fromCart = Boolean(line.cartPn);
+            return (
+            <div key={i} className={`rfq-part-row ${fromCart ? 'from-cart' : ''}`}>
+              {fromCart && (
                 <div className="rfq-cart-badge" title="Added from product browsing">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                     <polyline points="20 6 9 17 4 12" />
@@ -325,7 +357,6 @@ export default function RfqForm() {
                 placeholder="e.g. STM32F103C8T6"
                 value={line.partNumber}
                 onChange={(e) => updateLine(i, 'partNumber', e.target.value)}
-                required
                 style={{ flex: 2 }}
                 id={`part-number-${i}`}
               />
@@ -343,7 +374,6 @@ export default function RfqForm() {
                 placeholder="Qty"
                 value={line.qty}
                 onChange={(e) => updateLine(i, 'qty', e.target.value)}
-                required
                 min="1"
                 style={{ flex: 1 }}
               />
@@ -366,7 +396,8 @@ export default function RfqForm() {
                 ✕
               </button>
             </div>
-          ))}
+            );
+          })}
 
           <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)', flexWrap: 'wrap' }}>
             <button type="button" className="btn btn-secondary" onClick={addLine} id="add-line-btn">

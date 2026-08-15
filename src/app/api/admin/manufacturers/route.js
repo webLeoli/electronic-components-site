@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server';
 import { apiError } from '@/lib/api-error';
 import prisma from '@/lib/db';
 import { requireAuth, requireEditor } from '@/lib/admin-auth';
-import { manufacturerSlug } from '@/lib/manufacturer-map';
+import { manufacturerSlug, standardizeName } from '@/lib/manufacturer-map';
 import { revalidateManufacturer, revalidateAllProducts } from '@/lib/revalidate';
 
 // GET: List all manufacturers
 export async function GET(request) {
-  const authError = requireAuth(request);
+  const authError = await requireAuth(request);
   if (authError) return authError;
   try {
     const manufacturers = await prisma.manufacturer.findMany({
@@ -34,13 +34,16 @@ export async function GET(request) {
 
 // POST: Create manufacturer
 export async function POST(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
   try {
     const data = await request.json();
     if (!data.name) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
 
-    const name = data.name.trim();
+    // Canonicalize the name, not just the slug: products are matched to a brand
+    // by exact name, so storing "Analog Devices Inc." next to a slug of
+    // "analog-devices" produced a page that found none of its own products.
+    const name = standardizeName(data.name.trim());
     const slug = data.slug || manufacturerSlug(name);
     const manufacturer = await prisma.manufacturer.create({
       data: {
@@ -66,7 +69,7 @@ export async function POST(request) {
 
 // PUT: Update manufacturer
 export async function PUT(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
   try {
     const data = await request.json();
@@ -121,7 +124,7 @@ export async function PUT(request) {
 
 // DELETE: Delete manufacturer
 export async function DELETE(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
   try {
     const { searchParams } = new URL(request.url);

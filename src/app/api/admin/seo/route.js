@@ -4,7 +4,7 @@ import { requireAuth, requireAdmin } from '@/lib/admin-auth';
 import { getSitemapSummary } from '@/lib/sitemap-data';
 
 export async function GET(request) {
-  const authError = requireAuth(request);
+  const authError = await requireAuth(request);
   if (authError) return authError;
   try {
     const settings = await prisma.adminSetting.findMany({
@@ -30,7 +30,7 @@ export async function GET(request) {
 
 export async function PUT(request) {
   // requireAdmin: robots.txt/sitemap settings can deindex the whole site.
-  const authError = requireAdmin(request);
+  const authError = await requireAdmin(request);
   if (authError) return authError;
   try {
     const body = await request.json();

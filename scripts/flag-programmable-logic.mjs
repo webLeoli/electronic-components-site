@@ -1,29 +1,16 @@
 // Backfill/refresh the Product.isProgrammableLogic flag from the canonical
 // predicate in src/lib/fpga-series-data.js (single source of truth - no
-// duplicated SQL here).
+// duplicated SQL here), then VACUUM ANALYZE so search stays fast.
 //
-// Run after bulk product imports (and once after adding the column):
-//   node scripts/flag-programmable-logic.mjs
+// The importers run this automatically (scripts/post-import-maintenance.mjs).
+// Use this entry point after ad-hoc SQL edits, or once after adding the column:
+//   npm run db:maintain
 //
 // Idempotent: clears rows that no longer match, sets rows that now match.
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-import { buildProgrammableLogicWhere } from '../src/lib/fpga-series-data.js';
+import { runPostImportMaintenance } from './post-import-maintenance.mjs';
 
 const prisma = new PrismaClient();
-const plWhere = buildProgrammableLogicWhere();
-
-const t0 = Date.now();
-const cleared = await prisma.product.updateMany({
-  where: { isProgrammableLogic: true, NOT: plWhere },
-  data: { isProgrammableLogic: false },
-});
-const flagged = await prisma.product.updateMany({
-  where: { AND: [plWhere, { isProgrammableLogic: false }] },
-  data: { isProgrammableLogic: true },
-});
-const total = await prisma.product.count({ where: { isProgrammableLogic: true } });
-console.log(
-  `cleared: ${cleared.count}, newly flagged: ${flagged.count}, total flagged: ${total} (${Math.round((Date.now() - t0) / 1000)}s)`,
-);
+await runPostImportMaintenance(prisma);
 await prisma.$disconnect();

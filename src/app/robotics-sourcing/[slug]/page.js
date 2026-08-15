@@ -12,6 +12,7 @@ import {
   getCachedSubsystemStats,
   MIN_COUNT_FOR_DISPLAY,
 } from "@/lib/robotics-growth";
+import { formatInt } from "@/lib/text";
 
 // On-demand ISR: built on first hit, then revalidated hourly.
 export const revalidate = 3600;
@@ -152,7 +153,7 @@ export default async function RoboticsSubsystemPage({ params }) {
             <div>
               {available >= MIN_COUNT_FOR_DISPLAY ? (
                 <>
-                  <strong>{available.toLocaleString()}</strong>
+                  <strong>{formatInt(available)}</strong>
                   <span>alternative parts listed</span>
                 </>
               ) : (

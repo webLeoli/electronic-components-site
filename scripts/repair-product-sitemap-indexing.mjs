@@ -8,17 +8,20 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import { DEFAULT_INDEX_THRESHOLD } from '../src/lib/quality-score.js';
 
 const prisma = new PrismaClient();
 const PRODUCTS_PER_SITEMAP = 5000;
 
 function parseArgs() {
-  const opts = { threshold: 70, dryRun: false };
+  // Default MUST track the live policy. A hardcoded 70 here once meant running
+  // this "repair" would silently noindex every Silver-tier page (score 48-69).
+  const opts = { threshold: DEFAULT_INDEX_THRESHOLD, dryRun: false };
   for (const arg of process.argv.slice(2)) {
     if (arg === '--dry-run') {
       opts.dryRun = true;
     } else if (arg.startsWith('--threshold=')) {
-      opts.threshold = Number.parseInt(arg.split('=')[1], 10) || 70;
+      opts.threshold = Number.parseInt(arg.split('=')[1], 10) || DEFAULT_INDEX_THRESHOLD;
     } else {
       throw new Error(`Unknown option: ${arg}`);
     }
@@ -76,12 +79,19 @@ async function main() {
 
   await setPolicy(opts.threshold);
 
+  // Consolidated duplicates 301 to their canonical row; they must never be
+  // indexable no matter their score, or the sitemap advertises redirects.
   const enabled = await prisma.product.updateMany({
-    where: { qualityScore: { gte: opts.threshold } },
+    where: { qualityScore: { gte: opts.threshold }, duplicateOfId: null },
     data: { indexable: true },
   });
   const disabled = await prisma.product.updateMany({
-    where: { qualityScore: { lt: opts.threshold } },
+    where: {
+      OR: [
+        { qualityScore: { lt: opts.threshold } },
+        { duplicateOfId: { not: null } },
+      ],
+    },
     data: { indexable: false },
   });
 

@@ -2,6 +2,9 @@ import {
   getProductDisplayImage,
   generateRepresentativeImageAlt,
 } from './product-image-resolver';
+import { getStatusInfo } from './product-status';
+import { canonicalManufacturer, isDistributorBrand, manufacturerSlug } from './manufacturer-canonical';
+import { formatInt } from './text';
 
 const SITE_NAME = 'FPGACenter';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'https://fpgacenter.com';
@@ -31,13 +34,15 @@ if (process.env.NODE_ENV === 'production' && SITE_URL.includes('localhost')) {
 
 // Generate URL path for product pages: /product/{manufacturer-slug}/{partNumber}
 // This is the single source of truth for product URLs across the entire site.
+//
+// The brand segment is canonicalized (lib/manufacturer-canonical.js), not just
+// slugified: a row still carrying a duplicate feed spelling would otherwise get
+// its own parallel URL space. The product route compares the requested segment
+// against this path and 301s mismatches, so canonicalizing here is what retires
+// the old brand slugs — with or without the data migration having run.
 export function productPath(partNumber, manufacturer) {
-  const mfrSlug = (manufacturer || 'unknown')
-    .toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-  return `/product/${mfrSlug || 'unknown'}/${encodeURIComponent(partNumber)}`;
+  const mfrSlug = manufacturerSlug(canonicalManufacturer(manufacturer) || 'unknown');
+  return `/product/${mfrSlug}/${encodeURIComponent(partNumber)}`;
 }
 
 export function hasConfirmedStock(product) {
@@ -47,7 +52,7 @@ export function hasConfirmedStock(product) {
 
 export function getAvailabilityText(product, { includeUnit = false } = {}) {
   if (hasConfirmedStock(product)) {
-    return `${product.stock.toLocaleString()}${includeUnit ? ' pcs' : ''} In Stock`;
+    return `${formatInt(product.stock)}${includeUnit ? ' pcs' : ''} In Stock`;
   }
   if (product?.status === 'obsolete' || product?.status === 'eol') return 'RFQ for sourcing';
   return 'Available on request';
@@ -87,28 +92,29 @@ function getProductSeoImage(product) {
 export function generateProductMeta(product) {
   const mfr = product.manufacturer || 'Electronic Component';
   const encodedPN = encodeURIComponent(product.partNumber);
-  const stockLabel = hasConfirmedStock(product) ? 'In Stock' : 'Available';
+  const stockLabel = hasConfirmedStock(product)
+    ? 'In Stock'
+    : (product.status === 'obsolete' || product.status === 'eol' ? 'RFQ' : 'Available');
   const categoryName = product.category?.name || '';
 
-  // Title: Part# - Manufacturer | Status | FPGACenter
-  // e.g. "XC7A35T-1CPG236C - Xilinx | In Stock | Buy Online"
-  const title = `${product.partNumber} - ${mfr} | ${stockLabel} | Buy Online`;
-  const ogTitle = `${product.partNumber} - ${mfr} | Buy at ${SITE_NAME}`;
+  // Root layout appends " | FPGACenter". Do not add "Buy Online" — most of the
+  // catalogue is RFQ, and Google rewrites titles that don't match the page.
+  const title = `${product.partNumber} - ${mfr} | ${stockLabel}`;
+  const ogTitle = `${product.partNumber} - ${mfr}`;
 
-  // Description: richer with category, package, stock for SERP snippet
-  const descParts = [`Buy ${product.partNumber} by ${mfr}`];
+  const descParts = [`${product.partNumber} by ${mfr}`];
   if (categoryName) descParts.push(`(${categoryName})`);
   if (product.packageType) descParts.push(`in ${product.packageType} package`);
   descParts.push('.');
   if (hasConfirmedStock(product)) {
-    descParts.push(`${product.stock.toLocaleString()} units in stock.`);
+    descParts.push(`${formatInt(product.stock)} units in stock.`);
   } else if (product.status === 'obsolete' || product.status === 'eol') {
     descParts.push('RFQ for verified sourcing.');
   }
   if (product.minPrice > 0) {
     descParts.push(`From $${product.minPrice.toFixed(product.minPrice < 1 ? 4 : 2)}.`);
   }
-  descParts.push(`No MOQ. Fast shipping from ${SITE_NAME}.`);
+  descParts.push(`Request a quote at ${SITE_NAME}.`);
   const description = descParts.join(' ');
   const productUrl = `${SITE_URL}${productPath(product.partNumber, product.manufacturer)}`;
 
@@ -153,10 +159,12 @@ export function generateProductMeta(product) {
 export function generateCategoryMeta(category, { page = 1 } = {}) {
   const description = category.seoDesc || `Browse ${category.name} electronic components. Find hard-to-find and obsolete parts at ${SITE_NAME}. Fast delivery, no minimum order.`;
   const baseUrl = `${SITE_URL}/category/${category.slug}`;
-  // Canonical always points to the base category URL (page 1).
-  // Paginated views are not independent entities — they share the same intent.
-  // Google can still crawl ?page=N for product discovery but consolidates equity.
-  const canonicalUrl = baseUrl;
+  // Paginated views self-canonicalize. Pointing page 2+ at page 1 declares them
+  // duplicates, so Google drops them and every product listed past the first 20
+  // loses its only internal link. Filter permutations (?status=, ?mount=) are
+  // deliberately excluded from the canonical: those ARE facets of the same
+  // listing and should consolidate onto the plain paginated URL.
+  const canonicalUrl = page > 1 ? `${baseUrl}?page=${page}` : baseUrl;
 
   // Title with product count for CTR — shows inventory scale
   const titleBase = category.seoTitle || `${category.name} - Electronic Components`;
@@ -192,72 +200,50 @@ export function generateProductJsonLd(product) {
   const hasPrice = product.minPrice != null && product.minPrice > 0;
   const priceValid = new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0];
 
-  // Build offer — use AggregateOffer for price range display in Google
-  const baseOffer = {
-    url: productUrl,
-    availability: getSchemaAvailability(product),
-    // FPGACenter sells original/genuine parts — even obsolete/EOL products
-    // are new-old-stock (NOS), not second-hand. Always NewCondition.
-    itemCondition: 'https://schema.org/NewCondition',
-    seller: {
-      '@type': 'Organization',
-      name: SITE_NAME,
-      url: SITE_URL,
-    },
-    // Shipping details for Google Shopping rich results — global shipping
-    shippingDetails: {
-      '@type': 'OfferShippingDetails',
-      shippingDestination: [
-        { '@type': 'DefinedRegion', addressCountry: 'US' },
-        { '@type': 'DefinedRegion', addressCountry: 'CN' },
-        { '@type': 'DefinedRegion', addressCountry: 'DE' },
-        { '@type': 'DefinedRegion', addressCountry: 'GB' },
-        { '@type': 'DefinedRegion', addressCountry: 'JP' },
-        { '@type': 'DefinedRegion', addressCountry: 'KR' },
-        { '@type': 'DefinedRegion', addressCountry: 'CA' },
-      ],
-      deliveryTime: {
-        '@type': 'ShippingDeliveryTime',
-        handlingTime: { '@type': 'QuantitativeValue', minValue: 0, maxValue: 1, unitCode: 'DAY' },
-        transitTime: { '@type': 'QuantitativeValue', minValue: 2, maxValue: 7, unitCode: 'DAY' },
-      },
-    },
-    // Return policy — 30-day returns for defective/incorrect parts
-    hasMerchantReturnPolicy: {
-      '@type': 'MerchantReturnPolicy',
-      returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
-      merchantReturnDays: 30,
-      returnMethod: 'https://schema.org/ReturnByMail',
-      returnFees: 'https://schema.org/FreeReturn',
-    },
-  };
-
+  // One Offer at the listed minPrice. A fabricated AggregateOffer lowPrice
+  // (minPrice * 0.58) and 0–1 day handling / FreeReturn shipping nodes were
+  // ineligible-or-worse for rich results: Google can suppress Product snippets
+  // when price or shipping does not match the page.
   let offers;
   if (hasPrice) {
-    // AggregateOffer shows price range in Google ("$0.50 - $1.20" instead of single price)
-    const lowPrice = +(product.minPrice * 0.58).toFixed(4); // bulk tier estimate
-    offers = {
-      '@type': 'AggregateOffer',
-      ...baseOffer,
-      priceCurrency: 'USD',
-      lowPrice: lowPrice,
-      highPrice: product.minPrice,
-      offerCount: 6, // 6 price tiers
-      priceValidUntil: priceValid,
-    };
-  } else {
     offers = {
       '@type': 'Offer',
-      ...baseOffer,
+      url: productUrl,
+      availability: getSchemaAvailability(product),
+      itemCondition: 'https://schema.org/NewCondition',
+      seller: {
+        '@type': 'Organization',
+        name: SITE_NAME,
+        url: SITE_URL,
+      },
+      priceCurrency: 'USD',
+      price: product.minPrice,
+      priceValidUntil: priceValid,
     };
   }
+  // No price: emit NO offers node at all.
+  //
+  // This used to emit an Offer carrying availability and seller but no price.
+  // Google's Product documentation makes "price or priceSpecification.price"
+  // REQUIRED on an Offer, so that object was invalid structured data rather than
+  // merely incomplete — 116,775 products, 10,815 of them indexed, each reporting
+  // a "Missing field price" error in Search Console.
+  //
+  // `offers` itself is optional: Product needs one of review / aggregateRating /
+  // offers to be eligible for a rich result, and a part with no price cannot win
+  // a price rich result anyway. Dropping the node costs nothing and clears the
+  // error. Setting `price: 0` would be worse than either — in schema.org that
+  // states the part is free, which is not what an RFQ-only listing means.
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.partNumber,
     description: product.description || `${product.partNumber}${product.manufacturer ? ` by ${product.manufacturer}` : ''} electronic component`,
-    brand: product.manufacturer ? {
+    // schema.org brand is the maker of the product. For rows filed under a
+    // distributor (Rochester Electronics et al.) the real brand is unknown, and
+    // naming the reseller was a false claim in structured data — omit instead.
+    brand: product.manufacturer && !isDistributorBrand(product.manufacturer) ? {
       '@type': 'Brand',
       name: product.manufacturer,
     } : undefined,
@@ -291,10 +277,7 @@ export function generateProductJsonLd(product) {
     additionalProperties.push({
       '@type': 'PropertyValue',
       name: 'Lifecycle Status',
-      value: product.status === 'active' ? 'Active' :
-             product.status === 'obsolete' ? 'Obsolete' :
-             product.status === 'eol' ? 'End of Life' :
-             product.status === 'nrnd' ? 'Not Recommended for New Design' : product.status,
+      value: getStatusInfo(product.status).schemaLabel,
     });
   }
   // Parse specs JSON and add key parameters
@@ -367,10 +350,6 @@ export function generateOrganizationJsonLd() {
         availableLanguage: ['English'],
       },
     ],
-    hasCredential: [
-      { '@type': 'EducationalOccupationalCredential', credentialCategory: 'certification', name: 'ISO 9001:2015' },
-      { '@type': 'EducationalOccupationalCredential', credentialCategory: 'quality process', name: 'IDEA-STD-1010-aligned inspection' },
-    ],
     address: {
       '@type': 'PostalAddress',
       addressLocality: 'Shenzhen',
@@ -383,7 +362,9 @@ export function generateOrganizationJsonLd() {
 }
 
 /**
- * Generate WebSite JSON-LD with SearchAction for Google Sitelinks Searchbox.
+ * WebSite JSON-LD. SearchAction is omitted on purpose: /search is noindex and
+ * robots-disallowed, so a sitelinks searchbox target would contradict crawl
+ * policy. Re-add only if the search landing is allowed to be indexed.
  */
 export function generateWebSiteJsonLd() {
   return {
@@ -391,14 +372,6 @@ export function generateWebSiteJsonLd() {
     '@type': 'WebSite',
     name: SITE_NAME,
     url: SITE_URL,
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: {
-        '@type': 'EntryPoint',
-        urlTemplate: `${SITE_URL}/search?q={search_term_string}`,
-      },
-      'query-input': 'required name=search_term_string',
-    },
   };
 }
 

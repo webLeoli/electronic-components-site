@@ -1,13 +1,55 @@
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { productPath } from '@/lib/seo';
+
+/**
+ * Every tag attached to an unstable_cache() entry in the app.
+ *
+ * These tags were being declared and never used: nothing in the codebase called
+ * revalidateTag, so the only way a cached aggregate refreshed was its timer.
+ * That forced the timers to stay short — the category tree and its per-child
+ * product counts sat at 300s — and a crawler landing on an expired entry pays
+ * the full cost: /category/embedded takes 5.5s cold against 61ms warm, because
+ * the tree query with counts is ~0.9-2.5s and the total count another ~0.9s.
+ *
+ * With deliberate purging available, those timers can be long and the expensive
+ * work happens on import instead of on a visitor's request.
+ */
+const DATA_CACHE_TAGS = [
+  'category-tree',
+  'category-product-count',
+  'categories',
+  'manufacturers',
+  'homepage',
+  'homepage-products',
+  'sitemap',
+  'fpga-sourcing',
+  'robotics-sourcing',
+];
+
+/**
+ * Purge the cached aggregates. Call after any bulk data change — imports,
+ * merges, rescoring — or the site serves the previous catalogue's numbers until
+ * each timer happens to expire.
+ */
+export function revalidateDataCaches(tags = DATA_CACHE_TAGS) {
+  for (const tag of tags) {
+    try {
+      revalidateTag(tag);
+    } catch (e) {
+      console.error('[revalidate] tag failed for', tag, e?.message);
+    }
+  }
+  return tags;
+}
+
+export { DATA_CACHE_TAGS };
 
 /**
  * On-demand ISR revalidation helpers.
  *
- * The public pages are ISR-cached (revalidate=3600), so without these calls an
- * admin edit wouldn't show on the frontend for up to an hour. Each admin
- * mutation calls the matching helper so the affected public pages refresh
- * immediately.
+ * Most public listing/content pages use ISR. Product detail pages are dynamic
+ * to prevent unbounded per-SKU disk artifacts, but keeping the same targeted
+ * calls makes mutations safe if route caching changes later.
  *
  * Revalidation is best-effort: a failure here must never break the mutation's
  * response, so every call is wrapped.

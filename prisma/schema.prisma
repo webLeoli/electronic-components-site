@@ -34,6 +34,22 @@ model Product {
   isProgrammableLogic Boolean @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  // Last change to anything a visitor or crawler can SEE. `updatedAt` is not
+  // usable as a sitemap <lastmod>: it is bumped by every housekeeping write
+  // (quality rescore, isProgrammableLogic backfill), which told Google that
+  // hundreds of thousands of unchanged pages had been edited. Only writers that
+  // touch rendered fields set this one; metadata-only jobs must leave it alone.
+  contentUpdatedAt DateTime?
+  // Duplicate consolidation. Supplier feeds ship the same orderable part under
+  // punctuation variants ("74AHC132D,112" from NXP vs "74AHC132D112" resold by
+  // Rochester); partNumber's @unique cannot see them as equal, so the catalogue
+  // held 12,315 such groups / 24,760 rows, 18,063 of them indexable. The thinner
+  // row points here at the row that owns the canonical page and the product
+  // route 301s to it. Set by scripts/dedupe-part-numbers.mjs — never by hand,
+  // and never on a row that is itself a duplicate target.
+  duplicateOfId Int?
+  duplicateOf   Product?  @relation("ProductDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates    Product[] @relation("ProductDuplicates")
   category     Category? @relation(fields: [categoryId], references: [id])
 
   @@index([manufacturer])
@@ -41,6 +57,9 @@ model Product {
   @@index([status])
   @@index([qualityScore])
   @@index([indexable])
+  // Product sitemap shards filter by indexable and order by id. Without this
+  // composite index every deep shard sorts the full 700K-row catalogue.
+  @@index([indexable, id])
   // Composite indexes for the hot read paths at 700K+ rows:
   // - related-products / same-manufacturer widgets sort by stock
   // - category and manufacturer listings sort by partNumber
@@ -51,8 +70,13 @@ model Product {
   @@index([categoryId, partNumber])
   @@index([manufacturer, partNumber])
   @@index([indexable, updatedAt])
+  // Sitemap lastmod lookups order indexable rows by content date.
+  @@index([indexable, contentUpdatedAt])
   @@index([status, stock])
   @@index([isProgrammableLogic, stock])
+  // Duplicate lookups go both ways: the product route reads duplicateOfId on the
+  // row it just loaded, and the dedupe script re-checks a winner's dependents.
+  @@index([duplicateOfId])
   // Trigram GIN indexes power ILIKE '%q%' search. They MUST be declared here:
   // `prisma db push` drops any index it doesn't know about, which is exactly
   // how these got silently dropped once. scripts/add-search-indexes.mjs

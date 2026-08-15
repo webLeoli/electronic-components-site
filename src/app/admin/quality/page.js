@@ -1,12 +1,23 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
+import { TIERS, getQualityTier, DEFAULT_INDEX_THRESHOLD } from '@/lib/quality-score';
 
-const TIER_CONFIG = {
-  gold:    { label: 'Gold',    emoji: '🥇', color: '#22c55e', bg: 'rgba(34,197,94,0.12)',  min: 70 },
-  silver:  { label: 'Silver',  emoji: '🥈', color: '#3b82f6', bg: 'rgba(59,130,246,0.12)', min: 45 },
-  bronze:  { label: 'Bronze',  emoji: '🥉', color: '#eab308', bg: 'rgba(234,179,8,0.12)',  min: 20 },
-  noindex: { label: 'Noindex', emoji: '⛔', color: '#ef4444', bg: 'rgba(239,68,68,0.12)',  min: 0 },
+// Cut points and labels come from the scoring module; only the presentation
+// extras (background tints) are local. This block used to hardcode 70/45/20,
+// which silently disagreed with the scale after it was reweighted.
+const TIER_BG = {
+  gold: 'rgba(34,197,94,0.12)',
+  silver: 'rgba(59,130,246,0.12)',
+  bronze: 'rgba(234,179,8,0.12)',
+  noindex: 'rgba(239,68,68,0.12)',
 };
+
+const TIER_CONFIG = Object.fromEntries(
+  Object.entries(TIERS).map(([key, tier]) => [
+    key,
+    { label: tier.label, emoji: tier.emoji, color: tier.color, bg: TIER_BG[key], min: tier.min },
+  ]),
+);
 
 function TierBadge({ tier, score }) {
   const cfg = TIER_CONFIG[tier] || TIER_CONFIG.noindex;
@@ -21,12 +32,7 @@ function TierBadge({ tier, score }) {
   );
 }
 
-function getTier(score) {
-  if (score >= 70) return 'gold';
-  if (score >= 45) return 'silver';
-  if (score >= 20) return 'bronze';
-  return 'noindex';
-}
+const getTier = getQualityTier;
 
 // --- Visual bar chart component ---
 function TierBar({ tiers, total }) {
@@ -215,7 +221,7 @@ export default function AdminQualityPage() {
             </div>
             <div className="admin-card" style={{ padding: '16px', textAlign: 'center' }}>
               <div style={{ fontSize: '24px', fontWeight: 800, color: stats.policy?.disabled ? '#ef4444' : '#38bdf8' }}>
-                {stats.policy?.disabled ? 'Disabled' : `>= ${stats.policy?.threshold ?? 45}`}
+                {stats.policy?.disabled ? 'Disabled' : `>= ${stats.policy?.threshold ?? DEFAULT_INDEX_THRESHOLD}`}
               </div>
               <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Index Policy</div>
             </div>
@@ -255,13 +261,13 @@ export default function AdminQualityPage() {
                   cannot silently revert a 70-threshold rollout to 45. */}
               <button
                 className="admin-btn admin-btn-primary"
-                onClick={() => handleOperation('rescore', stats.policy?.threshold ?? 70)}
+                onClick={() => handleOperation('rescore', stats.policy?.threshold ?? DEFAULT_INDEX_THRESHOLD)}
                 disabled={operating}
                 style={{ padding: '12px', fontSize: '13px' }}
               >
                 {operating ? '⏳ Processing...' : '🔄 Re-score All Products'}
                 <br />
-                <span style={{ fontSize: '10px', opacity: 0.7 }}>Recompute @ ≥{stats.policy?.threshold ?? 70}</span>
+                <span style={{ fontSize: '10px', opacity: 0.7 }}>Recompute @ ≥{stats.policy?.threshold ?? DEFAULT_INDEX_THRESHOLD}</span>
               </button>
 
               {/* Enable Gold only */}

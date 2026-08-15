@@ -1,17 +1,25 @@
+import { headers } from 'next/headers';
 import prisma from '@/lib/db';
 import Link from 'next/link';
 import AddToRfqButton from '@/components/AddToRfqButton';
 import { ProductIcon } from '@/components/ProductImage';
 import { productPath, SITE_NAME, SITE_URL, hasConfirmedStock, getAvailabilityText } from '@/lib/seo';
+import { getStatusInfo } from '@/lib/product-status';
+import { MIN_SEARCH_QUERY_LENGTH, MAX_SEARCH_QUERY_LENGTH, SEARCH_RATE_LIMIT, countSearchMatches } from '@/lib/search-policy';
+import { canonicalNamesForQuery } from '@/lib/manufacturer-canonical';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { formatInt } from '@/lib/text';
 
+// Catalogue size claim kept in step with lib/seo SITE_DESC — this page used to
+// advertise "over 1 million components" against a 720K-row catalogue.
 export const metadata = {
   title: 'Search Electronic Components',
-  description: 'Search our inventory of over 1 million electronic components by part number, manufacturer, or keyword.',
+  description: 'Search our catalogue of 720K+ electronic components by part number, manufacturer, or keyword.',
   robots: { index: false, follow: true },
   alternates: { canonical: `${SITE_URL}/search` },
   openGraph: {
     title: `Search Electronic Components | ${SITE_NAME}`,
-    description: 'Search 1M+ electronic components by part number, manufacturer, or keyword.',
+    description: 'Search 720K+ electronic components by part number, manufacturer, or keyword.',
     url: `${SITE_URL}/search`,
     siteName: SITE_NAME,
     type: 'website',
@@ -20,7 +28,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: `Search Electronic Components | ${SITE_NAME}`,
-    description: 'Search 1M+ electronic components by part number, manufacturer, or keyword.',
+    description: 'Search 720K+ electronic components by part number, manufacturer, or keyword.',
     images: [`${SITE_URL}/og-image.png`],
   },
 };
@@ -38,44 +46,105 @@ export default async function SearchPage({ searchParams }) {
 
   let products = [];
   let totalProducts = 0;
+  let totalCapped = false;
   let totalPages = 0;
   let queryError = null;
 
   if (query) {
-    if (query.length < 2) {
-      queryError = 'Search term must be at least 2 characters long.';
-    } else if (query.length > 100) {
-      queryError = 'Search term is too long (maximum 100 characters).';
+    if (query.length < MIN_SEARCH_QUERY_LENGTH) {
+      queryError = `Search term must be at least ${MIN_SEARCH_QUERY_LENGTH} characters long.`;
+    } else if (query.length > MAX_SEARCH_QUERY_LENGTH) {
+      queryError = `Search term is too long (maximum ${MAX_SEARCH_QUERY_LENGTH} characters).`;
+    } else if (!(await rateLimit(getClientIp({ headers: await headers() }), SEARCH_RATE_LIMIT))) {
+      // Same bucket as /api/search. Checked only once the query is known to be
+      // index-servable, so a rejected short query costs nothing.
+      queryError = 'Too many searches from your connection. Please wait a moment and try again.';
     } else {
-      // Search in partNumber, manufacturer, description
-      const where = {
-        OR: [
-          { partNumber: { contains: query, mode: 'insensitive' } },
-          { manufacturer: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-        ],
-      };
+      // Search in partNumber, manufacturer, description.
+      // duplicateOfId: null keeps punctuation variants of the same part from
+      // taking two result slots (scripts/dedupe-part-numbers.mjs).
+      const textOr = [
+        { partNumber: { contains: query, mode: 'insensitive' } },
+        { manufacturer: { contains: query, mode: 'insensitive' } },
+        { description: { contains: query, mode: 'insensitive' } },
+      ];
+      // Retired brand spellings still have to find their products — a search for
+      // "Skyworks Solutions" must not come back empty now that the rows say
+      // "Skyworks". See canonicalNamesForQuery.
+      const brandNames = canonicalNamesForQuery(query);
 
-      totalProducts = await prisma.product.count({ where });
+      // Counted to a cap, not exactly: an exact count of a broad term cost 6.3s
+      // on its own, and pagination stops at MAX_PAGES × ITEMS_PER_PAGE anyway.
+      const counted = await countSearchMatches(prisma, {
+        textOr, brandNames, baseWhere: { duplicateOfId: null },
+      });
+      totalProducts = counted.total;
+      totalCapped = counted.capped;
+
+      // When the query only matches through a retired brand name, search that
+      // brand directly instead of OR-ing it into the text predicate: the
+      // (manufacturer, partNumber) and (manufacturer, stock) indexes then serve
+      // the sort, where the OR form degenerates into a scan.
+      // Existence check, not a count: whether the text side matches anything is
+      // all that matters here, and `take: 1` lets the planner stop at the first
+      // row instead of counting every match.
+      const textMatchesAnything = brandNames.length === 0 || (await prisma.product.findMany({
+        where: { OR: textOr, duplicateOfId: null }, select: { id: true }, take: 1,
+      })).length > 0;
+      const where = (brandNames.length && !textMatchesAnything)
+        ? { manufacturer: { in: brandNames }, duplicateOfId: null }
+        : { OR: [...textOr, ...brandNames.map(name => ({ manufacturer: { equals: name } }))], duplicateOfId: null };
       // Cap total pages to prevent deep pagination queries
       totalPages = Math.min(Math.ceil(totalProducts / ITEMS_PER_PAGE), MAX_PAGES);
 
-      const orderBy = {};
       const validSorts = ['partNumber', 'manufacturer', 'minPrice', 'stock'];
-      orderBy[validSorts.includes(sort) ? sort : 'partNumber'] = order === 'desc' ? 'desc' : 'asc';
+      const sortField = validSorts.includes(sort) ? sort : 'partNumber';
+      const sortDir = order === 'desc' ? 'desc' : 'asc';
+      const orderBy = { [sortField]: sortDir };
+      const ROW_SELECT = {
+        partNumber: true, manufacturer: true, description: true, packageType: true,
+        mountType: true, status: true, minPrice: true, stock: true, moq: true,
+        imageUrl: true, category: { select: { slug: true, name: true } },
+      };
 
-      products = await prisma.product.findMany({
-        where,
-        orderBy,
-        skip: (page - 1) * ITEMS_PER_PAGE,
-        take: ITEMS_PER_PAGE,
-        // Explicit select keeps specs/datasheet blobs out of the result rows.
-        select: {
-          partNumber: true, manufacturer: true, description: true, packageType: true,
-          mountType: true, status: true, minPrice: true, stock: true, moq: true,
-          imageUrl: true, category: { select: { slug: true, name: true } },
-        },
-      });
+      if (!totalCapped) {
+        // Few enough matches that the database can sort them outright.
+        products = await prisma.product.findMany({
+          where, orderBy,
+          skip: (page - 1) * ITEMS_PER_PAGE,
+          take: ITEMS_PER_PAGE,
+          // Explicit select keeps specs/datasheet blobs out of the result rows.
+          select: ROW_SELECT,
+        });
+      } else {
+        // Broad term. Sorting it in the database means sorting every match: a
+        // word like "regulator" hits ~100K descriptions and ORDER BY costs 1.4s
+        // against 9ms for the same query unsorted. Since pagination stops at
+        // MAX_PAGES × ITEMS_PER_PAGE anyway, take exactly that many candidates
+        // (the planner stops early), rank them here, and page within them.
+        const pool = await prisma.product.findMany({
+          where,
+          select: { id: true, partNumber: true, manufacturer: true, minPrice: true, stock: true },
+          take: MAX_PAGES * ITEMS_PER_PAGE,
+        });
+        const dir = sortDir === 'desc' ? -1 : 1;
+        pool.sort((a, b) => {
+          const x = a[sortField], y = b[sortField];
+          if (x == null && y == null) return 0;
+          if (x == null) return 1;
+          if (y == null) return -1;
+          if (typeof x === 'number' && typeof y === 'number') return (x - y) * dir;
+          return String(x).localeCompare(String(y)) * dir;
+        });
+        const pageIds = pool.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE).map(r => r.id);
+        const rows = pageIds.length
+          ? await prisma.product.findMany({ where: { id: { in: pageIds } }, select: ROW_SELECT })
+          : [];
+        // findMany returns rows in its own order; restore the ranked one.
+        const byPart = new Map(rows.map(r => [r.partNumber, r]));
+        const ranked = pool.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+        products = ranked.map(r => byPart.get(r.partNumber)).filter(Boolean);
+      }
     }
   }
 
@@ -103,7 +172,9 @@ export default async function SearchPage({ searchParams }) {
         </h1>
         {query && (
           <p style={{ color: 'var(--color-text-muted)', marginTop: '4px', fontSize: '14px' }}>
-            {totalProducts.toLocaleString()} {totalProducts === 1 ? 'result' : 'results'} found
+            {/* "2,000+" when the count hit its cap — the exact figure is not
+                worth the full-table scan it costs (see search-policy.js). */}
+            {formatInt(totalProducts)}{totalCapped ? '+' : ''} {totalProducts === 1 ? 'result' : 'results'} found
           </p>
         )}
       </div>
@@ -200,12 +271,8 @@ export default async function SearchPage({ searchParams }) {
                       {product.minPrice ? `$${product.minPrice.toFixed(product.minPrice < 1 ? 4 : 2)}` : 'RFQ'}
                     </td>
                     <td>
-                      <span className={`badge ${
-                        product.status === 'active' ? 'badge-success' :
-                        product.status === 'obsolete' ? 'badge-danger' :
-                        product.status === 'eol' ? 'badge-warning' : 'badge-info'
-                      }`}>
-                        {product.status === 'nrnd' ? 'NRND' : product.status.toUpperCase()}
+                      <span className={`badge ${getStatusInfo(product.status).badgeClass}`}>
+                        {getStatusInfo(product.status).short}
                       </span>
                     </td>
                     <td>
@@ -249,14 +316,28 @@ export default async function SearchPage({ searchParams }) {
       {query && !queryError && products.length === 0 && (
         <div className="empty-state">
           <div style={{ fontSize: '64px', marginBottom: 'var(--space-md)' }}>😕</div>
-          <h3>No Results Found</h3>
-          <p>We couldn&apos;t find &quot;{query}&quot; in our inventory. But we can source it for you!</p>
-          <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-lg)' }}>
-            <Link href={`/rfq?part=${encodeURIComponent(query)}`} className="btn btn-primary">
-              Submit RFQ for &quot;{query}&quot;
-            </Link>
-            <Link href="/" className="btn btn-secondary">Back to Home</Link>
-          </div>
+          {page > 1 && totalProducts > 0 ? (
+            <>
+              <h3>No more results on this page</h3>
+              <p>Page {page} is past the last matching row for &quot;{query}&quot;.</p>
+              <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-lg)' }}>
+                <Link href={`/search?q=${encodeURIComponent(query)}`} className="btn btn-primary">
+                  Back to first page
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <h3>No Results Found</h3>
+              <p>We couldn&apos;t find &quot;{query}&quot; in our inventory. But we can source it for you!</p>
+              <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-lg)' }}>
+                <Link href={`/rfq?part=${encodeURIComponent(query)}`} className="btn btn-primary">
+                  Submit RFQ for &quot;{query}&quot;
+                </Link>
+                <Link href="/" className="btn btn-secondary">Back to Home</Link>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

@@ -126,6 +126,7 @@ async function writeProductRows(prisma, filePath, batchSize) {
           indexable: true,
           createdAt: true,
           updatedAt: true,
+          contentUpdatedAt: true,
           category: { select: { slug: true } },
         },
       });
@@ -152,6 +153,9 @@ async function writeProductRows(prisma, filePath, batchSize) {
           indexable: product.indexable,
           createdAt: dateOrNull(product.createdAt),
           updatedAt: dateOrNull(product.updatedAt),
+          // Carried so an export/import round trip preserves sitemap lastmod
+          // instead of restamping every page as freshly changed.
+          contentUpdatedAt: dateOrNull(product.contentUpdatedAt),
         };
         await fh.write(`${JSON.stringify(row)}\n`);
       }

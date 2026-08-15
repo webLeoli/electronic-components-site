@@ -22,8 +22,11 @@ export async function PUT(request) {
     if (sessionUser.id > 0) {
       // === Multi-user mode: change own password ===
       const user = await prisma.adminUser.findUnique({ where: { id: sessionUser.id } });
-      if (!user) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      // isActive, not just existence: same revocation rule the shared guards
+      // enforce. A deactivated account still holds a valid cookie for up to 24h,
+      // and it must not be able to write anything — including its own password.
+      if (!user || !user.isActive) {
+        return NextResponse.json({ error: 'Session revoked — please log in again' }, { status: 401 });
       }
 
       const valid = await bcrypt.compare(currentPassword, user.password);

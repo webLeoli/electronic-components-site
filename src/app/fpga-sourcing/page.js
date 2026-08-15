@@ -3,6 +3,7 @@ import { formatCount } from '@/lib/text';
 import { unstable_cache } from 'next/cache';
 import { SITE_NAME, SITE_URL, getAvailabilityText, hasConfirmedStock } from '@/lib/seo';
 import { getFpgaSeries, getSeriesStats } from '@/lib/fpga-growth';
+import { formatInt } from '@/lib/text';
 
 // ISR: regenerate at most hourly.
 export const revalidate = 3600;
@@ -129,8 +130,8 @@ export default async function FpgaSourcingPage() {
                 <h2>{series.shortTitle}</h2>
                 <p>{series.intro}</p>
                 <div className="series-card-stats">
-                  <span>{series.total.toLocaleString()} matches</span>
-                  <span>{series.inStock.toLocaleString()} stocked</span>
+                  <span>{formatInt(series.total)} matches</span>
+                  <span>{formatInt(series.inStock)} stocked</span>
                 </div>
               </Link>
             ))}

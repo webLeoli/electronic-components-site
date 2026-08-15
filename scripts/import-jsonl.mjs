@@ -8,10 +8,15 @@ import { PrismaClient } from '@prisma/client';
 import { createReadStream } from 'fs';
 import { createInterface } from 'readline';
 import { resolve } from 'path';
+import { runPostImportMaintenance } from './post-import-maintenance.mjs';
+import { canonicalManufacturer, manufacturerSlug } from '../src/lib/manufacturer-canonical.js';
 
 const prisma = new PrismaClient();
 const BATCH_SIZE = 200;
 
+// Categories only. Brand names go through manufacturerSlug(), which also maps
+// "&" to "and" — this one doesn't, and the mismatch used to produce brand slugs
+// no product URL could ever resolve to.
 function slugify(str) {
   return str
     .toLowerCase()
@@ -67,8 +72,8 @@ async function main() {
     totalLines++;
     try {
       const item = JSON.parse(line);
-      const manufacturer = item['Manufacturer'] || 'Unknown';
-      const mfrSlug = slugify(manufacturer);
+      const manufacturer = canonicalManufacturer(item['Manufacturer']) || 'Unknown';
+      const mfrSlug = manufacturerSlug(manufacturer);
       manufacturerSet.set(manufacturer, mfrSlug);
 
       const specs = item.specifications || {};
@@ -152,38 +157,34 @@ async function main() {
     crlfDelay: Infinity,
   });
 
+  // One payload builder for all four upsert sites below (batch + per-row
+  // fallback, create + update). They used to be four hand-copied literals,
+  // which is how contentUpdatedAt initially landed in only half of them.
+  // contentUpdatedAt is the sitemap's <lastmod> source: importers write
+  // rendered fields so they set it; housekeeping jobs never do.
+  const productPayload = (r) => ({
+    manufacturer: r.manufacturer,
+    description: r.description,
+    categoryId: r.categoryId,
+    packageType: r.packageType,
+    mountType: r.mountType,
+    status: r.status,
+    minPrice: r.minPrice,
+    stock: r.stock,
+    moq: r.moq,
+    specs: r.specs,
+    contentUpdatedAt: new Date(),
+  });
+
+  const upsertProduct = (r) => prisma.product.upsert({
+    where: { partNumber: r.partNumber },
+    update: productPayload(r),
+    create: { partNumber: r.partNumber, ...productPayload(r) },
+  });
+
   async function flushBatch() {
     if (batch.length === 0) return;
-    const ops = batch.map(r => {
-      return prisma.product.upsert({
-        where: { partNumber: r.partNumber },
-        update: {
-          manufacturer: r.manufacturer,
-          description: r.description,
-          categoryId: r.categoryId,
-          packageType: r.packageType,
-          mountType: r.mountType,
-          status: r.status,
-          minPrice: r.minPrice,
-          stock: r.stock,
-          moq: r.moq,
-          specs: r.specs,
-        },
-        create: {
-          partNumber: r.partNumber,
-          manufacturer: r.manufacturer,
-          description: r.description,
-          categoryId: r.categoryId,
-          packageType: r.packageType,
-          mountType: r.mountType,
-          status: r.status,
-          minPrice: r.minPrice,
-          stock: r.stock,
-          moq: r.moq,
-          specs: r.specs,
-        },
-      });
-    });
+    const ops = batch.map(upsertProduct);
 
     try {
       await prisma.$transaction(ops);
@@ -192,34 +193,7 @@ async function main() {
       // Fallback: one by one
       for (const r of batch) {
         try {
-          await prisma.product.upsert({
-            where: { partNumber: r.partNumber },
-            update: {
-              manufacturer: r.manufacturer,
-              description: r.description,
-              categoryId: r.categoryId,
-              packageType: r.packageType,
-              mountType: r.mountType,
-              status: r.status,
-              minPrice: r.minPrice,
-              stock: r.stock,
-              moq: r.moq,
-              specs: r.specs,
-            },
-            create: {
-              partNumber: r.partNumber,
-              manufacturer: r.manufacturer,
-              description: r.description,
-              categoryId: r.categoryId,
-              packageType: r.packageType,
-              mountType: r.mountType,
-              status: r.status,
-              minPrice: r.minPrice,
-              stock: r.stock,
-              moq: r.moq,
-              specs: r.specs,
-            },
-          });
+          await upsertProduct(r);
           imported++;
         } catch (e2) {
           skipped++;
@@ -253,7 +227,7 @@ async function main() {
 
       batch.push({
         partNumber,
-        manufacturer: item['Manufacturer'] || 'Unknown',
+        manufacturer: canonicalManufacturer(item['Manufacturer']) || 'Unknown',
         description: item['Description'] || null,
         categoryId,
         packageType: pkg && pkg !== '-' ? pkg : null,
@@ -286,6 +260,10 @@ async function main() {
   console.log(`   Categories:        ${categoryIdMap.size}`);
   console.log(`   Manufacturers:     ${manufacturerSet.size}`);
   console.log('='.repeat(50));
+
+  if (imported > 0) {
+    await runPostImportMaintenance(prisma);
+  }
 
   await prisma.$disconnect();
 }

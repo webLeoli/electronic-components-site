@@ -39,7 +39,7 @@ function validateBaseUrl(value, label) {
 // AI writer config + generation are admin-only: the config controls where the
 // stored API keys are sent, and generation can spawn server-side CLI processes.
 export async function GET(request) {
-  const authError = requireAdmin(request);
+  const authError = await requireAdmin(request);
   if (authError) return authError;
   const config = await getAiWriterConfig();
   return NextResponse.json({ config: maskAiWriterConfig(config) });
@@ -47,7 +47,7 @@ export async function GET(request) {
 
 // PUT: save config. Empty apiKey fields keep the stored secret.
 export async function PUT(request) {
-  const authError = requireAdmin(request);
+  const authError = await requireAdmin(request);
   if (authError) return authError;
   try {
     const body = await request.json();
@@ -65,7 +65,7 @@ export async function PUT(request) {
 // POST: generate an article and save it as a DRAFT.
 // Body: { topic, keywords?, categoryId?, generateImage? }
 export async function POST(request) {
-  const authError = requireAdmin(request);
+  const authError = await requireAdmin(request);
   if (authError) return authError;
   try {
     const { topic, keywords, categoryId, generateImage } = await request.json();

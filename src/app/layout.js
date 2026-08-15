@@ -62,31 +62,23 @@ export default function RootLayout({ children }) {
         {/* Site navigation schema for Google sitelinks accuracy */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
           '@context': 'https://schema.org',
-          '@type': 'SiteNavigationElement',
-          name: [
-            'FPGA & CPLD Sourcing',
-            'Robotics Component Sourcing',
-            'Electronic Component Categories',
-            'Request for Quote',
-            'BOM Quote Tool',
-            'Manufacturers',
-            'Technical Articles',
-            'Quality Assurance',
-            'About Us',
-            'Contact Us',
-          ],
-          url: [
-            `${SITE_URL}/fpga-sourcing`,
-            `${SITE_URL}/robotics-sourcing`,
-            `${SITE_URL}/category`,
-            `${SITE_URL}/rfq`,
-            `${SITE_URL}/bom`,
-            `${SITE_URL}/manufacturers`,
-            `${SITE_URL}/blog`,
-            `${SITE_URL}/quality`,
-            `${SITE_URL}/about`,
-            `${SITE_URL}/contact`,
-          ],
+          '@type': 'ItemList',
+          itemListElement: [
+            ['FPGA & CPLD Sourcing', `${SITE_URL}/fpga-sourcing`],
+            ['Robotics Component Sourcing', `${SITE_URL}/robotics-sourcing`],
+            ['Electronic Component Categories', `${SITE_URL}/category`],
+            ['Request for Quote', `${SITE_URL}/rfq`],
+            ['BOM Quote Tool', `${SITE_URL}/bom`],
+            ['Manufacturers', `${SITE_URL}/manufacturers`],
+            ['Technical Articles', `${SITE_URL}/blog`],
+            ['Quality Assurance', `${SITE_URL}/quality`],
+            ['About Us', `${SITE_URL}/about`],
+            ['Contact Us', `${SITE_URL}/contact`],
+          ].map(([name, url], i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            item: { '@type': 'SiteNavigationElement', name, url },
+          })),
         })}} />
         <Suspense fallback={null}>
           <CodeInjection />

@@ -14,8 +14,30 @@ import {
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 import AddToRfqButton from '@/components/AddToRfqButton';
+import ProductQuantityActions from '@/components/ProductQuantityActions';
 import ProductImage, { ProductIcon } from '@/components/ProductImage';
 import { FALLBACK_PARTS } from '@/lib/fallbacks';
+import { getStatusInfo } from '@/lib/product-status';
+import { getProductMemoryCached } from '@/lib/product-memory-cache';
+import { isDistributorBrand, manufacturerSlug as slugifyManufacturer } from '@/lib/manufacturer-canonical';
+import { formatInt } from '@/lib/text';
+
+/**
+ * Spec entries that actually carry a value.
+ *
+ * Supplier feeds ship a fixed key set and fill the unknown ones with "-", so a
+ * raw Object.entries() gives rows like "Operating Temperature: -". Both the
+ * generated prose and the rendered spec table have to skip those: a table of
+ * dashes makes a page look specified when it is not, which is the same signal
+ * lib/quality-score.js stopped paying for. Shared so the two can never disagree
+ * about what counts as a real value.
+ */
+function meaningfulSpecEntries(specs) {
+  return Object.entries(specs || {}).filter(([, v]) => {
+    const val = String(v ?? '').trim();
+    return val && val !== '-' && val !== '—' && val !== 'N/A' && val !== 'n/a' && val !== 'TBD';
+  });
+}
 
 // --- Rich Description Generator ---
 // Builds multi-paragraph description from product data instead of generic one-liner
@@ -24,22 +46,32 @@ function generateRichDescription(product, specs) {
   const mfr = product.manufacturer || 'a leading manufacturer';
   const cat = product.category?.name || 'Electronic Component';
   const parentCat = product.category?.parent?.name;
+  // Rochester Electronics & co. resell other makers' silicon, so "manufactured
+  // by" and "marked obsolete by" are both false for their rows — and the OEM's
+  // own page for the same part says the opposite. See lib/manufacturer-canonical.
+  const isReseller = isDistributorBrand(product.manufacturer);
 
   // Para 1: Product identity
-  let intro = `The ${product.partNumber} is a ${cat.toLowerCase()}`;
+  let intro = `The ${product.partNumber} is listed under ${cat}`;
   if (parentCat) intro += ` in the ${parentCat} family`;
-  intro += ` manufactured by ${mfr}.`;
+  intro += isReseller ? ` supplied by ${mfr}.` : ` manufactured by ${mfr}.`;
   if (product.status === 'active') {
     intro += ' This component is currently in active production.';
   } else if (product.status === 'obsolete') {
-    intro += ` This part has been marked as obsolete by ${mfr}; ${SITE_NAME} can quote verified sourcing options through qualified specialty channels.`;
+    intro += isReseller
+      ? ` This part is obsolete at the original manufacturer; ${SITE_NAME} can quote verified sourcing options through qualified specialty channels.`
+      : ` This part has been marked as obsolete by ${mfr}; ${SITE_NAME} can quote verified sourcing options through qualified specialty channels.`;
   } else if (product.status === 'eol') {
     intro += ` This component has reached End of Life status. ${SITE_NAME} specializes in sourcing EOL parts with full traceability and quality assurance.`;
+  } else if (product.status === 'lastbuy') {
+    intro += isReseller
+      ? ` This part is in a last-time-buy window at the original manufacturer, so remaining supply is finite; ${SITE_NAME} can quote against current availability and advise on alternates.`
+      : ` ${mfr} has placed this part in its last-time-buy window, so remaining supply is finite; ${SITE_NAME} can quote against current availability and advise on alternates.`;
   }
   parts.push(intro);
 
-  // Para 2: Key specs summary (dynamically from specs JSON)
-  const specEntries = Object.entries(specs);
+  // Para 2: Key specs summary (dynamically from specs JSON).
+  const specEntries = meaningfulSpecEntries(specs);
   if (specEntries.length > 0) {
     const highlights = specEntries.slice(0, 5).map(([k, v]) =>
       `${k.replace(/([A-Z])/g, ' $1').trim()}: ${v}`
@@ -58,7 +90,10 @@ function generateRichDescription(product, specs) {
 
   // Para 4: Availability
   if (hasConfirmedStock(product)) {
-    parts.push(`${SITE_NAME} currently has ${product.stock.toLocaleString()} units of ${product.partNumber} in stock, available for immediate shipment with no minimum order quantity.`);
+    const moqNote = !product.moq || product.moq <= 1
+      ? 'with no minimum order quantity'
+      : `with a minimum order of ${product.moq} units`;
+    parts.push(`${SITE_NAME} currently has ${formatInt(product.stock)} units of ${product.partNumber} in stock, available for immediate shipment ${moqNote}.`);
   } else if (product.status === 'obsolete' || product.status === 'eol' || product.status === 'nrnd') {
     parts.push(`Submit an RFQ for ${product.partNumber}; ${SITE_NAME} will verify availability, provenance, lead time, and pricing before confirming supply.`);
   } else {
@@ -102,7 +137,7 @@ function generateProductFAQ(product, specs) {
   if (hasConfirmedStock(product)) {
     faqs.push({
       q: `Is the ${product.partNumber} in stock and ready to ship?`,
-      a: `Yes, ${SITE_NAME} currently has ${product.stock.toLocaleString()} units of ${product.partNumber} in stock. Orders placed before 3 PM (CST) are eligible for same-day dispatch. No minimum order quantity required.`,
+      a: `Yes, ${SITE_NAME} currently lists ${formatInt(product.stock)} units of ${product.partNumber}. Submit an RFQ to confirm ship date, date code, and lead time.`,
     });
   } else if (product.status === 'obsolete' || product.status === 'eol' || product.status === 'nrnd') {
     faqs.push({
@@ -133,20 +168,22 @@ function generateProductFAQ(product, specs) {
     });
   }
 
-  // Q4: Price tiers (only if price exists)
+  // Q4: Pricing (only if price exists). No invented tier structure here — the
+  // visible tier table is labelled an estimate; a FAQPage answer is not.
   if (product.minPrice > 0) {
     faqs.push({
       q: `What is the pricing for ${product.partNumber}?`,
-      a: `Unit pricing for ${product.partNumber} starts at $${product.minPrice.toFixed(product.minPrice < 1 ? 4 : 2)} with volume discounts available for quantities of 10+, 100+, 500+, and 1,000+ units. Submit an RFQ for a customized quote based on your specific quantity requirements.`,
+      a: `Unit pricing for ${product.partNumber} starts at $${product.minPrice.toFixed(product.minPrice < 1 ? 4 : 2)}. Volume pricing depends on quantity and market availability — submit an RFQ for a firm quote.`,
     });
   }
 
   return faqs;
 }
 
-// React cache() deduplicates this query within a single request
-// so generateMetadata and ProductPage share the same DB result
-const getProduct = cache(async (partNumber) => {
+// React cache() deduplicates metadata/page work within one render. The bounded
+// process cache additionally protects Postgres from repeated crawler traffic
+// without creating per-product files on disk.
+const getProduct = cache((partNumber) => getProductMemoryCached(`product:${partNumber}`, async () => {
   const product = await prisma.product.findUnique({
     where: { partNumber },
     include: { category: { include: { parent: true } } },
@@ -164,16 +201,24 @@ const getProduct = cache(async (partNumber) => {
     specs: '{}',
     imageUrl: null,
   } : null;
-});
+}));
 
-// ISR: revalidate every 1 hour
-export const revalidate = 3600;
+// Resolve the survivor of a duplicate group. Same memory cache as getProduct, so
+// a crawler hammering a redirecting URL costs one query per TTL, not per hit.
+const getCanonicalPart = cache((id) => getProductMemoryCached(`canonical:${id}`, () =>
+  prisma.product.findUnique({
+    where: { id },
+    select: { partNumber: true, manufacturer: true },
+  })
+));
 
-// Skip build-time prerendering — with 720K products, ISR handles everything.
-// Pages are generated on first request and cached for `revalidate` seconds.
-export async function generateStaticParams() {
-  return [];
-}
+// Product URLs are heavily crawled. Self-hosted ISR keeps every generated
+// HTML/RSC artifact on disk even after the revalidation window expires, so a
+// 700K-product catalogue eventually fills the server. Render on demand instead:
+// crawlers still receive complete server-rendered HTML, but no per-SKU files
+// accumulate under .next/server/app/product.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // Dynamic metadata for SEO — uses cached getProduct()
 export async function generateMetadata({ params }) {
@@ -204,16 +249,12 @@ function parseSpecs(specsStr) {
   }
 }
 
-// Helper: status display
+// Helper: status display. Backed by lib/product-status so the badge here, the
+// category/search tables, and the JSON-LD lifecycle property can never disagree
+// about what a status means.
 function StatusBadge({ status }) {
-  const map = {
-    active: { label: 'Active', className: 'badge-success' },
-    obsolete: { label: 'Obsolete', className: 'badge-danger' },
-    eol: { label: 'End of Life', className: 'badge-warning' },
-    nrnd: { label: 'Not Recommended', className: 'badge-info' },
-  };
-  const s = map[status] || map.active;
-  return <span className={`badge ${s.className}`}>{s.label}</span>;
+  const info = getStatusInfo(status);
+  return <span className={`badge ${info.badgeClass}`}>{info.label}</span>;
 }
 
 // Price tier simulation
@@ -237,6 +278,16 @@ export default async function ProductPage({ params }) {
     notFound();
   }
 
+  // Punctuation-variant duplicate ("74AHC132D112" for NXP's "74AHC132D,112"):
+  // send it to the row that owns the canonical page. Set offline by
+  // scripts/dedupe-part-numbers.mjs; see Product.duplicateOfId in schema.prisma.
+  if (product.duplicateOfId) {
+    const canonical = await getCanonicalPart(product.duplicateOfId);
+    if (canonical) {
+      permanentRedirect(productPath(canonical.partNumber, canonical.manufacturer));
+    }
+  }
+
   // Canonicalize the manufacturer URL segment. The page resolves purely by
   // (unique) partNumber, so any manufacturer slug would otherwise return 200
   // and create duplicate-content URLs. Redirect mismatches to the canonical
@@ -248,6 +299,8 @@ export default async function ProductPage({ params }) {
   }
 
   const specs = parseSpecs(product.specs);
+  // Placeholder rows are dropped before rendering — see meaningfulSpecEntries.
+  const specEntries = meaningfulSpecEntries(specs);
   const priceTiers = getPriceTiers(product.minPrice);
   const availabilityTone = getAvailabilityTone(product);
   const availabilityColor = availabilityTone === 'success'
@@ -257,45 +310,45 @@ export default async function ProductPage({ params }) {
       : 'var(--color-text-muted)';
   const availabilityDot = availabilityTone === 'success' ? 'in-stock' : 'obsolete';
 
-  // Run all secondary queries in parallel to avoid serial timeout
-  const [manufacturerRecord, relatedProducts, sameManufacturerProducts] = await Promise.all([
+  // Shared category/manufacturer candidates keep the cache cardinality small:
+  // many product pages reuse the same bounded entries.
+  const [manufacturerRecord, relatedCandidates, sameManufacturerCandidates] = await Promise.all([
     // Lookup manufacturer slug from DB
     product.manufacturer
-      ? prisma.manufacturer.findFirst({
-          where: { name: product.manufacturer },
-          select: { slug: true },
-        })
+      ? getProductMemoryCached(`manufacturer:${product.manufacturer}`, () =>
+          prisma.manufacturer.findFirst({
+            where: { name: product.manufacturer },
+            select: { slug: true },
+          }), { ttlMs: 10 * 60 * 1000 })
       : null,
-    // Fetch related products (same category)
+    // Fetch a reusable related-product pool (same category)
     product.categoryId
-      ? prisma.product.findMany({
-          where: {
-            categoryId: product.categoryId,
-            partNumber: { not: product.partNumber },
-          },
-          select: { partNumber: true, manufacturer: true, description: true, stock: true, minPrice: true, status: true, imageUrl: true },
-          take: 6,
-          orderBy: { stock: 'desc' },
-        })
+      ? getProductMemoryCached(`category-related-v2:${product.categoryId}`, () =>
+          prisma.product.findMany({
+            where: { categoryId: product.categoryId, duplicateOfId: null },
+            select: { partNumber: true, manufacturer: true, description: true, stock: true, minPrice: true, status: true, imageUrl: true },
+            take: 7,
+            orderBy: { stock: 'desc' },
+          }))
       : [],
-    // Fetch more products from same manufacturer (for internal linking)
+    // Fetch a reusable manufacturer-product pool (for internal linking)
     product.manufacturer
-      ? prisma.product.findMany({
-          where: {
-            manufacturer: product.manufacturer,
-            partNumber: { not: product.partNumber },
-          },
-          select: { partNumber: true, description: true, minPrice: true, stock: true, manufacturer: true, status: true },
-          take: 6,
-          orderBy: { stock: 'desc' },
-        })
+      ? getProductMemoryCached(`manufacturer-products-v2:${product.manufacturer}`, () =>
+          prisma.product.findMany({
+            where: { manufacturer: product.manufacturer, duplicateOfId: null },
+            select: { partNumber: true, description: true, minPrice: true, stock: true, manufacturer: true, status: true },
+            take: 7,
+            orderBy: { stock: 'desc' },
+          }))
       : [],
   ]);
-  const manufacturerSlug = manufacturerRecord?.slug || (product.manufacturer || 'unknown')
-    .toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+  const relatedProducts = relatedCandidates
+    .filter(candidate => candidate.partNumber !== product.partNumber)
+    .slice(0, 6);
+  const sameManufacturerProducts = sameManufacturerCandidates
+    .filter(candidate => candidate.partNumber !== product.partNumber)
+    .slice(0, 6);
+  const manufacturerSlug = manufacturerRecord?.slug || slugifyManufacturer(product.manufacturer);
 
   // Build breadcrumb items
   const breadcrumbItems = [{ name: 'Home', url: '/' }];
@@ -337,7 +390,7 @@ export default async function ProductPage({ params }) {
   const tocSections = [
     { id: 'product-overview', label: 'Overview', show: true },
     { id: 'product-pricing', label: 'Pricing', show: priceTiers.length > 0 },
-    { id: 'product-specs', label: 'Specifications', show: Object.keys(specs).length > 0 },
+    { id: 'product-specs', label: 'Specifications', show: specEntries.length > 0 },
     { id: 'product-applications', label: 'Applications', show: true },
     { id: 'product-faq', label: 'FAQ', show: faqs.length > 0 },
     { id: 'product-related', label: 'Related Products', show: relatedProducts.length > 0 },
@@ -454,7 +507,7 @@ export default async function ProductPage({ params }) {
               </div>
               <div className="quick-info-item">
                 <span className="quick-info-label">Lifecycle</span>
-                <span className="quick-info-value" style={{ textTransform: 'capitalize' }}>{product.status}</span>
+                <span className="quick-info-value">{getStatusInfo(product.status).label}</span>
               </div>
             </div>
 
@@ -469,7 +522,7 @@ export default async function ProductPage({ params }) {
                     Datasheet
                   </a>
                 )}
-                <Link href={`/rfq?part=${encodeURIComponent(product.partNumber)}`} className="btn btn-primary btn-sm">
+                <Link href={`/rfq?part=${encodeURIComponent(product.partNumber)}${product.manufacturer ? `&manufacturer=${encodeURIComponent(product.manufacturer)}` : ''}`} className="btn btn-primary btn-sm">
                   Verify Stock & Date Code
                 </Link>
               </div>
@@ -494,14 +547,22 @@ export default async function ProductPage({ params }) {
               </div>
             )}
 
-            {/* Technical Specifications */}
-            {Object.keys(specs).length > 0 && (
+            {/* Technical Specifications.
+                Rows whose value is a feed placeholder are dropped rather than
+                rendered as "Operating Temperature | -". Supplier feeds pad their
+                whole key set on every row, so 76,463 products carried 8+ such
+                rows: they make a page look specified when it is not, and they
+                are the same placeholders the description generator and the
+                quality score already learned to ignore. A product whose specs
+                are ALL placeholders now renders no table at all instead of an
+                empty-looking one. */}
+            {specEntries.length > 0 && (
               <div className="product-section" id="product-specs">
                 <h2 className="product-section-title">Technical Specifications</h2>
                 <div className="table-wrapper">
                   <table className="table specs-table" id="specs-table">
                     <tbody>
-                      {Object.entries(specs).map(([key, value]) => (
+                      {specEntries.map(([key, value]) => (
                         <tr key={key}>
                           <td style={{ fontWeight: 600, color: 'var(--color-text-primary)', width: '200px', textTransform: 'capitalize' }}>
                             {key.replace(/([A-Z])/g, ' $1').trim()}
@@ -587,34 +648,21 @@ export default async function ProductPage({ params }) {
                 )}
               </div>
 
-              {/* Quantity Input */}
-              <div style={{ marginBottom: 'var(--space-md)' }}>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '6px' }}>
-                  Quantity
-                </label>
-                <input type="number" className="input" defaultValue={product.moq} min={product.moq} id="qty-input" />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-                <Link href={`/rfq?part=${encodeURIComponent(product.partNumber)}`} className="btn btn-primary btn-lg" style={{ width: '100%' }} id="rfq-btn">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
-                  Verify Stock & Date Code
-                </Link>
-                <AddToRfqButton
-                  partNumber={product.partNumber}
-                  manufacturer={product.manufacturer}
-                />
-              </div>
+              {/* Quantity + RFQ actions (client component: the quantity has to
+                  reach both the cart and the RFQ link) */}
+              <ProductQuantityActions
+                partNumber={product.partNumber}
+                manufacturer={product.manufacturer}
+                moq={product.moq}
+              />
 
               <div style={{ marginTop: 'var(--space-lg)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--color-border)' }}>
                 <div className="sidebar-info-row">
                   <span>✓</span><span>Originality & lot review</span>
                 </div>
                 <div className="sidebar-info-row">
-                  <span>▣</span><span>No Minimum Order Quantity</span>
+                  <span>▣</span>
+                  <span>{!product.moq || product.moq <= 1 ? 'No Minimum Order Quantity' : `Minimum order: ${formatInt(product.moq)}`}</span>
                 </div>
                 <div className="sidebar-info-row">
                   <span>➤</span><span>{hasConfirmedStock(product) ? 'Same-Day Dispatch Available' : 'Sourcing & Lead-Time Confirmation'}</span>

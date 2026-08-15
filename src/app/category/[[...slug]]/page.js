@@ -8,6 +8,9 @@ import AddToRfqButton from '@/components/AddToRfqButton';
 import CategoryIcon from '@/components/CategoryIcon';
 import { ProductIcon } from '@/components/ProductImage';
 import { FALLBACK_CATEGORIES } from '@/lib/fallbacks';
+import { STATUS_KEYS, getStatusInfo, isKnownStatus } from '@/lib/product-status';
+import { LISTING_MAX_PAGES, buildPageList } from '@/lib/pagination';
+import { formatInt } from '@/lib/text';
 
 // Dynamic by inference (reads searchParams for pagination/filters); the
 // heavy data queries are cached below.
@@ -90,30 +93,43 @@ async function fetchCategoryTreeRaw(categorySlug) {
   return root;
 }
 
-// Cross-request cache (5min) so cold-start cost is amortised over many users.
-// Tag with the slug so we can invalidate a single category if its tree changes.
+// Cross-request cache so cold-start cost is amortised over many users.
+//
+// 300s → 1h (2026-08-15). The tree and its per-child counts only change on a
+// bulk import, but the timer was the ONLY refresh mechanism — nothing called
+// revalidateTag — so it had to stay short. Measured cost of a miss on the
+// largest L1: the tree-with-counts query is 0.9-2.5s and /category/embedded
+// answers in 5.5s cold against 61ms warm. At 300s a crawler working through the
+// catalogue hit that price twelve times an hour.
+//
+// The tags below are now purged deliberately: lib/revalidate.revalidateDataCaches(),
+// exposed as POST /api/admin/revalidate { "dataCaches": true }. Run it after any
+// bulk data change, or the page serves the previous import's numbers for an hour.
 const fetchCategoryCached = (categorySlug) => unstable_cache(
   () => fetchCategoryTreeRaw(categorySlug),
   ['category-tree', categorySlug],
-  { revalidate: 300, tags: ['category-tree', `category-tree:${categorySlug}`] },
+  { revalidate: 3600, tags: ['category-tree', `category-tree:${categorySlug}`] },
 )();
 
 // React cache() so generateMetadata + Page in the same request share one fetch.
 const getCategory = cache(fetchCategoryCached);
 
-// Same cached treatment for the product count, which alone was 5.5s on
-// embedded's 155K-row IN-list. The categoryIds list and filters are part of
-// the cache key.
+// Same cached treatment, and the same 300s → 1h reasoning, for the product
+// count: ~0.9s on embedded's 14-category IN-list even after the table was
+// compacted. The categoryIds list and filters are part of the cache key.
 const getProductCountCached = (key, where) => unstable_cache(
   () => prisma.product.count({ where }),
   ['category-product-count', key],
-  { revalidate: 300, tags: ['category-product-count', `category-product-count:${key}`] },
+  { revalidate: 3600, tags: ['category-product-count', `category-product-count:${key}`] },
 )();
 
 export async function generateMetadata({ params, searchParams }) {
   const { slug } = await params;
   const sp = await searchParams;
   const page = Math.max(1, parseInt(sp?.page) || 1);
+  // Multi-segment URLs 404 in the page component; don't emit real canonical
+  // metadata for them here.
+  if (slug && slug.length > 1) return { title: 'Category Not Found' };
   const categorySlug = slug?.[slug.length - 1];
   if (!categorySlug) return {
     title: 'All Categories',
@@ -146,9 +162,14 @@ export async function generateMetadata({ params, searchParams }) {
   return generateCategoryMeta(category, { page });
 }
 
-// Pagination config
+// Pagination config. The cap and the page-number strategy live in
+// lib/pagination — see the note there on why 100 pages stranded 572,980
+// products and why deep offsets are affordable on this sort path.
 const ITEMS_PER_PAGE = 20;
-const MAX_PAGES = 100; // Limit deep pagination to protect database
+const MAX_PAGES = LISTING_MAX_PAGES;
+// Defaults are omitted from generated URLs — see buildUrl in <Pagination>.
+const DEFAULT_SORT = 'partNumber';
+const DEFAULT_ORDER = 'asc';
 
 // Product list page, cached per unique (where, orderBy, page) combination.
 // Args are JSON strings because unstable_cache keys on serialized arguments.
@@ -181,8 +202,8 @@ export default async function CategoryPage({ params, searchParams }) {
   const sp = await searchParams;
   // Enforce page bounds: 1 <= page <= MAX_PAGES
   const page = Math.max(1, Math.min(parseInt(sp?.page) || 1, MAX_PAGES));
-  const sort = sp?.sort || 'partNumber';
-  const order = sp?.order || 'asc';
+  const sort = sp?.sort || DEFAULT_SORT;
+  const order = sp?.order || DEFAULT_ORDER;
   const statusFilter = sp?.status || '';
   const mountFilter = sp?.mount || '';
 
@@ -219,9 +240,12 @@ export default async function CategoryPage({ params, searchParams }) {
     }
   }
 
-  // Build product where clause with optional filters
-  const productWhere = { categoryId: { in: categoryIds } };
-  if (statusFilter && ['active', 'obsolete', 'eol', 'nrnd'].includes(statusFilter)) {
+  // Build product where clause with optional filters.
+  // duplicateOfId: null hides rows consolidated by scripts/dedupe-part-numbers.mjs
+  // — without it the listing shows "74AHC132D,112" and "74AHC132D112" as two
+  // products, and the second one's link immediately 301s back to the first.
+  const productWhere = { categoryId: { in: categoryIds }, duplicateOfId: null };
+  if (statusFilter && isKnownStatus(statusFilter)) {
     productWhere.status = statusFilter;
   }
   if (mountFilter) {
@@ -254,6 +278,8 @@ export default async function CategoryPage({ params, searchParams }) {
     JSON.stringify(orderBy),
     page,
   );
+
+  if (page > 1 && products.length === 0) notFound();
 
   // Breadcrumb — flat URLs, hierarchy expressed via breadcrumb trail
   const breadcrumbItems = [{ name: 'Home', url: '/' }, { name: 'Categories', url: '/category' }];
@@ -298,7 +324,7 @@ export default async function CategoryPage({ params, searchParams }) {
     '@type': 'CollectionPage',
     name: category.seoTitle || `${category.name} - Electronic Components`,
     description: category.seoDesc || `Browse ${category.name} electronic components at ${SITE_NAME}`,
-    url: `${SITE_URL}/category/${category.slug}`,
+    url: page > 1 ? `${SITE_URL}/category/${category.slug}?page=${page}` : `${SITE_URL}/category/${category.slug}`,
     mainEntity: {
       '@type': 'ItemList',
       numberOfItems: totalProducts,
@@ -342,7 +368,7 @@ export default async function CategoryPage({ params, searchParams }) {
                     </span>
                     {totalProducts > 0 && (
                       <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                        {totalProducts.toLocaleString()}
+                        {formatInt(totalProducts)}
                       </span>
                     )}
                   </Link>
@@ -367,16 +393,15 @@ export default async function CategoryPage({ params, searchParams }) {
           <div className="filter-section">
             <h3 className="filter-title">Lifecycle Status</h3>
             <div className="filter-list">
-              {['active', 'obsolete', 'eol'].map(s => {
+              {STATUS_KEYS.map(s => {
                 const params = new URLSearchParams({ status: s });
                 if (mountFilter) params.set('mount', mountFilter);
-                if (sort !== 'partNumber') params.set('sort', sort);
-                if (order !== 'asc') params.set('order', order);
-                const labels = { active: 'Active', obsolete: 'Obsolete', eol: 'End of Life' };
-                const badgeCls = { active: 'badge-success', obsolete: 'badge-danger', eol: 'badge-warning' };
+                if (sort !== DEFAULT_SORT) params.set('sort', sort);
+                if (order !== DEFAULT_ORDER) params.set('order', order);
+                const info = getStatusInfo(s);
                 return (
                   <Link key={s} href={`/category/${categorySlug}?${params}`} rel="nofollow" className={`filter-item ${statusFilter === s ? 'active' : ''}`}>
-                    <span className={`badge ${badgeCls[s]}`} style={{ marginRight: '6px' }}>●</span> {labels[s]}
+                    <span className={`badge ${info.badgeClass}`} style={{ marginRight: '6px' }}>●</span> {info.label}
                   </Link>
                 );
               })}
@@ -389,8 +414,8 @@ export default async function CategoryPage({ params, searchParams }) {
               {['SMD', 'THT'].map(m => {
                 const params = new URLSearchParams({ mount: m });
                 if (statusFilter) params.set('status', statusFilter);
-                if (sort !== 'partNumber') params.set('sort', sort);
-                if (order !== 'asc') params.set('order', order);
+                if (sort !== DEFAULT_SORT) params.set('sort', sort);
+                if (order !== DEFAULT_ORDER) params.set('order', order);
                 return (
                   <Link key={m} href={`/category/${categorySlug}?${params}`} rel="nofollow" className={`filter-item ${mountFilter === m ? 'active' : ''}`}>
                     {m === 'SMD' ? 'SMD' : 'Through-Hole'}
@@ -424,7 +449,7 @@ export default async function CategoryPage({ params, searchParams }) {
             </div>
             <div className="category-header-actions">
               <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                {totalProducts.toLocaleString()} products found
+                {formatInt(totalProducts)} products found
               </span>
               <Link href={`/rfq?category=${encodeURIComponent(category.name)}`} className="btn btn-primary btn-sm">
                 Quote {category.name}
@@ -475,12 +500,8 @@ export default async function CategoryPage({ params, searchParams }) {
                         </td>
                         <td>{product.moq || 1}</td>
                         <td>
-                          <span className={`badge ${
-                            product.status === 'active' ? 'badge-success' :
-                            product.status === 'obsolete' ? 'badge-danger' :
-                            product.status === 'eol' ? 'badge-warning' : 'badge-info'
-                          }`}>
-                            {product.status === 'nrnd' ? 'NRND' : product.status.toUpperCase()}
+                          <span className={`badge ${getStatusInfo(product.status).badgeClass}`}>
+                            {getStatusInfo(product.status).short}
                           </span>
                         </td>
                         <td>
@@ -566,7 +587,7 @@ async function AllCategoriesPage() {
                 <span style={{ width: '42px', height: '42px' }}><CategoryIcon slug={cat.slug} size={42} variant="card" /></span>
                 <div>
                   <h2 style={{ fontSize: '18px', fontWeight: 700 }}>{cat.name}</h2>
-                  <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{totalProducts.toLocaleString()} products</span>
+                  <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{formatInt(totalProducts)} products</span>
                 </div>
               </Link>
               {cat.children.length > 0 && (
@@ -636,18 +657,22 @@ function SortDropdown({ current, order, slug, statusFilter, mountFilter }) {
 
 // Pagination component — preserves sort and filter params
 function Pagination({ current, total, slug, sort, order, statusFilter, mountFilter }) {
-  const pages = [];
-  const start = Math.max(1, current - 2);
-  const end = Math.min(total, current + 2);
+  // Decade jumps, not just current±2: on a 5,073-page listing the old window
+  // left page 2,500 roughly 1,250 clicks from page 1, so raising the cap alone
+  // would not have made those products reachable.
+  const pages = buildPageList(current, total);
 
-  if (start > 1) pages.push(1);
-  if (start > 2) pages.push('...');
-  for (let i = start; i <= end; i++) pages.push(i);
-  if (end < total - 1) pages.push('...');
-  if (end < total) pages.push(total);
-
+  // Only emit sort/order when they differ from the defaults. robots.txt carries
+  // `Disallow: /*?*sort=` and `/*?*order=` to keep faceted permutations out of
+  // the crawl, and this builder used to attach `sort=partNumber&order=asc` to
+  // every link unconditionally — which meant the plain "page 2" link matched
+  // the block rule and Google could not reach any category page past the first.
+  // A deliberately sorted view still carries the params, and is still blocked;
+  // that part is intended.
   const buildUrl = (p) => {
-    const params = new URLSearchParams({ page: p, sort, order });
+    const params = new URLSearchParams({ page: p });
+    if (sort !== DEFAULT_SORT) params.set('sort', sort);
+    if (order !== DEFAULT_ORDER) params.set('order', order);
     if (statusFilter) params.set('status', statusFilter);
     if (mountFilter) params.set('mount', mountFilter);
     return `/category/${slug}?${params}`;
@@ -659,8 +684,9 @@ function Pagination({ current, total, slug, sort, order, statusFilter, mountFilt
         <Link href={buildUrl(current - 1)} className="pagination-btn">← Prev</Link>
       )}
       {pages.map((p, i) =>
-        p === '...' ? (
-          <span key={`dots-${i}`} className="pagination-dots">...</span>
+        // Gap markers come back as a string; anything numeric is a real page.
+        typeof p === 'string' ? (
+          <span key={`dots-${i}`} className="pagination-dots">{p}</span>
         ) : (
           <Link
             key={p}

@@ -1,6 +1,7 @@
 import prisma from "@/lib/db";
 import { productPath } from "@/lib/seo";
 import { unstable_cache } from "next/cache";
+import { formatInt } from "@/lib/text";
 
 // Robotics sourcing is a curated cross-reference layer: for each robot subsystem we
 // pair the Western parts engineers design around with vetted Chinese functional
@@ -122,7 +123,7 @@ export const MIN_COUNT_FOR_DISPLAY = 10;
 
 export function formatPartsListed(count) {
   if (count >= MIN_COUNT_FOR_DISPLAY)
-    return `${count.toLocaleString()} parts listed`;
+    return `${formatInt(count)} parts listed`;
   return "Sourced on request";
 }
 
@@ -140,9 +141,14 @@ export function getSubsystemBySlug(slug) {
 
 function chineseBrandWhere(subsystem) {
   return {
-    OR: subsystem.chineseBrands.map((brand) => ({
-      manufacturer: { contains: brand, mode: "insensitive" },
-    })),
+    AND: [
+      { duplicateOfId: null },
+      {
+        OR: subsystem.chineseBrands.map((brand) => ({
+          manufacturer: { contains: brand, mode: "insensitive" },
+        })),
+      },
+    ],
   };
 }
 

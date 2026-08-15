@@ -5,11 +5,18 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
-    "start": "next start",
+    "start": "next start -H 127.0.0.1",
     "lint": "eslint",
     "data:repair-sitemap": "node scripts/repair-product-sitemap-indexing.mjs",
     "data:export": "node scripts/export-safe-data-package.mjs",
-    "data:import": "node scripts/import-safe-data-package.mjs"
+    "data:import": "node scripts/import-safe-data-package.mjs",
+    "data:audit": "node scripts/audit-data-quality.mjs",
+    "data:merge-brands": "node scripts/merge-manufacturers.mjs",
+    "data:dedupe-parts": "node scripts/dedupe-part-numbers.mjs",
+    "db:maintain": "node scripts/flag-programmable-logic.mjs",
+    "db:search-indexes": "node scripts/add-search-indexes.mjs",
+    "blog:publish-next": "node scripts/publish-next-blog.mjs",
+    "data:purge-pii": "node scripts/purge-pii.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
@@ -22,7 +29,7 @@
     "prisma": "5.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "sanitize-html": "^2.17.3"
+    "sanitize-html": "2.17.5"
   },
   "devDependencies": {
     "eslint": "^9",

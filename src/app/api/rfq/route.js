@@ -6,6 +6,12 @@ import crypto from 'crypto';
 import prisma from '@/lib/db';
 import { sendRfqNotification, sendRfqConfirmation } from '@/lib/email';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { enforceMaxBody } from '@/lib/request-limits';
+
+// Room for the multipart envelope and the ordinary form fields that travel
+// alongside the BOM, so a legitimate 10MB file is never rejected for the
+// boundary markers wrapped around it.
+const MULTIPART_OVERHEAD_ALLOWANCE = 1 * 1024 * 1024;
 
 // Derive a precise channel label from tracking data — 5-layer priority
 function deriveSourceChannel(tracking) {
@@ -60,20 +66,51 @@ function deriveSourceChannel(tracking) {
   return 'direct';
 }
 
-// IP-based rate limiter — max 3 submissions per hour per IP.
-// Backed by Redis when REDIS_URL is set (cluster-safe), in-memory otherwise.
+// IP-based rate limiting, in two tiers, because one tier gets the trade-off
+// wrong in whichever direction you pick.
+//
+// RFQ_RATE_LIMIT is the real quota: 3 accepted quote requests per hour per IP.
+// It is consumed only AFTER validation passes. Charging it up front — which is
+// what this route used to do — meant a visitor who mistyped their email three
+// times had spent the whole hour's budget on 400s and could not then submit the
+// request they came to make. On a site where the quote form IS the conversion,
+// that is a lost customer, and it is invisible in logs because the 429 looks
+// like abuse being blocked correctly.
+//
+// RFQ_REQUEST_LIMIT is the flood guard that the first tier used to provide:
+// generous enough that no honest visitor reaches it, tight enough that nobody
+// can hammer the endpoint with 10MB multipart bodies for free.
 const RFQ_RATE_LIMIT = { windowMs: 60 * 60 * 1000, max: 3, prefix: 'rfq' };
+const RFQ_REQUEST_LIMIT = { windowMs: 60 * 60 * 1000, max: 30, prefix: 'rfq-req' };
 
-// Spam detection heuristics
+// Spam detection heuristics.
+//
+// Signals are split by confidence because the consequences are not symmetric.
+// A HARD signal parks the submission in the 'spam' queue: no notification email
+// is sent and scripts/purge-pii.mjs deletes it after 30 days. That is only
+// acceptable for signals a real buyer cannot trip. Everything else is SOFT: the
+// RFQ stays in the normal 'new' queue and is emailed as usual, with the reason
+// recorded in `notes` so the team can judge it.
+//
+// The previous version treated every heuristic as hard, and one of them was
+// `/^[A-Z\s]{10,}$/` on the name field — an all-caps name of ten characters or
+// more. Industrial buyers routinely type "ZHANG WEIMING" or "JOHN ANDERSON" in
+// caps, and each of those leads was silently discarded after the customer had
+// been shown "we'll respond within 24 hours". That rule is gone; only genuinely
+// malformed input (control/markup characters) still flags the name.
+const HARD_SPAM_REASONS = new Set(['honeypot_filled', 'invalid_parts_json', 'no_valid_parts']);
+
 function detectSpam(data) {
   const reasons = [];
-  
-  // 1. Honeypot field (should be empty)
+
+  // 1. Honeypot field (should be empty) — hidden from humans, so any value is
+  //    an automated submission. HARD.
   if (data.website && data.website.trim() !== '') {
     reasons.push('honeypot_filled');
   }
 
-  // 2. Submission too fast (< 5 seconds from page load)
+  // 2. Submission too fast (< 5 seconds from page load). SOFT: a slow hydration
+  //    or an autofilled form can beat the clock legitimately.
   if (data._loadTime) {
     const elapsed = Date.now() - parseInt(data._loadTime);
     if (elapsed < 5000) {
@@ -81,7 +118,8 @@ function detectSpam(data) {
     }
   }
 
-  // 3. Email patterns commonly used by spammers
+  // 3. Disposable-mailbox providers. SOFT: some buyers screen new suppliers
+  //    behind a throwaway address before revealing a corporate one.
   const spamEmailPatterns = [
     /@(mailinator|guerrillamail|tempmail|throwaway|yopmail|sharklasers)/i,
     /test@test/i,
@@ -90,18 +128,20 @@ function detectSpam(data) {
     reasons.push('spam_email');
   }
 
-  // 4. Message contains excessive URLs (spam signature)
+  // 4. Message contains excessive URLs (link-spam signature). SOFT: a buyer can
+  //    legitimately paste several datasheet links.
   const urlCount = ((data.message || '').match(/https?:\/\//g) || []).length;
   if (urlCount > 3) {
     reasons.push('excessive_urls');
   }
 
-  // 5. All caps name or nonsense characters
-  if (data.name && (/^[A-Z\s]{10,}$/.test(data.name) || /[<>{}|\\]/.test(data.name))) {
+  // 5. Markup/control characters in the name. SOFT.
+  if (data.name && /[<>{}|\\]/.test(data.name)) {
     reasons.push('suspicious_name');
   }
 
-  // 6. Parts validation — at least one valid part number
+  // 6. Parts validation — at least one valid part number. HARD: the client
+  //    cannot reach this endpoint with no parsable part unless it is scripted.
   try {
     const parts = JSON.parse(data.parts || '[]');
     const validParts = parts.filter(p => p.partNumber && p.partNumber.trim().length >= 2);
@@ -113,6 +153,11 @@ function detectSpam(data) {
   }
 
   return reasons;
+}
+
+// True only for signals that justify discarding the lead outright.
+function isHardSpam(reasons) {
+  return reasons.some(reason => HARD_SPAM_REASONS.has(reason));
 }
 
 // ============================================================
@@ -216,11 +261,17 @@ function generateSecureFilename(ext) {
 
 export async function POST(request) {
   try {
+    // Before request.formData() buffers anything. The BOM size check further
+    // down runs too late to protect memory — by then the body is already in
+    // the heap several times over.
+    const tooLarge = enforceMaxBody(request, BOM_MAX_SIZE + MULTIPART_OVERHEAD_ALLOWANCE);
+    if (tooLarge) return tooLarge;
+
     const ip = getClientIp(request);
     const userAgent = request.headers.get('user-agent') || '';
 
-    // Rate limit check
-    if (!(await rateLimit(ip, RFQ_RATE_LIMIT))) {
+    // Flood guard only — the submission quota is charged after validation.
+    if (!(await rateLimit(ip, RFQ_REQUEST_LIMIT))) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
         { status: 429 }
@@ -277,7 +328,11 @@ export async function POST(request) {
     // Parts array structure validation
     let parsedParts;
     try {
-      parsedParts = JSON.parse(data.parts);
+      // The browser form posts multipart, where every field is a string, so
+      // parts arrives JSON-encoded. A JSON request body can carry the real
+      // array — accept both rather than JSON.parse an array, which stringifies
+      // it to "[object Object]" and rejects a perfectly valid submission.
+      parsedParts = Array.isArray(data.parts) ? data.parts : JSON.parse(data.parts);
       if (!Array.isArray(parsedParts) || parsedParts.length === 0) throw new Error('empty');
     } catch {
       return NextResponse.json(
@@ -303,28 +358,10 @@ export async function POST(request) {
       );
     }
 
-    // Re-serialize sanitized parts for storage
-    data.parts = JSON.stringify(validParts);
-
-    // Spam detection
-    const spamReasons = detectSpam(data);
-    const isSpam = spamReasons.length > 0;
-
-    // Sanitize inputs
-    const sanitize = (s, maxLen = 500) => 
-      s ? String(s).trim().replace(/[<>]/g, '').substring(0, maxLen) : null;
-
-    // Process tracking data
-    const tracking = data._tracking || {};
-    const sourceChannel = deriveSourceChannel(tracking);
-
-    // ============================================================
-    // SECURE BOM FILE UPLOAD
-    // ============================================================
-    let bomFilePath = null;
-    let bomFileName = null;
-    if (bomFile && !isSpam) {
-      // 1. SIZE CHECK — prevent storage exhaustion
+    // Validate the BOM before charging quota. The file is already in memory
+    // from the request; a rejected type/size must not burn a lead slot.
+    let pendingBom = null;
+    if (bomFile) {
       if (bomFile.size > BOM_MAX_SIZE) {
         return NextResponse.json(
           { error: `BOM file too large: ${(bomFile.size / 1024 / 1024).toFixed(1)}MB. Maximum: 10MB.` },
@@ -332,7 +369,6 @@ export async function POST(request) {
         );
       }
 
-      // 2. EXTENSION CHECK — only allow known BOM formats
       const originalName = bomFile.name || '';
       const ext = path.extname(originalName).toLowerCase();
       if (!BOM_ALLOWED_EXTENSIONS.includes(ext)) {
@@ -342,7 +378,6 @@ export async function POST(request) {
         );
       }
 
-      // 3. DOUBLE EXTENSION CHECK — block "file.html.xlsx" style tricks
       const nameParts = originalName.split('.');
       if (nameParts.length > 2) {
         const dangerousExts = ['.html', '.htm', '.php', '.jsp', '.asp', '.aspx', '.exe', '.bat', '.cmd', '.sh', '.js', '.svg', '.xml'];
@@ -355,33 +390,53 @@ export async function POST(request) {
         }
       }
 
-      // 4. READ FILE CONTENT for content validation
-      const bytes = await bomFile.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      // 5. MAGIC BYTE / CONTENT VALIDATION — verify actual file type
+      const buffer = Buffer.from(await bomFile.arrayBuffer());
       if (!validateFileContent(buffer, ext)) {
         return NextResponse.json(
           { error: 'File content does not match the declared file type, or contains prohibited content.' },
           { status: 400 }
         );
       }
+      pendingBom = { buffer, ext, originalName };
+    }
 
-      // 6. SAVE TO PRIVATE DIRECTORY (outside public/) — files NOT directly web-accessible
+    // The request is well-formed and is about to become a lead — now charge the
+    // submission quota. Everything above this line is free to retry.
+    if (!(await rateLimit(ip, RFQ_RATE_LIMIT))) {
+      return NextResponse.json(
+        { error: 'You have submitted several requests recently. Please try again later, or email us directly.' },
+        { status: 429 }
+      );
+    }
+
+    // Re-serialize sanitized parts for storage
+    data.parts = JSON.stringify(validParts);
+
+    // Spam detection. Only hard signals suppress the lead; soft ones are
+    // annotated and still reach the team.
+    const spamReasons = detectSpam(data);
+    const isSpam = isHardSpam(spamReasons);
+    const softFlags = spamReasons.filter(reason => !HARD_SPAM_REASONS.has(reason));
+
+    // Sanitize inputs
+    const sanitize = (s, maxLen = 500) =>
+      s ? String(s).trim().replace(/[<>]/g, '').substring(0, maxLen) : null;
+
+    // Process tracking data
+    const tracking = data._tracking || {};
+    const sourceChannel = deriveSourceChannel(tracking);
+
+    let bomFilePath = null;
+    let bomFileName = null;
+    if (pendingBom && !isSpam) {
       const uploadDir = path.join(process.cwd(), 'data', 'bom-uploads');
       if (!existsSync(uploadDir)) {
         await mkdir(uploadDir, { recursive: true });
       }
-
-      // 7. SECURE FILENAME — random, no user-controlled path components
-      const secureFilename = generateSecureFilename(ext);
-      const filePath = path.join(uploadDir, secureFilename);
-
-      await writeFile(filePath, buffer);
-
-      // Store internal path (NOT a public URL — served via API only)
+      const secureFilename = generateSecureFilename(pendingBom.ext);
+      await writeFile(path.join(uploadDir, secureFilename), pendingBom.buffer);
       bomFilePath = secureFilename;
-      bomFileName = originalName;
+      bomFileName = pendingBom.originalName;
     }
 
     // Save to database
@@ -399,7 +454,11 @@ export async function POST(request) {
         status: isSpam ? 'spam' : 'new',
         ipAddress: ip,
         userAgent: userAgent.substring(0, 500),
-        notes: isSpam ? `Auto-flagged: ${spamReasons.join(', ')}` : null,
+        notes: isSpam
+          ? `Auto-flagged as spam: ${spamReasons.join(', ')}`
+          : softFlags.length
+            ? `Needs review (delivered as normal): ${softFlags.join(', ')}`
+            : null,
         trackingData: Object.keys(tracking).length > 0 ? JSON.stringify(tracking) : null,
         sourceChannel,
         landingPage: sanitize(tracking.landing_page, 500),

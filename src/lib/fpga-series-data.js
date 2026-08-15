@@ -88,7 +88,10 @@ const SERIES = [
     family: 'FPGA',
     intro: 'Source Actel, ProASIC3, IGLOO, and aerospace-oriented programmable logic with quality documentation review before shipment.',
     searchIntent: 'A3P, A3PE, AGL, Actel FPGA sourcing',
-    prefixes: ['A3P', 'A3PE', 'AGL', 'APA', 'RTAX'],
+    // ProASIC Plus uses APA075/150/300/450/600/750/1000. Avoid the
+    // overly-broad "APA" prefix, which also matches Advantech APAX industrial
+    // controllers and expansion backplanes.
+    prefixes: ['A3P', 'A3PE', 'AGL', 'APA0', 'APA1', 'APA3', 'APA4', 'APA6', 'APA7', 'RTAX'],
     manufacturers: ['Actel', 'Microchip'],
   },
 ];
@@ -97,13 +100,9 @@ function startsWithAny(field, prefixes) {
   return prefixes.map(prefix => ({ [field]: { startsWith: prefix, mode: 'insensitive' } }));
 }
 
-function containsAny(field, terms) {
-  return terms.map(term => ({ [field]: { contains: term, mode: 'insensitive' } }));
-}
-
-function categoryContainsAny(terms) {
+function categoryEqualsAny(terms) {
   return terms.map(term => ({
-    category: { is: { name: { contains: term, mode: 'insensitive' } } },
+    category: { is: { name: { equals: term, mode: 'insensitive' } } },
   }));
 }
 
@@ -122,6 +121,7 @@ export function buildSeriesWhere(series, { stockedOnly = false, indexableOnly = 
     },
   ];
 
+  and.push({ duplicateOfId: null });
   if (stockedOnly) and.push({ stock: { gt: 0 } });
   if (indexableOnly) and.push({ indexable: true });
 
@@ -131,14 +131,23 @@ export function buildSeriesWhere(series, { stockedOnly = false, indexableOnly = 
 export function buildProgrammableLogicWhere({ stockedOnly = false, indexableOnly = false } = {}) {
   const and = [
     {
+      // Manufacturer alone is not evidence that a part is programmable logic:
+      // Microchip, Intel and AMD also sell large MCU, analog and processor
+      // catalogues. Match a known family prefix or an explicit FPGA/CPLD
+      // category so homepage recommendations stay topically accurate.
       OR: [
         ...SERIES.flatMap(series => startsWithAny('partNumber', series.prefixes)),
-        ...categoryContainsAny(['FPGA', 'CPLD', 'Programmable Logic']),
-        ...containsAny('manufacturer', ['Xilinx', 'AMD', 'Altera', 'Intel', 'Lattice', 'Actel', 'Microchip']),
+        ...categoryEqualsAny([
+          'FPGAs',
+          'CPLDs',
+          'PLDs - Programmable Logic Devices',
+          'FPGAs with Microcontrollers',
+        ]),
       ],
     },
   ];
 
+  and.push({ duplicateOfId: null });
   if (stockedOnly) and.push({ stock: { gt: 0 } });
   if (indexableOnly) and.push({ indexable: true });
 

@@ -40,8 +40,19 @@ if (!dryRun && contactCount) {
 }
 log(`Contacts anonymized (>24mo): ${contactCount}`);
 
-// 3. Delete old spam RFQs (and their BOM files)
-const spamWhere = { status: 'spam', submittedAt: { lt: DAYS_30 } };
+// 3. Delete old spam RFQs (and their BOM files).
+//
+// Deletion is irreversible, so it is restricted to submissions carrying a
+// high-confidence signal (see HARD_SPAM_REASONS in src/app/api/rfq/route.js).
+// Rows flagged only by soft heuristics — including everything the retired
+// all-caps-name rule caught before 2026-08-02 — are left in place for a human
+// to judge, because deleting one of those destroys a real sales lead.
+const HARD_SPAM_REASONS = ['honeypot_filled', 'invalid_parts_json', 'no_valid_parts'];
+const spamWhere = {
+  status: 'spam',
+  submittedAt: { lt: DAYS_30 },
+  OR: HARD_SPAM_REASONS.map(reason => ({ notes: { contains: reason } })),
+};
 const spamRows = await prisma.rfqSubmission.findMany({
   where: spamWhere,
   select: { id: true, bomFile: true },
@@ -55,7 +66,14 @@ if (!dryRun && spamRows.length) {
   }
   await prisma.rfqSubmission.deleteMany({ where: spamWhere });
 }
-log(`Spam RFQs deleted (>30d): ${spamRows.length}`);
+log(`Spam RFQs deleted (>30d, high-confidence only): ${spamRows.length}`);
+
+const retained = await prisma.rfqSubmission.count({
+  where: { status: 'spam', submittedAt: { lt: DAYS_30 }, NOT: spamWhere },
+});
+if (retained) {
+  log(`Spam RFQs retained for review (soft flags only): ${retained} — check /admin/rfq?status=spam`);
+}
 
 await prisma.$disconnect();
 log('PII purge complete.');

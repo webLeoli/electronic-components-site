@@ -7,7 +7,7 @@
  * 
  * Auto-Alt Examples:
  *   "STM32F103C8T6 STMicroelectronics ARM Cortex-M3 MCU 72MHz - In Stock"
- *   "IRF540N Infineon N-Channel Power MOSFET - Buy Online"
+ *   "IRF540N Infineon N-Channel Power MOSFET - RFQ"
  * 
  * Usage:
  *   <ProductImage product={product} size={200} />

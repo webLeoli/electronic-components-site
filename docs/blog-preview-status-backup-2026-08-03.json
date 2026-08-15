@@ -1,0 +1,20 @@
+{
+  "capturedAt": "2026-08-02T16:38:12.357Z",
+  "purpose": "Restore blog post publication state after temporarily publishing every draft for preview.",
+  "posts": [
+    { "id": 33, "slug": "actel-proasic-sourcing-guide", "status": "draft", "publishedAt": null },
+    { "id": 31, "slug": "altera-max-cpld-replacement-paths", "status": "draft", "publishedAt": null },
+    { "id": 22, "slug": "analog-power-second-sourcing-guide", "status": "draft", "publishedAt": null },
+    { "id": 27, "slug": "clock-generator-pll-sourcing", "status": "draft", "publishedAt": null },
+    { "id": 24, "slug": "dc-dc-regulator-replacement-guide", "status": "draft", "publishedAt": null },
+    { "id": 12, "slug": "gd32-vs-stm32-gd32f103-motor-control-alternatives", "status": "draft", "publishedAt": null },
+    { "id": 32, "slug": "lattice-machxo-ecp-sourcing", "status": "draft", "publishedAt": null },
+    { "id": 23, "slug": "ldo-cross-reference-guide", "status": "draft", "publishedAt": null },
+    { "id": 28, "slug": "mcu-second-source-cross-reference-guide", "status": "draft", "publishedAt": null },
+    { "id": 26, "slug": "op-amp-equivalent-selection", "status": "draft", "publishedAt": null },
+    { "id": 30, "slug": "sourcing-altera-cyclone-legacy", "status": "draft", "publishedAt": null },
+    { "id": 29, "slug": "sourcing-xilinx-spartan-6-guide", "status": "draft", "publishedAt": null },
+    { "id": 25, "slug": "supervisor-reset-ic-selection-guide", "status": "draft", "publishedAt": null },
+    { "id": 3, "slug": "understanding-mlcc-capacitors-guide", "status": "draft", "publishedAt": "2026-04-01T16:26:58.034Z" }
+  ]
+}

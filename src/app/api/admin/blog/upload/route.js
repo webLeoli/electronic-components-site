@@ -11,13 +11,21 @@ import {
   monthPath,
   validateImageUpload,
 } from '@/lib/image-upload-policy';
+import { enforceMaxBody } from '@/lib/request-limits';
+
+// See /api/admin/upload: coarse ceiling ahead of formData(), well above the
+// blog policy's own limit so the policy stays the thing that reports the error.
+const BLOG_UPLOAD_MAX_BODY = 8 * 1024 * 1024;
 
 // POST: Upload blog image file. Videos are intentionally not accepted here
 // because blog uploads live on the app server and can grow too quickly.
 export async function POST(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
   try {
+    const tooLarge = enforceMaxBody(request, BLOG_UPLOAD_MAX_BODY);
+    if (tooLarge) return tooLarge;
+
     const formData = await request.formData();
     const file = formData.get('file');
     const title = formData.get('title') || '';

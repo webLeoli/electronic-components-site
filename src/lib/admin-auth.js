@@ -1,12 +1,37 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import prisma from '@/lib/db';
 
 /**
  * Shared admin authentication helper for API routes.
  *
  * Token format: `userId:role:timestamp:hmac` (HMAC-SHA256 signed)
  * Only 4-part signed tokens are accepted — unsigned tokens are rejected.
+ *
+ * REVOCATION
+ * ----------
+ * The signature and the 24h expiry are not enough on their own. The token
+ * carries the user id AND the role, and nothing used to look at the database
+ * again, so for up to 24 hours after an administrative action:
+ *
+ *   - a deactivated account (isActive = false) still had full access — which
+ *     means "disable the compromised account" did not actually cut anyone off,
+ *     including from the RFQ inbox and its customer contact details;
+ *   - a deleted account still had full access;
+ *   - a demoted admin still acted as an admin, because the old role travels in
+ *     the token.
+ *
+ * The guards below therefore re-check the account on every request. Admin
+ * traffic is a handful of requests per minute, so the extra lookup costs
+ * nothing that matters, and a revoked session now dies on its next request.
+ *
+ * This is why the guards are async: `await requireAuth(request)`.
  */
+
+// The legacy single-password master admin signs in as user id 0 and has no
+// AdminUser row. Its credential is the master password itself, so rotating that
+// is what revokes it — there is no row to check.
+const LEGACY_MASTER_USER_ID = 0;
 
 const SESSION_SECRET = process.env.SESSION_SECRET;
 
@@ -68,22 +93,54 @@ export function getAdminSession(request) {
 }
 
 /**
- * Guard: require any valid admin session.
- * Returns a 401 Response if not authenticated, otherwise null.
+ * Resolve the session against the current state of the account.
+ *
+ * Returns { session } when the caller may proceed (with `session.role` refreshed
+ * from the database), or { error } with the Response to return.
+ */
+async function resolveLiveSession(request) {
+  const session = getAdminSession(request);
+  if (!session) {
+    return { error: NextResponse.json({ error: 'Unauthorized — please log in' }, { status: 401 }) };
+  }
+
+  if (session.userId === LEGACY_MASTER_USER_ID) return { session };
+
+  let user;
+  try {
+    user = await prisma.adminUser.findUnique({
+      where: { id: session.userId },
+      select: { isActive: true, role: true },
+    });
+  } catch {
+    // Database unreachable. Fail CLOSED: an admin API that cannot verify who is
+    // calling must not serve customer data on the strength of a cookie alone.
+    return { error: NextResponse.json({ error: 'Authentication unavailable' }, { status: 503 }) };
+  }
+
+  if (!user || !user.isActive) {
+    return { error: NextResponse.json({ error: 'Session revoked — please log in again' }, { status: 401 }) };
+  }
+
+  // Trust the stored role over the one in the token, so a demotion takes effect
+  // immediately instead of at the token's expiry.
+  return { session: { ...session, role: user.role } };
+}
+
+/**
+ * Guard: require any valid, still-active admin session.
+ * Returns a Response if the caller must be rejected, otherwise null.
  *
  * Usage:
  *   export async function GET(request) {
- *     const authError = requireAuth(request);
+ *     const authError = await requireAuth(request);
  *     if (authError) return authError;
  *     // ... handler logic
  *   }
  */
-export function requireAuth(request) {
-  const session = getAdminSession(request);
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized — please log in' }, { status: 401 });
-  }
-  return null;
+export async function requireAuth(request) {
+  const { error } = await resolveLiveSession(request);
+  return error || null;
 }
 
 /**
@@ -91,11 +148,9 @@ export function requireAuth(request) {
  * Route-level defense in depth: the edge proxy also blocks viewer writes, but
  * mutating handlers must not depend on the proxy matcher staying intact.
  */
-export function requireEditor(request) {
-  const session = getAdminSession(request);
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized — please log in' }, { status: 401 });
-  }
+export async function requireEditor(request) {
+  const { session, error } = await resolveLiveSession(request);
+  if (error) return error;
   if (session.role !== 'admin' && session.role !== 'editor') {
     return NextResponse.json({ error: 'Forbidden — write access requires editor role' }, { status: 403 });
   }
@@ -106,11 +161,9 @@ export function requireEditor(request) {
  * Guard: require admin role specifically.
  * Returns 401 if not authenticated, 403 if insufficient role.
  */
-export function requireAdmin(request) {
-  const session = getAdminSession(request);
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized — please log in' }, { status: 401 });
-  }
+export async function requireAdmin(request) {
+  const { session, error } = await resolveLiveSession(request);
+  if (error) return error;
   if (session.role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden — admin role required' }, { status: 403 });
   }

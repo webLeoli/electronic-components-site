@@ -58,7 +58,7 @@ async function fetchAllBatched(model, args) {
 }
 
 export async function GET(request) {
-  const authError = requireAdmin(request);
+  const authError = await requireAdmin(request);
   if (authError) return authError;
   try {
     const { searchParams } = new URL(request.url);

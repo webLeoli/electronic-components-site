@@ -7,7 +7,7 @@ import { requireAuth, requireEditor } from '@/lib/admin-auth';
 
 // GET: List all RFQ submissions
 export async function GET(request) {
-  const authError = requireAuth(request);
+  const authError = await requireAuth(request);
   if (authError) return authError;
   try {
     const { searchParams } = new URL(request.url);
@@ -41,7 +41,7 @@ export async function GET(request) {
 
 // PUT: Update RFQ status
 export async function PUT(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
   try {
     const data = await request.json();
@@ -66,7 +66,7 @@ export async function PUT(request) {
 
 // DELETE: Delete RFQ
 export async function DELETE(request) {
-  const authError = requireEditor(request);
+  const authError = await requireEditor(request);
   if (authError) return authError;
   try {
     const { searchParams } = new URL(request.url);

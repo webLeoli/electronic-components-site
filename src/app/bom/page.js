@@ -3,10 +3,10 @@ import { SITE_NAME, SITE_URL } from '@/lib/seo';
 
 export const metadata = {
   title: 'BOM Quote Tool',
-  description: 'Upload your Bill of Materials and get volume quotes for all components at once. Supports CSV, Excel, and paste-from-spreadsheet formats. Fast response within 24 hours.',
+  description: 'Upload your Bill of Materials and get volume quotes for all components at once. Supports CSV, TSV, and paste-from-spreadsheet. Fast response within 24 hours.',
   openGraph: {
     title: `BOM Quote Tool | ${SITE_NAME}`,
-    description: 'Upload your Bill of Materials and get volume quotes for all components at once. Supports CSV, Excel, and paste-from-spreadsheet formats.',
+    description: 'Upload your Bill of Materials and get volume quotes for all components at once. Supports CSV, TSV, and paste-from-spreadsheet.',
     url: `${SITE_URL}/bom`,
     siteName: SITE_NAME,
     type: 'website',

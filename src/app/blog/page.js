@@ -2,7 +2,7 @@ import prisma from '@/lib/db';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SITE_NAME, SITE_URL } from '@/lib/seo';
-import { getBlogCoverImage, getBlogCoverTheme } from '@/lib/blog-cover';
+import { getBlogCoverAlt, getBlogCoverImage, getBlogCoverMobileImage, getBlogCoverTheme } from '@/lib/blog-cover';
 import './blog.css';
 
 export const revalidate = 3600;
@@ -10,12 +10,14 @@ export const revalidate = 3600;
 export async function generateMetadata({ searchParams }) {
   const sp = await searchParams;
   const page = Math.max(1, parseInt(sp?.page) || 1);
+  const categorySlug = typeof sp?.category === 'string' ? sp.category : '';
 
-  // Category filters canonicalize to /blog (faceted views of the same
-  // collection), but paginated pages self-canonicalize: pointing page 2+ at
-  // page 1 tells Google they are duplicates and buries every post beyond the
-  // first page.
-  const canonicalUrl = page > 1 ? `${SITE_URL}/blog?page=${page}` : `${SITE_URL}/blog`;
+  // Self-canonical including the active category. Folding /blog?page=2&category=fpga
+  // onto /blog?page=2 told Google two different post lists were the same URL.
+  const qs = new URLSearchParams();
+  if (categorySlug) qs.set('category', categorySlug);
+  if (page > 1) qs.set('page', String(page));
+  const canonicalUrl = qs.toString() ? `${SITE_URL}/blog?${qs}` : `${SITE_URL}/blog`;
   const title = page > 1 ? `Technical Articles & Guides - Page ${page}` : 'Technical Articles & Guides';
 
   return {
@@ -48,7 +50,10 @@ export default async function BlogPage({ searchParams }) {
   const where = { status: 'published' };
   if (categorySlug) {
     const cat = await prisma.blogCategory.findUnique({ where: { slug: categorySlug } });
-    if (cat) where.categoryId = cat.id;
+    // Unknown category must 404: silently listing ALL posts under
+    // /blog?category=bogus duplicates /blog on an infinite URL space.
+    if (!cat) notFound();
+    where.categoryId = cat.id;
   }
 
   const [posts, total, categories] = await Promise.all([
@@ -77,11 +82,16 @@ export default async function BlogPage({ searchParams }) {
   // A page past the end must 404, not render an indexable empty state.
   if (page > 1 && posts.length === 0) notFound();
 
+  const listQs = new URLSearchParams();
+  if (categorySlug) listQs.set('category', categorySlug);
+  if (page > 1) listQs.set('page', String(page));
+  const listUrl = listQs.toString() ? `${SITE_URL}/blog?${listQs}` : `${SITE_URL}/blog`;
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     name: `Technical Articles | ${SITE_NAME}`,
-    url: `${SITE_URL}/blog`,
+    url: listUrl,
     description: 'Expert guides, product comparisons, and technical articles about FPGAs, MCUs, and electronic components.',
   };
 
@@ -125,17 +135,31 @@ export default async function BlogPage({ searchParams }) {
             </div>
           ) : (
             <div className="blog-grid">
-              {posts.map(post => {
+              {posts.map((post, index) => {
                 const coverImage = getBlogCoverImage(post);
+                const mobileCoverImage = getBlogCoverMobileImage(post);
+                const coverAlt = getBlogCoverAlt(post);
                 const coverTheme = getBlogCoverTheme(post);
 
                 return (
                   <Link href={`/blog/${post.slug}`} key={post.id} className="blog-card">
                     <div
                       className={`blog-card-cover ${coverImage ? 'has-image' : `blog-cover-generated ${coverTheme.className}`}`}
-                      style={coverImage ? { backgroundImage: `url(${coverImage})` } : undefined}
                     >
-                      {!coverImage && (
+                      {coverImage ? (
+                        <picture>
+                          {mobileCoverImage && <source media="(max-width: 768px)" srcSet={mobileCoverImage} />}
+                          <img
+                            src={coverImage}
+                            alt={coverAlt}
+                            width="1200"
+                            height="630"
+                            loading={index < 2 ? 'eager' : 'lazy'}
+                            fetchPriority={index === 0 ? 'high' : 'auto'}
+                            decoding="async"
+                          />
+                        </picture>
+                      ) : (
                         <div className="blog-cover-generated-inner">
                           <span>{coverTheme.label}</span>
                           <strong>{coverTheme.title}</strong>
