@@ -155,16 +155,15 @@ log "Generating Prisma client"
 npx prisma generate
 
 if [ "${SKIP_DB:-0}" != "1" ]; then
-  if [ -d prisma/migrations ] && find prisma/migrations -mindepth 1 -maxdepth 1 -type d | grep -q .; then
-    log "Applying Prisma migrations"
-    npx prisma migrate deploy
+  # Production predates Prisma's migration history. The checked-in 0_init
+  # migration documents a fresh install, but migrate deploy cannot apply it to
+  # the existing non-empty database (P3005). Keep production aligned with the
+  # declared schema using db push, which is also the workflow documented here.
+  log "Syncing database schema with prisma db push"
+  if [ "${FORCE_DB_PUSH_ACCEPT_DATA_LOSS:-0}" = "1" ]; then
+    npx prisma db push --accept-data-loss
   else
-    log "No Prisma migrations found; syncing schema with prisma db push"
-    if [ "${FORCE_DB_PUSH_ACCEPT_DATA_LOSS:-0}" = "1" ]; then
-      npx prisma db push --accept-data-loss
-    else
-      npx prisma db push
-    fi
+    npx prisma db push
   fi
 else
   log "Skipping database sync because SKIP_DB=1"
